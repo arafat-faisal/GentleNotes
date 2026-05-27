@@ -1,36 +1,7 @@
-import 'package:flutter/material.dart';
+/// Re-export shim for backward compatibility.
+///
+/// ResponsiveLayout has been renamed to ResponsiveHelper and moved to
+/// core/utils/responsive_helper.dart.
+library responsive_layout_shim;
 
-class ResponsiveLayout extends StatelessWidget {
-  final Widget mobile;
-  final Widget? tablet;
-  final Widget desktop;
-
-  const ResponsiveLayout({
-    super.key,
-    required this.mobile,
-    this.tablet,
-    required this.desktop,
-  });
-
-  static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < 600;
-
-  static bool isTablet(BuildContext context) =>
-      MediaQuery.of(context).size.width >= 600 &&
-      MediaQuery.of(context).size.width < 1024;
-
-  static bool isDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= 1024;
-
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width >= 1024) {
-      return desktop;
-    } else if (width >= 600 && tablet != null) {
-      return tablet!;
-    } else {
-      return mobile;
-    }
-  }
-}
+export '../../core/utils/responsive_helper.dart';

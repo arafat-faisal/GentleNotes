@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'router.dart';
-import 'theme/theme_controller.dart';
+// Theme providers now live in core/theme for better organization.
+import '../core/theme/theme_providers.dart';
 
 class GentleNotesApp extends ConsumerWidget {
   const GentleNotesApp({super.key});

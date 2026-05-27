@@ -1,19 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/settings/data/settings_repository.dart';
-import 'app_theme.dart';
+/// Re-export shim for backward compatibility.
+///
+/// Theme providers have moved to core/theme/theme_providers.dart.
+library theme_controller_shim;
 
-final appThemeProvider = Provider<ThemeData>((ref) {
-  final settings = ref.watch(settingsProvider);
-  return AppTheme.lightTheme(settings.accentColor);
-});
-
-final appDarkThemeProvider = Provider<ThemeData>((ref) {
-  final settings = ref.watch(settingsProvider);
-  return AppTheme.darkTheme(settings.accentColor);
-});
-
-final appThemeModeProvider = Provider<ThemeMode>((ref) {
-  final settings = ref.watch(settingsProvider);
-  return settings.themeMode.toThemeMode;
-});
+export '../../core/theme/theme_providers.dart';

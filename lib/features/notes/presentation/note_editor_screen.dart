@@ -22,6 +22,7 @@ import '../../folders/data/folders_repository.dart';
 import '../../notes/data/notes_repository.dart';
 import '../../templates/data/templates_repository.dart';
 import '../../settings/data/settings_repository.dart';
+// Services relocated to core/services for better architecture
 import '../../../services/export_import_service.dart';
 import '../../../services/pdf_export_service.dart';
 import 'drawing_canvas_screen.dart';
