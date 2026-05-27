@@ -1,0 +1,75 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../features/home/presentation/home_screen.dart';
+import '../features/home/presentation/splash_screen.dart';
+import '../features/home/presentation/onboarding_screen.dart';
+import '../features/folders/presentation/folder_detail_screen.dart';
+import '../features/notes/presentation/note_editor_screen.dart';
+import '../features/templates/presentation/templates_screen.dart';
+import '../features/settings/presentation/settings_screen.dart';
+import '../features/settings/presentation/about_screen.dart';
+import '../features/calendar/calendar_screen.dart';
+
+final routerProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/folders/:id',
+        builder: (context, state) {
+          final folderId = state.pathParameters['id']!;
+          return FolderDetailScreen(folderId: folderId);
+        },
+      ),
+      GoRoute(
+        path: '/notes/create',
+        builder: (context, state) {
+          final folderId = state.uri.queryParameters['folderId'];
+          final templateId = state.uri.queryParameters['templateId'];
+          return NoteEditorScreen(
+            noteId: null,
+            initialFolderId: folderId,
+            initialTemplateId: templateId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/notes/edit/:id',
+        builder: (context, state) {
+          final noteId = state.pathParameters['id']!;
+          return NoteEditorScreen(noteId: noteId);
+        },
+      ),
+      GoRoute(
+        path: '/templates',
+        builder: (context, state) => const TemplatesScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/about',
+        builder: (context, state) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: '/calendar',
+        builder: (context, state) => const CalendarScreen(),
+      ),
+    ],
+  );
+});
