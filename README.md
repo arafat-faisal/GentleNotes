@@ -1,17 +1,34 @@
-# gentle_notes
+# 🧠 GentleNotes
 
-A new Flutter project.
+A beautiful cross-platform note-taking app to organize thoughts, ideas, and learning content with rich media support.
 
-## Getting Started
+## ✨ Features
+- 📄 Rich notes (text, images, audio, code)
+- 📁 Smart folders & tags
+- 🎨 Custom themes
+- 🔍 Fast search
+- ☁️ Future: Cloud sync
 
-This project is a starting point for a Flutter application.
+## 📱 Platforms
+- Android ✅
+- iOS ✅
+- Web ✅
+- Desktop ✅
 
-A few resources to get you started if this is your first Flutter project:
+## 🧠 Vision
+GentleNotes is designed to be a calm, powerful, and organized workspace for students, developers, and creators.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 🚀 Tech Stack
+- Flutter
+- Dart
+- (Planned: Firebase / Supabase)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 📌 Status
+🚧 In Development (Early Stage)
+
+## 🗺️ Roadmap
+- [ ] Core note CRUD
+- [ ] Folder system
+- [ ] Rich editor
+- [ ] Sync system
+- [ ] AI-powered notes
