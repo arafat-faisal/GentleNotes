@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import '../core/utils/quill_markdown_converter.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -85,7 +87,7 @@ class ExportImportService {
     buffer.writeln('isFavorite: ${note.isFavorite}');
     buffer.writeln('---');
     buffer.writeln();
-    buffer.writeln(note.content);
+    buffer.writeln(QuillMarkdownConverter.deltaToMarkdown(note.content));
     return buffer.toString();
   }
 
@@ -197,7 +199,7 @@ class ExportImportService {
         final note = NoteModel(
           id: id,
           title: title,
-          content: content,
+          content: QuillMarkdownConverter.markdownToDeltaJson(content),
           noteType: NoteType.markdown,
           tags: ['imported'],
           attachments: [],

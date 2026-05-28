@@ -115,7 +115,7 @@ final filteredNotesProvider = Provider<List<NoteModel>>((ref) {
   return notes.where((note) {
     if (search.isNotEmpty) {
       final titleMatch = note.title.toLowerCase().contains(search);
-      final contentMatch = note.content.toLowerCase().contains(search);
+      final contentMatch = note.plainText.toLowerCase().contains(search);
       final tagMatch = note.tags.any((t) => t.toLowerCase().contains(search));
       if (!titleMatch && !contentMatch && !tagMatch) return false;
     }

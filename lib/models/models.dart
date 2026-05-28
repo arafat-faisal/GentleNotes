@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+
 
 // --- ENUMS ---
 
@@ -268,6 +270,26 @@ class NoteModel {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  String get plainText {
+    if (content.startsWith('[') && content.endsWith(']')) {
+      try {
+        final List parsed = jsonDecode(content);
+        final sb = StringBuffer();
+        for (final op in parsed) {
+          if (op is Map && op.containsKey('insert')) {
+            final insert = op['insert'];
+            if (insert is String) {
+              sb.write(insert);
+            }
+          }
+        }
+        return sb.toString();
+      } catch (_) {}
+    }
+    return content;
+  }
+
 
   NoteModel copyWith({
     String? folderId,

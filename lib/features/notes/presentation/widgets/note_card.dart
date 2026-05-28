@@ -126,7 +126,7 @@ class NoteCard extends StatelessWidget {
           if (note.content.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              _contentPreview(note.content),
+              _contentPreview(note.plainText),
               style: theme.textTheme.bodySmall,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

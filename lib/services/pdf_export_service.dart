@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
+import '../core/utils/quill_markdown_converter.dart';
+
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:pdf/pdf.dart';
@@ -84,7 +86,8 @@ class PdfExportService {
     final cleanFolder = folderName != null ? _cleanText(folderName) : null;
     final cleanTags = note.tags.map((t) => _cleanText(t)).toList();
 
-    final rawBlocks = _parseNoteContent(note.content);
+    final markdown = QuillMarkdownConverter.deltaToMarkdown(note.content);
+    final rawBlocks = _parseNoteContent(markdown);
     final contentBlocks = rawBlocks.map((b) {
       if (b.type == PdfBlockType.image) return b;
       if (b.type == PdfBlockType.table) {

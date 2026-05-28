@@ -62,7 +62,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
       if (_localSearchQuery.isNotEmpty) {
         final query = _localSearchQuery.toLowerCase();
         final matchesTitle = n.title.toLowerCase().contains(query);
-        final matchesContent = n.content.toLowerCase().contains(query);
+        final matchesContent = n.plainText.toLowerCase().contains(query);
         final matchesTag = n.tags.any((t) => t.toLowerCase().contains(query));
         return matchesTitle || matchesContent || matchesTag;
       }
@@ -256,7 +256,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                     const SizedBox(height: 4),
                     Expanded(
                       child: Text(
-                        note.content,
+                        note.plainText,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -312,7 +312,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      note.content,
+                      note.plainText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(

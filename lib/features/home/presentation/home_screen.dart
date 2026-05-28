@@ -575,7 +575,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // Note Body Snippet
               Text(
-                note.content,
+                note.plainText,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
