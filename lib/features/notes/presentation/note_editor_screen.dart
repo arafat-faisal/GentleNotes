@@ -73,6 +73,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   bool _isPreviewMode = false;
   String? _activeToolbarGroup;
 
+  String? _activeColorMode;
+  bool _showCustomColorPicker = false;
+  double _customHue = 0.0;
+  double _customSaturation = 1.0;
+  double _customLightness = 0.5;
+  Color _customSelectedColor = const Color(0xFFEF4444);
+  final List<Color> _userSavedColors = [];
+
   // ── UI mode flags ────────────────────────────────────────────────────────
   bool _isFullScreen = false;
   bool _isFocusMode = false;
@@ -975,261 +983,239 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     }
   }
 
-  // ── Custom Color Picker Helper ───────────────────────────────────────────
-  Future<Color?> _showCustomColorPicker(BuildContext context, {
-    required List<Color> presetColors,
-    required String title,
-    Widget Function(Color)? previewBuilder,
-  }) async {
-    Color? selectedColor;
-    final hexController = TextEditingController();
-    Color previewColor = presetColors.first;
-    
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setModalState) {
-          final theme = Theme.of(ctx2);
-          final isDark = theme.brightness == Brightness.dark;
-          return Container(
+
+
+  Color _getCurrentSelectedColor() {
+    final style = _quillController.getSelectionStyle();
+    if (_activeColorMode == 'text') {
+      final attr = style.attributes[Attribute.color.key];
+      if (attr != null && attr.value is String) {
+        return Color(int.parse('FF${(attr.value as String).replaceAll('#', '')}', radix: 16));
+      }
+      return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black;
+    } else if (_activeColorMode == 'highlight') {
+      final attr = style.attributes[Attribute.background.key];
+      if (attr != null && attr.value is String) {
+        return Color(int.parse('FF${(attr.value as String).replaceAll('#', '')}', radix: 16));
+      }
+      return Colors.transparent;
+    }
+    return Colors.transparent;
+  }
+
+  void _applyColor(Color? color) {
+    if (_titleFocusNode.hasFocus) return;
+    final hexStr = color != null
+        ? '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}'
+        : null;
+
+    if (_activeColorMode == 'text') {
+      _quillController.formatSelection(ColorAttribute(hexStr));
+    } else if (_activeColorMode == 'highlight') {
+      _quillController.formatSelection(BackgroundAttribute(hexStr));
+    }
+    _markDirty();
+  }
+
+  void _updateCustomColor() {
+    _customSelectedColor = HSLColor.fromAHSL(1.0, _customHue, _customSaturation, _customLightness).toColor();
+    _applyColor(_customSelectedColor);
+  }
+
+  void _updateCustomColorPickerFromSelection() {
+    final color = _getCurrentSelectedColor();
+    if (color != Colors.transparent &&
+        color != (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)) {
+      final hsl = HSLColor.fromColor(color);
+      setState(() {
+        _customHue = hsl.hue;
+        _customSaturation = hsl.saturation;
+        _customLightness = hsl.lightness;
+        _customSelectedColor = color;
+      });
+    }
+  }
+
+  Widget _buildColorSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required Gradient gradient,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 38,
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 10,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF13111C) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border.all(color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5)),
+              borderRadius: BorderRadius.circular(5),
+              gradient: gradient,
             ),
-            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx2).viewInsets.bottom + 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                )),
-                const SizedBox(height: 16),
-                Text(title, style: theme.textTheme.titleMedium?.copyWith(
-                  fontFamily: 'Outfit', fontWeight: FontWeight.w700)),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 10, runSpacing: 10,
-                  children: [
-                    ...presetColors.map((c) {
-                      final isSelected = previewColor == c;
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 10,
+                activeTrackColor: Colors.transparent,
+                inactiveTrackColor: Colors.transparent,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                thumbColor: Colors.white,
+                overlayColor: Colors.transparent,
+              ),
+              child: Slider(
+                value: value,
+                min: min,
+                max: max,
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineCustomColorPicker(ThemeData theme, bool isDark) {
+    final hexStr = '#${_customSelectedColor.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildColorSlider(
+          label: 'Hue',
+          value: _customHue,
+          min: 0.0,
+          max: 360.0,
+          gradient: LinearGradient(
+            colors: List.generate(360, (index) => HSLColor.fromAHSL(1.0, index.toDouble(), 1.0, 0.5).toColor()),
+          ),
+          onChanged: (val) {
+            setState(() {
+              _customHue = val;
+              _updateCustomColor();
+            });
+          },
+        ),
+        const SizedBox(height: 6),
+        _buildColorSlider(
+          label: 'Sat',
+          value: _customSaturation,
+          min: 0.0,
+          max: 1.0,
+          gradient: LinearGradient(
+            colors: [
+              HSLColor.fromAHSL(1.0, _customHue, 0.0, _customLightness).toColor(),
+              HSLColor.fromAHSL(1.0, _customHue, 1.0, _customLightness).toColor(),
+            ],
+          ),
+          onChanged: (val) {
+            setState(() {
+              _customSaturation = val;
+              _updateCustomColor();
+            });
+          },
+        ),
+        const SizedBox(height: 6),
+        _buildColorSlider(
+          label: 'Light',
+          value: _customLightness,
+          min: 0.0,
+          max: 1.0,
+          gradient: LinearGradient(
+            colors: [
+              Colors.black,
+              HSLColor.fromAHSL(1.0, _customHue, _customSaturation, 0.5).toColor(),
+              Colors.white,
+            ],
+          ),
+          onChanged: (val) {
+            setState(() {
+              _customLightness = val;
+              _updateCustomColor();
+            });
+          },
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: _customSelectedColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.grey.shade400),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              hexStr,
+              style: const TextStyle(fontFamily: 'Courier', fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+              tooltip: 'Save to Palette',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                if (!_userSavedColors.contains(_customSelectedColor)) {
+                  setState(() {
+                    _userSavedColors.add(_customSelectedColor);
+                  });
+                }
+              },
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 24,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _userSavedColors.map((c) {
+                      final isSelected = _getCurrentSelectedColor() == c;
                       return GestureDetector(
                         onTap: () {
-                          setModalState(() => previewColor = c);
-                          hexController.text = '#${c.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+                          setState(() {
+                            _customSelectedColor = c;
+                            final hsl = HSLColor.fromColor(c);
+                            _customHue = hsl.hue;
+                            _customSaturation = hsl.saturation;
+                            _customLightness = hsl.lightness;
+                          });
+                          _applyColor(c);
                         },
                         child: Container(
-                          width: 36, height: 36,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: 18,
+                          height: 18,
                           decoration: BoxDecoration(
                             color: c,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isSelected ? const Color(0xFF8B5CF6) : Colors.grey.shade400,
-                              width: isSelected ? 3 : 1,
+                              color: isSelected ? theme.colorScheme.primary : Colors.grey.shade400,
+                              width: isSelected ? 2 : 1,
                             ),
-                            boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF8B5CF6).withOpacity(0.4), blurRadius: 6)] : null,
                           ),
-                          child: isSelected ? const Icon(Icons.check, size: 16, color: Colors.white) : null,
                         ),
                       );
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                if (previewBuilder != null) ...[
-                  Text('Preview', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 8),
-                  previewBuilder(previewColor),
-                  const SizedBox(height: 20),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: hexController,
-                        decoration: const InputDecoration(
-                          hintText: '#HEX Color',
-                          prefixText: 'Value: ',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        onChanged: (val) {
-                          if (val.length == 7 && val.startsWith('#')) {
-                            final parsedColor = Color(int.parse('FF${val.substring(1)}', radix: 16));
-                            setModalState(() => previewColor = parsedColor);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      ),
-                      onPressed: () {
-                        selectedColor = const Color(0x00000000);
-                        Navigator.pop(ctx2);
-                      },
-                      child: const Text('Normal'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B5CF6),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      ),
-                      onPressed: () {
-                        selectedColor = previewColor;
-                        Navigator.pop(ctx2);
-                      },
-                      child: const Text('Select'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-    return selectedColor;
-  }
-
-  // Highlight color picker button
-  Widget _buildHighlightButton(ThemeData theme, bool isDark) {
-    final highlights = [
-      const Color(0xFFFFFF00),
-      const Color(0xFFADFF2F),
-      const Color(0xFF87CEEB),
-      const Color(0xFFFFB6C1),
-      const Color(0xFFFFD700),
-      const Color(0xFFFFA07A),
-      const Color(0xFF98FB98),
-      const Color(0xFFDDA0DD),
-    ];
-    return Tooltip(
-      message: 'Highlight Text',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: () async {
-          final color = await _showCustomColorPicker(
-            context,
-            presetColors: highlights,
-            title: '🖌️ Highlight Color',
-            previewBuilder: (c) => Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: RichText(
-                text: TextSpan(
-                  text: 'Sample highlighted ',
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
-                  children: [
-                    TextSpan(
-                      text: 'text preview',
-                      style: TextStyle(backgroundColor: c, fontSize: 14),
-                    ),
-                  ],
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
-          );
-          if (color != null && !_titleFocusNode.hasFocus) {
-            if (color.value == 0) {
-              _quillController.formatSelection(BackgroundAttribute(null));
-            } else {
-              final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-              _quillController.formatSelection(BackgroundAttribute(hexStr));
-            }
-            _markDirty();
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(6.0),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFFF00).withOpacity(0.4),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Icon(Icons.highlight, size: 18),
-          ),
+          ],
         ),
-      ),
-    );
-  }
-
-  // Text color picker button
-  Widget _buildTextColorButton(ThemeData theme, bool isDark) {
-    final textColors = [
-      const Color(0xFFEF4444),
-      const Color(0xFFF97316),
-      const Color(0xFFEAB308),
-      const Color(0xFF22C55E),
-      const Color(0xFF3B82F6),
-      const Color(0xFF8B5CF6),
-      const Color(0xFFEC4899),
-      const Color(0xFF6B7280),
-      const Color(0xFF111827),
-      const Color(0xFF6366F1),
-      const Color(0xFF14B8A6),
-      const Color(0xFFF59E0B),
-    ];
-    return Tooltip(
-      message: 'Text Color',
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: () async {
-          final color = await _showCustomColorPicker(
-            context,
-            presetColors: textColors,
-            title: '🎨 Text Color',
-            previewBuilder: (c) => Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: RichText(
-                text: TextSpan(
-                  text: 'Normal text with ',
-                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14),
-                  children: [
-                    TextSpan(
-                      text: 'colored text preview',
-                      style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-          if (color != null && !_titleFocusNode.hasFocus) {
-            if (color.value == 0) {
-              _quillController.formatSelection(ColorAttribute(null));
-            } else {
-              final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-              _quillController.formatSelection(ColorAttribute(hexStr));
-            }
-            _markDirty();
-          }
-        },
-        child: const Padding(
-          padding: EdgeInsets.all(6.0),
-          child: Icon(Icons.format_color_text, size: 18),
-        ),
-      ),
+      ],
     );
   }
 
@@ -1256,6 +1242,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
         child: GestureDetector(
           onTap: () => setState(() {
             _activeToolbarGroup = (isActive ? null : id);
+            if (_activeToolbarGroup != 'color') {
+              _activeColorMode = null;
+              _showCustomColorPicker = false;
+            }
           }),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -1386,13 +1376,173 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
             ],
           );
         case 'color':
-          return Row(
-            children: [
-              _buildTextColorButton(theme, isDark),
-              const SizedBox(width: 4),
-              _buildHighlightButton(theme, isDark),
-            ],
-          );
+          final textColors = [
+            const Color(0xFF000000),
+            const Color(0xFFEF4444),
+            const Color(0xFFF97316),
+            const Color(0xFFEAB308),
+            const Color(0xFF22C55E),
+            const Color(0xFF06B6D4),
+            const Color(0xFF3B82F6),
+            const Color(0xFF6366F1),
+            const Color(0xFF8B5CF6),
+            const Color(0xFFEC4899),
+            const Color(0xFF6B7280),
+            const Color(0xFFFFFFFF),
+          ];
+          final highlights = [
+            const Color(0xFFFFFF00),
+            const Color(0xFFADFF2F),
+            const Color(0xFF87CEEB),
+            const Color(0xFFFFB6C1),
+            const Color(0xFFFFD700),
+            const Color(0xFFFFA07A),
+            const Color(0xFF98FB98),
+            const Color(0xFFDDA0DD),
+            const Color(0xFFE2E8F0),
+            const Color(0xFFFFC0CB),
+          ];
+          if (_activeColorMode == null) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _activeColorMode = 'text';
+                      _showCustomColorPicker = false;
+                    });
+                    _updateCustomColorPickerFromSelection();
+                  },
+                  icon: Icon(Icons.format_color_text, color: theme.colorScheme.primary),
+                  label: Text('Text Color', style: TextStyle(color: theme.colorScheme.onSurface)),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _activeColorMode = 'highlight';
+                      _showCustomColorPicker = false;
+                    });
+                    _updateCustomColorPickerFromSelection();
+                  },
+                  icon: Icon(Icons.highlight, color: theme.colorScheme.primary),
+                  label: Text('Highlight Color', style: TextStyle(color: theme.colorScheme.onSurface)),
+                ),
+              ],
+            );
+          } else {
+            final colorsToUse = _activeColorMode == 'text' ? textColors : highlights;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                      onPressed: () => setState(() {
+                        _activeColorMode = null;
+                        _showCustomColorPicker = false;
+                      }),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            Tooltip(
+                              message: 'Clear Color',
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () {
+                                  _applyColor(null);
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.grey.shade400),
+                                  ),
+                                  child: const Icon(Icons.format_color_reset_rounded, size: 16, color: Colors.red),
+                                ),
+                              ),
+                            ),
+                            ...colorsToUse.map((c) {
+                              final isSelected = _getCurrentSelectedColor() == c;
+                              return GestureDetector(
+                                onTap: () {
+                                  _applyColor(c);
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: c,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? theme.colorScheme.primary
+                                          : (c == Colors.white ? Colors.grey.shade300 : Colors.transparent),
+                                      width: isSelected ? 2.5 : 1,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [BoxShadow(color: theme.colorScheme.primary.withOpacity(0.4), blurRadius: 4)]
+                                        : null,
+                                  ),
+                                  child: isSelected
+                                      ? Icon(
+                                          Icons.check,
+                                          size: 14,
+                                          color: c.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                        )
+                                      : null,
+                                ),
+                              );
+                            }),
+                            Tooltip(
+                              message: 'Custom Color',
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: () => setState(() {
+                                  _showCustomColorPicker = !_showCustomColorPicker;
+                                }),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: _showCustomColorPicker ? theme.colorScheme.primary : Colors.transparent,
+                                    border: Border.all(color: theme.colorScheme.primary),
+                                  ),
+                                  child: Icon(
+                                    Icons.palette_outlined,
+                                    size: 16,
+                                    color: _showCustomColorPicker
+                                        ? Colors.white
+                                        : theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_showCustomColorPicker) ...[
+                  const Divider(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: _buildInlineCustomColorPicker(theme, isDark),
+                  ),
+                ],
+              ],
+            );
+          }
         case 'heading':
           return Row(
             children: [
@@ -1466,6 +1616,67 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
       return const SizedBox.shrink();
     }
 
+    Widget? previewBanner;
+    if (_activeToolbarGroup == 'color' && _activeColorMode != null) {
+      final selection = _quillController.selection;
+      final hasSelection = selection.baseOffset != selection.extentOffset;
+      if (!hasSelection) {
+        final previewColor = _getCurrentSelectedColor();
+        final isHighlight = _activeColorMode == 'highlight';
+        previewBanner = Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1B2C) : const Color(0xFFF3F1FA),
+            border: isAtBottom
+                ? Border(bottom: BorderSide(color: borderColor))
+                : Border(top: BorderSide(color: borderColor)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Preview: ',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isHighlight ? previewColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Sample Text',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isHighlight
+                        ? (previewColor.computeLuminance() > 0.5 ? Colors.black : Colors.white)
+                        : (previewColor == Colors.transparent
+                            ? (isDark ? Colors.white : Colors.black)
+                            : previewColor),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '(Select text in the editor to apply)',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                  color: isDark ? Colors.white38 : Colors.black38,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: surfaceColor,
@@ -1484,6 +1695,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
         mainAxisSize: MainAxisSize.min,
         children: isAtBottom
             ? [
+                if (previewBanner != null) previewBanner,
                 AnimatedSize(
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeInOut,
@@ -1510,6 +1722,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                 ),
               ]
             : [
+                if (previewBanner != null) previewBanner,
                 Row(
                   children: groups
                       .map((g) => groupBtn(g.$1, g.$2, g.$3))
@@ -2206,21 +2419,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     );
   }
 
-  Widget _wrapWithPreviewStyle(Widget content) {
-    return CustomPaint(
-      painter: PreviewStylePainter(_previewStyle),
-      child: Padding(
-        padding: styleContentPadding(_previewStyle),
-        child: content,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final folders = ref.watch(foldersProvider);
-    final settings = ref.watch(settingsProvider);
     final isDark = theme.brightness == Brightness.dark;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     final showFolderOptions = !isKeyboardOpen || !_editorFocusNode.hasFocus;
