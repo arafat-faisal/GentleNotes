@@ -54,7 +54,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   late String _noteId;
   bool _isEditMode = false;
 
-  final TextEditingController _titleController = MarkdownTextEditingController();
+  final TextEditingController _titleController = TextEditingController();
   QuillController _quillController = QuillController.basic();
   final TextEditingController _tagController = TextEditingController();
   final FocusNode _editorFocusNode = FocusNode();
@@ -132,158 +132,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     }
   }
 
-  void _formatTitle(String formatType, {String? hex}) {
-    final text = _titleController.text;
-    final selection = _titleController.selection;
-    if (selection.isCollapsed) {
-      final pos = selection.baseOffset;
-      if (pos < 0) return;
-      String tags;
-      int cursorOffset;
-      switch (formatType) {
-        case 'bold':
-          tags = '****';
-          cursorOffset = 2;
-          break;
-        case 'italic':
-          tags = '**';
-          cursorOffset = 1;
-          break;
-        case 'underline':
-          tags = '<u></u>';
-          cursorOffset = 3;
-          break;
-        case 'strike':
-          tags = '~~~~';
-          cursorOffset = 2;
-          break;
-        case 'color':
-          if (hex == null) return;
-          tags = '<color hex="$hex"></color>';
-          cursorOffset = 15 + hex.length;
-          break;
-        case 'bg':
-          if (hex == null) return;
-          tags = '<bg hex="$hex"></bg>';
-          cursorOffset = 12 + hex.length;
-          break;
-        default:
-          return;
-      }
-      final newText = text.replaceRange(pos, pos, tags);
-      _titleController.value = _titleController.value.copyWith(
-        text: newText,
-        selection: TextSelection.collapsed(offset: pos + cursorOffset),
-      );
-      _markDirty();
-      return;
-    }
-    
-    final start = selection.start;
-    final end = selection.end;
-    final selectedText = text.substring(start, end);
-    
-    String formatted;
-    int cursorOffset;
-    
-    switch (formatType) {
-      case 'bold':
-        if (selectedText.startsWith('**') && selectedText.endsWith('**') && selectedText.length >= 4) {
-          formatted = selectedText.substring(2, selectedText.length - 2);
-          cursorOffset = -2;
-        } else {
-          formatted = '**$selectedText**';
-          cursorOffset = 2;
-        }
-        break;
-      case 'italic':
-        if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length >= 2) {
-          formatted = selectedText.substring(1, selectedText.length - 1);
-          cursorOffset = -1;
-        } else {
-          formatted = '*$selectedText*';
-          cursorOffset = 1;
-        }
-        break;
-      case 'underline':
-        if (selectedText.startsWith('<u>') && selectedText.endsWith('</u>') && selectedText.length >= 7) {
-          formatted = selectedText.substring(3, selectedText.length - 4);
-          cursorOffset = -3;
-        } else {
-          formatted = '<u>$selectedText</u>';
-          cursorOffset = 3;
-        }
-        break;
-      case 'strike':
-        if (selectedText.startsWith('~~') && selectedText.endsWith('~~') && selectedText.length >= 4) {
-          formatted = selectedText.substring(2, selectedText.length - 2);
-          cursorOffset = -2;
-        } else {
-          formatted = '~~$selectedText~~';
-          cursorOffset = 2;
-        }
-        break;
-      case 'color':
-        if (hex == null) return;
-        var cleanText = selectedText;
-        if (selectedText.startsWith('<color hex=') && selectedText.endsWith('</color>')) {
-          final closeTagStart = selectedText.lastIndexOf('</color>');
-          final openTagEnd = selectedText.indexOf('>') + 1;
-          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
-            cleanText = selectedText.substring(openTagEnd, closeTagStart);
-          }
-        }
-        formatted = '<color hex="$hex">$cleanText</color>';
-        cursorOffset = 15 + hex.length;
-        break;
-      case 'bg':
-        if (hex == null) return;
-        var cleanText = selectedText;
-        if (selectedText.startsWith('<bg hex=') && selectedText.endsWith('</bg>')) {
-          final closeTagStart = selectedText.lastIndexOf('</bg>');
-          final openTagEnd = selectedText.indexOf('>') + 1;
-          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
-            cleanText = selectedText.substring(openTagEnd, closeTagStart);
-          }
-        }
-        formatted = '<bg hex="$hex">$cleanText</bg>';
-        cursorOffset = 12 + hex.length;
-        break;
-      case 'color_clear':
-        var cleanText = selectedText;
-        if (selectedText.startsWith('<color hex=') && selectedText.endsWith('</color>')) {
-          final closeTagStart = selectedText.lastIndexOf('</color>');
-          final openTagEnd = selectedText.indexOf('>') + 1;
-          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
-            cleanText = selectedText.substring(openTagEnd, closeTagStart);
-          }
-        }
-        formatted = cleanText;
-        cursorOffset = 0;
-        break;
-      case 'bg_clear':
-        var cleanText = selectedText;
-        if (selectedText.startsWith('<bg hex=') && selectedText.endsWith('</bg>')) {
-          final closeTagStart = selectedText.lastIndexOf('</bg>');
-          final openTagEnd = selectedText.indexOf('>') + 1;
-          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
-            cleanText = selectedText.substring(openTagEnd, closeTagStart);
-          }
-        }
-        formatted = cleanText;
-        cursorOffset = 0;
-        break;
-      default:
-        return;
-    }
-    
-    final newText = text.replaceRange(start, end, formatted);
-    _titleController.value = _titleController.value.copyWith(
-      text: newText,
-      selection: TextSelection.collapsed(offset: end + cursorOffset * 2),
-    );
-    _markDirty();
-  }
+
 
   void _markDirty() {
     _isDirty = true;
@@ -1291,21 +1140,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
               ),
             ),
           );
-          if (color != null) {
-            if (_titleFocusNode.hasFocus) {
-              if (color.value == 0) {
-                _formatTitle('bg_clear');
-              } else {
-                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-                _formatTitle('bg', hex: hexStr);
-              }
+          if (color != null && !_titleFocusNode.hasFocus) {
+            if (color.value == 0) {
+              _quillController.formatSelection(BackgroundAttribute(null));
             } else {
-              if (color.value == 0) {
-                _quillController.formatSelection(BackgroundAttribute(null));
-              } else {
-                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-                _quillController.formatSelection(BackgroundAttribute(hexStr));
-              }
+              final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+              _quillController.formatSelection(BackgroundAttribute(hexStr));
             }
             _markDirty();
           }
@@ -1370,21 +1210,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
               ),
             ),
           );
-          if (color != null) {
-            if (_titleFocusNode.hasFocus) {
-              if (color.value == 0) {
-                _formatTitle('color_clear');
-              } else {
-                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-                _formatTitle('color', hex: hexStr);
-              }
+          if (color != null && !_titleFocusNode.hasFocus) {
+            if (color.value == 0) {
+              _quillController.formatSelection(ColorAttribute(null));
             } else {
-              if (color.value == 0) {
-                _quillController.formatSelection(ColorAttribute(null));
-              } else {
-                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-                _quillController.formatSelection(ColorAttribute(hexStr));
-              }
+              final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+              _quillController.formatSelection(ColorAttribute(hexStr));
             }
             _markDirty();
           }
@@ -1496,31 +1327,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
       );
     }
 
-    bool titleHasFormat(String type) {
-      if (!_titleFocusNode.hasFocus) return false;
-      final text = _titleController.text;
-      final sel = _titleController.selection;
-      if (sel.isCollapsed) return false;
-      final selectedText = text.substring(sel.start, sel.end);
-      switch (type) {
-        case 'bold':
-          return selectedText.startsWith('**') && selectedText.endsWith('**');
-        case 'italic':
-          return selectedText.startsWith('*') && selectedText.endsWith('*');
-        case 'underline':
-          return selectedText.startsWith('<u>') && selectedText.endsWith('</u>');
-        case 'strike':
-          return selectedText.startsWith('~~') && selectedText.endsWith('~~');
-        default:
-          return false;
-      }
-    }
-
     final style = _quillController.getSelectionStyle();
-    final isBold = _titleFocusNode.hasFocus ? titleHasFormat('bold') : style.containsKey(Attribute.bold.key);
-    final isItalic = _titleFocusNode.hasFocus ? titleHasFormat('italic') : style.containsKey(Attribute.italic.key);
-    final isUnderline = _titleFocusNode.hasFocus ? titleHasFormat('underline') : style.containsKey(Attribute.underline.key);
-    final isStrike = _titleFocusNode.hasFocus ? titleHasFormat('strike') : style.containsKey(Attribute.strikeThrough.key);
+    final isBold = !_titleFocusNode.hasFocus && style.containsKey(Attribute.bold.key);
+    final isItalic = !_titleFocusNode.hasFocus && style.containsKey(Attribute.italic.key);
+    final isUnderline = !_titleFocusNode.hasFocus && style.containsKey(Attribute.underline.key);
+    final isStrike = !_titleFocusNode.hasFocus && style.containsKey(Attribute.strikeThrough.key);
     final isCode = style.containsKey(Attribute.inlineCode.key);
 
     final isH1 = style.attributes[Attribute.header.key]?.value == 1;
@@ -1547,30 +1358,22 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
           return Row(
             children: [
               sub(Icons.format_bold, 'Bold', () {
-                if (_titleFocusNode.hasFocus) {
-                  _formatTitle('bold');
-                } else {
+                if (!_titleFocusNode.hasFocus) {
                   _quillController.formatSelection(isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold);
                 }
               }, active: isBold),
               sub(Icons.format_italic, 'Italic', () {
-                if (_titleFocusNode.hasFocus) {
-                  _formatTitle('italic');
-                } else {
+                if (!_titleFocusNode.hasFocus) {
                   _quillController.formatSelection(isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic);
                 }
               }, active: isItalic),
               sub(Icons.format_underlined, 'Underline', () {
-                if (_titleFocusNode.hasFocus) {
-                  _formatTitle('underline');
-                } else {
+                if (!_titleFocusNode.hasFocus) {
                   _quillController.formatSelection(isUnderline ? Attribute.clone(Attribute.underline, null) : Attribute.underline);
                 }
               }, active: isUnderline),
               sub(Icons.format_strikethrough, 'Strikethrough', () {
-                if (_titleFocusNode.hasFocus) {
-                  _formatTitle('strike');
-                } else {
+                if (!_titleFocusNode.hasFocus) {
                   _quillController.formatSelection(isStrike ? Attribute.clone(Attribute.strikeThrough, null) : Attribute.strikeThrough);
                 }
               }, active: isStrike),
@@ -2744,77 +2547,3 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   }
 }
 
-class MarkdownTextEditingController extends TextEditingController {
-  MarkdownTextEditingController({super.text});
-
-  @override
-  TextSpan buildTextSpan({required BuildContext context, TextStyle? style, required bool withComposing}) {
-    final text = this.text;
-    final spans = <InlineSpan>[];
-    
-    int lastIndex = 0;
-    final regex = RegExp(
-      r'(\*\*(.*?)\*\*)|(\*(.*?)\*)|(<u>(.*?)</u>)|(~~(.*?)~~)|(<color hex="([^"]+)">([^<]+)</color>)|(<bg hex="([^"]+)">([^<]+)</bg>)',
-    );
-    
-    for (final match in regex.allMatches(text)) {
-      if (match.start > lastIndex) {
-        spans.add(TextSpan(text: text.substring(lastIndex, match.start), style: style));
-      }
-      
-      if (match.group(1) != null) {
-        spans.add(TextSpan(
-          text: match.group(2),
-          style: style?.copyWith(fontWeight: FontWeight.bold) ?? const TextStyle(fontWeight: FontWeight.bold),
-        ));
-      } else if (match.group(3) != null) {
-        spans.add(TextSpan(
-          text: match.group(4),
-          style: style?.copyWith(fontStyle: FontStyle.italic) ?? const TextStyle(fontStyle: FontStyle.italic),
-        ));
-      } else if (match.group(5) != null) {
-        spans.add(TextSpan(
-          text: match.group(6),
-          style: style?.copyWith(decoration: TextDecoration.underline) ?? const TextStyle(decoration: TextDecoration.underline),
-        ));
-      } else if (match.group(7) != null) {
-        spans.add(TextSpan(
-          text: match.group(8),
-          style: style?.copyWith(decoration: TextDecoration.lineThrough) ?? const TextStyle(decoration: TextDecoration.lineThrough),
-        ));
-      } else if (match.group(9) != null) {
-        final hexStr = match.group(10)!;
-        final colorText = match.group(11);
-        Color parsedColor = Colors.black;
-        try {
-          final hex = hexStr.replaceAll('#', '');
-          parsedColor = Color(int.parse('FF$hex', radix: 16));
-        } catch (_) {}
-        spans.add(TextSpan(
-          text: colorText,
-          style: style?.copyWith(color: parsedColor) ?? TextStyle(color: parsedColor),
-        ));
-      } else if (match.group(12) != null) {
-        final hexStr = match.group(13)!;
-        final bgText = match.group(14);
-        Color parsedColor = Colors.yellow;
-        try {
-          final hex = hexStr.replaceAll('#', '');
-          parsedColor = Color(int.parse('FF$hex', radix: 16));
-        } catch (_) {}
-        spans.add(TextSpan(
-          text: bgText,
-          style: style?.copyWith(backgroundColor: parsedColor) ?? TextStyle(backgroundColor: parsedColor),
-        ));
-      }
-      
-      lastIndex = match.end;
-    }
-    
-    if (lastIndex < text.length) {
-      spans.add(TextSpan(text: text.substring(lastIndex), style: style));
-    }
-    
-    return TextSpan(children: spans, style: style);
-  }
-}
