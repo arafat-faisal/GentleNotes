@@ -18,6 +18,7 @@ import 'package:speech_to_text/speech_to_text.dart' as speech_to_text;
 
 import '../../../core/widgets/gentle_scaffold.dart';
 import '../../../core/utils/quill_markdown_converter.dart';
+import '../../../core/utils/responsive_helper.dart';
 import '../../../models/models.dart';
 import '../../folders/data/folders_repository.dart';
 import '../../notes/data/notes_repository.dart';
@@ -53,10 +54,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   late String _noteId;
   bool _isEditMode = false;
 
-  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _titleController = MarkdownTextEditingController();
   QuillController _quillController = QuillController.basic();
   final TextEditingController _tagController = TextEditingController();
   final FocusNode _editorFocusNode = FocusNode();
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _tagsFocusNode = FocusNode();
 
   NoteType _noteType = NoteType.text;
   String? _selectedFolderId;
@@ -109,6 +112,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     _titleController.addListener(_markDirty);
     _tagController.addListener(_markDirty);
 
+    _titleFocusNode.addListener(_onFocusChange);
+    _tagsFocusNode.addListener(_onFocusChange);
+    _editorFocusNode.addListener(_onFocusChange);
+
     final settings = ref.read(settingsProvider);
     if (settings.autoSaveEnabled) {
       _autoSaveTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
@@ -117,6 +124,165 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
         }
       });
     }
+  }
+
+  void _onFocusChange() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _formatTitle(String formatType, {String? hex}) {
+    final text = _titleController.text;
+    final selection = _titleController.selection;
+    if (selection.isCollapsed) {
+      final pos = selection.baseOffset;
+      if (pos < 0) return;
+      String tags;
+      int cursorOffset;
+      switch (formatType) {
+        case 'bold':
+          tags = '****';
+          cursorOffset = 2;
+          break;
+        case 'italic':
+          tags = '**';
+          cursorOffset = 1;
+          break;
+        case 'underline':
+          tags = '<u></u>';
+          cursorOffset = 3;
+          break;
+        case 'strike':
+          tags = '~~~~';
+          cursorOffset = 2;
+          break;
+        case 'color':
+          if (hex == null) return;
+          tags = '<color hex="$hex"></color>';
+          cursorOffset = 15 + hex.length;
+          break;
+        case 'bg':
+          if (hex == null) return;
+          tags = '<bg hex="$hex"></bg>';
+          cursorOffset = 12 + hex.length;
+          break;
+        default:
+          return;
+      }
+      final newText = text.replaceRange(pos, pos, tags);
+      _titleController.value = _titleController.value.copyWith(
+        text: newText,
+        selection: TextSelection.collapsed(offset: pos + cursorOffset),
+      );
+      _markDirty();
+      return;
+    }
+    
+    final start = selection.start;
+    final end = selection.end;
+    final selectedText = text.substring(start, end);
+    
+    String formatted;
+    int cursorOffset;
+    
+    switch (formatType) {
+      case 'bold':
+        if (selectedText.startsWith('**') && selectedText.endsWith('**') && selectedText.length >= 4) {
+          formatted = selectedText.substring(2, selectedText.length - 2);
+          cursorOffset = -2;
+        } else {
+          formatted = '**$selectedText**';
+          cursorOffset = 2;
+        }
+        break;
+      case 'italic':
+        if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length >= 2) {
+          formatted = selectedText.substring(1, selectedText.length - 1);
+          cursorOffset = -1;
+        } else {
+          formatted = '*$selectedText*';
+          cursorOffset = 1;
+        }
+        break;
+      case 'underline':
+        if (selectedText.startsWith('<u>') && selectedText.endsWith('</u>') && selectedText.length >= 7) {
+          formatted = selectedText.substring(3, selectedText.length - 4);
+          cursorOffset = -3;
+        } else {
+          formatted = '<u>$selectedText</u>';
+          cursorOffset = 3;
+        }
+        break;
+      case 'strike':
+        if (selectedText.startsWith('~~') && selectedText.endsWith('~~') && selectedText.length >= 4) {
+          formatted = selectedText.substring(2, selectedText.length - 2);
+          cursorOffset = -2;
+        } else {
+          formatted = '~~$selectedText~~';
+          cursorOffset = 2;
+        }
+        break;
+      case 'color':
+        if (hex == null) return;
+        var cleanText = selectedText;
+        if (selectedText.startsWith('<color hex=') && selectedText.endsWith('</color>')) {
+          final closeTagStart = selectedText.lastIndexOf('</color>');
+          final openTagEnd = selectedText.indexOf('>') + 1;
+          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
+            cleanText = selectedText.substring(openTagEnd, closeTagStart);
+          }
+        }
+        formatted = '<color hex="$hex">$cleanText</color>';
+        cursorOffset = 15 + hex.length;
+        break;
+      case 'bg':
+        if (hex == null) return;
+        var cleanText = selectedText;
+        if (selectedText.startsWith('<bg hex=') && selectedText.endsWith('</bg>')) {
+          final closeTagStart = selectedText.lastIndexOf('</bg>');
+          final openTagEnd = selectedText.indexOf('>') + 1;
+          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
+            cleanText = selectedText.substring(openTagEnd, closeTagStart);
+          }
+        }
+        formatted = '<bg hex="$hex">$cleanText</bg>';
+        cursorOffset = 12 + hex.length;
+        break;
+      case 'color_clear':
+        var cleanText = selectedText;
+        if (selectedText.startsWith('<color hex=') && selectedText.endsWith('</color>')) {
+          final closeTagStart = selectedText.lastIndexOf('</color>');
+          final openTagEnd = selectedText.indexOf('>') + 1;
+          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
+            cleanText = selectedText.substring(openTagEnd, closeTagStart);
+          }
+        }
+        formatted = cleanText;
+        cursorOffset = 0;
+        break;
+      case 'bg_clear':
+        var cleanText = selectedText;
+        if (selectedText.startsWith('<bg hex=') && selectedText.endsWith('</bg>')) {
+          final closeTagStart = selectedText.lastIndexOf('</bg>');
+          final openTagEnd = selectedText.indexOf('>') + 1;
+          if (openTagEnd > 0 && closeTagStart > openTagEnd) {
+            cleanText = selectedText.substring(openTagEnd, closeTagStart);
+          }
+        }
+        formatted = cleanText;
+        cursorOffset = 0;
+        break;
+      default:
+        return;
+    }
+    
+    final newText = text.replaceRange(start, end, formatted);
+    _titleController.value = _titleController.value.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: end + cursorOffset * 2),
+    );
+    _markDirty();
   }
 
   void _markDirty() {
@@ -280,10 +446,15 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     if (_isDirty) {
       _saveNote(isAutoSave: true);
     }
+    _titleFocusNode.removeListener(_onFocusChange);
+    _tagsFocusNode.removeListener(_onFocusChange);
+    _editorFocusNode.removeListener(_onFocusChange);
     _titleController.dispose();
     _quillController.dispose();
     _tagController.dispose();
     _editorFocusNode.dispose();
+    _titleFocusNode.dispose();
+    _tagsFocusNode.dispose();
     super.dispose();
   }
 
@@ -1121,11 +1292,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
             ),
           );
           if (color != null) {
-            if (color.value == 0) {
-              _quillController.formatSelection(BackgroundAttribute(null));
+            if (_titleFocusNode.hasFocus) {
+              if (color.value == 0) {
+                _formatTitle('bg_clear');
+              } else {
+                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+                _formatTitle('bg', hex: hexStr);
+              }
             } else {
-              final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-              _quillController.formatSelection(BackgroundAttribute(hexStr));
+              if (color.value == 0) {
+                _quillController.formatSelection(BackgroundAttribute(null));
+              } else {
+                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+                _quillController.formatSelection(BackgroundAttribute(hexStr));
+              }
             }
             _markDirty();
           }
@@ -1191,11 +1371,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
             ),
           );
           if (color != null) {
-            if (color.value == 0) {
-              _quillController.formatSelection(ColorAttribute(null));
+            if (_titleFocusNode.hasFocus) {
+              if (color.value == 0) {
+                _formatTitle('color_clear');
+              } else {
+                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+                _formatTitle('color', hex: hexStr);
+              }
             } else {
-              final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
-              _quillController.formatSelection(ColorAttribute(hexStr));
+              if (color.value == 0) {
+                _quillController.formatSelection(ColorAttribute(null));
+              } else {
+                final hexStr = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+                _quillController.formatSelection(ColorAttribute(hexStr));
+              }
             }
             _markDirty();
           }
@@ -1208,7 +1397,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     );
   }
 
-  Widget _buildGentleNoteToolbar(ThemeData theme, bool isDark) {
+  Widget _buildGentleNoteToolbar(ThemeData theme, bool isDark, {bool isAtBottom = false}) {
     const groups = [
       ('format', Icons.format_bold, 'Format'),
       ('color',   Icons.palette_outlined, 'Color'),
@@ -1307,11 +1496,31 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
       );
     }
 
+    bool titleHasFormat(String type) {
+      if (!_titleFocusNode.hasFocus) return false;
+      final text = _titleController.text;
+      final sel = _titleController.selection;
+      if (sel.isCollapsed) return false;
+      final selectedText = text.substring(sel.start, sel.end);
+      switch (type) {
+        case 'bold':
+          return selectedText.startsWith('**') && selectedText.endsWith('**');
+        case 'italic':
+          return selectedText.startsWith('*') && selectedText.endsWith('*');
+        case 'underline':
+          return selectedText.startsWith('<u>') && selectedText.endsWith('</u>');
+        case 'strike':
+          return selectedText.startsWith('~~') && selectedText.endsWith('~~');
+        default:
+          return false;
+      }
+    }
+
     final style = _quillController.getSelectionStyle();
-    final isBold = style.containsKey(Attribute.bold.key);
-    final isItalic = style.containsKey(Attribute.italic.key);
-    final isUnderline = style.containsKey(Attribute.underline.key);
-    final isStrike = style.containsKey(Attribute.strikeThrough.key);
+    final isBold = _titleFocusNode.hasFocus ? titleHasFormat('bold') : style.containsKey(Attribute.bold.key);
+    final isItalic = _titleFocusNode.hasFocus ? titleHasFormat('italic') : style.containsKey(Attribute.italic.key);
+    final isUnderline = _titleFocusNode.hasFocus ? titleHasFormat('underline') : style.containsKey(Attribute.underline.key);
+    final isStrike = _titleFocusNode.hasFocus ? titleHasFormat('strike') : style.containsKey(Attribute.strikeThrough.key);
     final isCode = style.containsKey(Attribute.inlineCode.key);
 
     final isH1 = style.attributes[Attribute.header.key]?.value == 1;
@@ -1337,10 +1546,34 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
         case 'format':
           return Row(
             children: [
-              sub(Icons.format_bold, 'Bold', () => _quillController.formatSelection(isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold), active: isBold),
-              sub(Icons.format_italic, 'Italic', () => _quillController.formatSelection(isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic), active: isItalic),
-              sub(Icons.format_underlined, 'Underline', () => _quillController.formatSelection(isUnderline ? Attribute.clone(Attribute.underline, null) : Attribute.underline), active: isUnderline),
-              sub(Icons.format_strikethrough, 'Strikethrough', () => _quillController.formatSelection(isStrike ? Attribute.clone(Attribute.strikeThrough, null) : Attribute.strikeThrough), active: isStrike),
+              sub(Icons.format_bold, 'Bold', () {
+                if (_titleFocusNode.hasFocus) {
+                  _formatTitle('bold');
+                } else {
+                  _quillController.formatSelection(isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold);
+                }
+              }, active: isBold),
+              sub(Icons.format_italic, 'Italic', () {
+                if (_titleFocusNode.hasFocus) {
+                  _formatTitle('italic');
+                } else {
+                  _quillController.formatSelection(isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic);
+                }
+              }, active: isItalic),
+              sub(Icons.format_underlined, 'Underline', () {
+                if (_titleFocusNode.hasFocus) {
+                  _formatTitle('underline');
+                } else {
+                  _quillController.formatSelection(isUnderline ? Attribute.clone(Attribute.underline, null) : Attribute.underline);
+                }
+              }, active: isUnderline),
+              sub(Icons.format_strikethrough, 'Strikethrough', () {
+                if (_titleFocusNode.hasFocus) {
+                  _formatTitle('strike');
+                } else {
+                  _quillController.formatSelection(isStrike ? Attribute.clone(Attribute.strikeThrough, null) : Attribute.strikeThrough);
+                }
+              }, active: isStrike),
               sub(Icons.code_rounded, 'Inline Code', () => _quillController.formatSelection(isCode ? Attribute.clone(Attribute.inlineCode, null) : Attribute.inlineCode), active: isCode),
             ],
           );
@@ -1428,43 +1661,72 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     return Container(
       decoration: BoxDecoration(
         color: surfaceColor,
-        border: Border(bottom: BorderSide(color: borderColor)),
+        border: isAtBottom
+            ? Border(top: BorderSide(color: borderColor))
+            : Border(bottom: BorderSide(color: borderColor)),
         boxShadow: [
           BoxShadow(
             color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.06),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: isAtBottom ? const Offset(0, -2) : const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: groups
-                .map((g) => groupBtn(g.$1, g.$2, g.$3))
-                .toList(),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            child: _activeToolbarGroup == null
-                ? const SizedBox.shrink()
-                : Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF1C1829).withOpacity(0.9)
-                          : const Color(0xFFF8F6FF),
-                      border: Border(
-                        top: BorderSide(color: borderColor),
-                      ),
-                    ),
-                    child: subRow(),
-                  ),
-          ),
-        ],
+        children: isAtBottom
+            ? [
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  child: _activeToolbarGroup == null
+                      ? const SizedBox.shrink()
+                      : Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1C1829).withOpacity(0.9)
+                                : const Color(0xFFF8F6FF),
+                            border: Border(
+                              bottom: BorderSide(color: borderColor),
+                            ),
+                          ),
+                          child: subRow(),
+                        ),
+                ),
+                Row(
+                  children: groups
+                      .map((g) => groupBtn(g.$1, g.$2, g.$3))
+                      .toList(),
+                ),
+              ]
+            : [
+                Row(
+                  children: groups
+                      .map((g) => groupBtn(g.$1, g.$2, g.$3))
+                      .toList(),
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeInOut,
+                  child: _activeToolbarGroup == null
+                      ? const SizedBox.shrink()
+                      : Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1C1829).withOpacity(0.9)
+                                : const Color(0xFFF8F6FF),
+                            border: Border(
+                              top: BorderSide(color: borderColor),
+                            ),
+                          ),
+                          child: subRow(),
+                        ),
+                ),
+              ],
       ),
     );
   }
@@ -1478,6 +1740,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   Widget _buildFocusModeBody() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final isMobile = ResponsiveHelper.isMobile(context);
     
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF090B16) : const Color(0xFFF8F6FF),
@@ -1576,11 +1840,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                 ],
               ),
             ),
-            _buildGentleNoteToolbar(theme, isDark),
+            if (!isKeyboardOpen && !isMobile) _buildGentleNoteToolbar(theme, isDark),
             Padding(
               padding: const EdgeInsets.fromLTRB(28, 8, 28, 0),
               child: TextField(
                 controller: _titleController,
+                focusNode: _titleFocusNode,
                 style: TextStyle(
                   fontFamily: 'Outfit',
                   fontSize: 28,
@@ -1640,6 +1905,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                 ),
               ),
             ),
+            if (isMobile || (isKeyboardOpen && !isMobile))
+              _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
           ],
         ),
       ),
@@ -1808,6 +2075,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   Widget _buildEditorBody(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final showFolderOptions = !isKeyboardOpen || !_editorFocusNode.hasFocus;
+    final isMobile = ResponsiveHelper.isMobile(context);
 
     if (_isPreviewMode) {
       final bgColor = _previewBgColor ?? theme.scaffoldBackgroundColor;
@@ -1896,7 +2166,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
           ),
         Column(
           children: [
-            _buildGentleNoteToolbar(theme, isDark),
+            if (!isKeyboardOpen && !isMobile) _buildGentleNoteToolbar(theme, isDark),
             Expanded(
               child: Padding(
                 padding: styleContentPadding(_previewStyle).add(const EdgeInsets.all(16.0)),
@@ -1987,8 +2257,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
 
       return Column(
         children: [
-          _buildLayoutSelector(),
-          const Divider(height: 1),
+          if (showFolderOptions) ...[
+            _buildLayoutSelector(),
+            const Divider(height: 1),
+          ],
           Expanded(
             child: _markdownLayout == MarkdownLayoutMode.editOnly
                 ? editWidget
@@ -2133,6 +2405,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     final folders = ref.watch(foldersProvider);
     final settings = ref.watch(settingsProvider);
     final isDark = theme.brightness == Brightness.dark;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final showFolderOptions = !isKeyboardOpen || !_editorFocusNode.hasFocus;
+    final isMobile = ResponsiveHelper.isMobile(context);
     
     if (_isFullScreen) {
       return _buildFullScreenBody();
@@ -2155,6 +2430,28 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     return GentleScaffold(
       title: _isEditMode ? 'Edit Note' : 'New Note',
       showBackButton: true,
+      showBottomNav: false,
+      titleWidget: TextField(
+        controller: _titleController,
+        focusNode: _titleFocusNode,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+          color: isDark ? Colors.white : Colors.black87,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Note Title...',
+          hintStyle: TextStyle(
+            color: isDark ? Colors.white38 : Colors.black38,
+            fontSize: 18,
+          ),
+          border: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          fillColor: Colors.transparent,
+        ),
+      ),
       actions: [
         Builder(
           builder: (context) {
@@ -2266,188 +2563,258 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
         children: [
           Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _titleController,
-                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
-                        hintText: 'Note Title...',
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.zero,
-                        fillColor: Colors.transparent,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String?>(
-                                value: _selectedFolderId,
-                                hint: const Row(
-                                  children: [
-                                    Icon(Icons.folder_outlined, size: 18),
-                                    SizedBox(width: 6),
-                                    Text('Select Folder', style: TextStyle(fontSize: 12)),
-                                  ],
-                                ),
-                                items: [
-                                  const DropdownMenuItem<String?>(
-                                    value: null,
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.folder_off_outlined, size: 16),
-                                        SizedBox(width: 6),
-                                        Text('No Folder', style: TextStyle(fontSize: 12)),
-                                      ],
-                                    ),
+              if (showFolderOptions) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String?>(
+                              value: _selectedFolderId,
+                              hint: const Row(
+                                children: [
+                                  Icon(Icons.folder_outlined, size: 18),
+                                  SizedBox(width: 6),
+                                  Text('Select Folder', style: TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                              items: [
+                                const DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.folder_off_outlined, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('No Folder', style: TextStyle(fontSize: 12)),
+                                    ],
                                   ),
-                                  ...folders.map((f) => DropdownMenuItem<String?>(
-                                        value: f.id,
+                                ),
+                                ...folders.map((f) => DropdownMenuItem<String?>(
+                                      value: f.id,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(color: f.color, shape: BoxShape.circle),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(f.name, style: const TextStyle(fontSize: 12)),
+                                        ],
+                                      ),
+                                    )),
+                              ],
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedFolderId = val;
+                                  _isDirty = true;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<NoteType>(
+                              value: _noteType,
+                              items: NoteType.values
+                                  .map((t) => DropdownMenuItem<NoteType>(
+                                        value: t,
                                         child: Row(
                                           children: [
-                                            Container(
-                                              width: 8,
-                                              height: 8,
-                                              decoration: BoxDecoration(color: f.color, shape: BoxShape.circle),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(f.name, style: const TextStyle(fontSize: 12)),
+                                            Icon(t.icon, size: 16, color: theme.colorScheme.primary),
+                                            const SizedBox(width: 6),
+                                            Text(t.displayName, style: const TextStyle(fontSize: 12)),
                                           ],
                                         ),
-                                      )),
-                                ],
-                                onChanged: (val) {
+                                      ))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) {
                                   setState(() {
-                                    _selectedFolderId = val;
+                                    _noteType = val;
+                                    _isDirty = true;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: colors.map((colHex) {
+                              final isSelected = _colorHex == colHex;
+                              final color = colHex == '#FFFFFF'
+                                  ? Colors.grey.shade300
+                                  : Color(int.parse('FF${colHex.replaceAll('#', '')}', radix: 16));
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _colorHex = colHex;
                                     _isDirty = true;
                                   });
                                 },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<NoteType>(
-                                value: _noteType,
-                                items: NoteType.values
-                                    .map((t) => DropdownMenuItem<NoteType>(
-                                          value: t,
-                                          child: Row(
-                                            children: [
-                                              Icon(t.icon, size: 16, color: theme.colorScheme.primary),
-                                              const SizedBox(width: 6),
-                                              Text(t.displayName, style: const TextStyle(fontSize: 12)),
-                                            ],
-                                          ),
-                                        ))
-                                    .toList(),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setState(() {
-                                      _noteType = val;
-                                      _isDirty = true;
-                                    });
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            height: 36,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: colors.map((colHex) {
-                                final isSelected = _colorHex == colHex;
-                                final color = colHex == '#FFFFFF'
-                                    ? Colors.grey.shade300
-                                    : Color(int.parse('FF${colHex.replaceAll('#', '')}', radix: 16));
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _colorHex = colHex;
-                                      _isDirty = true;
-                                    });
-                                  },
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: colHex == '#FFFFFF' ? Colors.white : color,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected ? theme.colorScheme.onSurface : Colors.grey.shade400,
-                                        width: isSelected ? 1.5 : 0.5,
-                                      ),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: colHex == '#FFFFFF' ? Colors.white : color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected ? theme.colorScheme.onSurface : Colors.grey.shade400,
+                                      width: isSelected ? 1.5 : 0.5,
                                     ),
                                   ),
-                                );
-                              }).toList(),
-                            ),
+                                ),
+                              );
+                            }).toList(),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
+                const Divider(height: 1),
+              ],
               Expanded(
                 child: _buildEditorBody(context),
               ),
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: Row(
-                  children: [
-                    Icon(Icons.local_offer_outlined, size: 20, color: theme.colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _tagController,
-                        style: const TextStyle(fontSize: 13),
-                        decoration: const InputDecoration(
-                          hintText: 'Add tags (comma separated, e.g., flutter, research, ai)',
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                          fillColor: Colors.transparent,
+              if (!isMobile) ...[
+                if (isKeyboardOpen && !_tagsFocusNode.hasFocus)
+                  _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+              ],
+              if (!isKeyboardOpen || _tagsFocusNode.hasFocus) ...[
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_offer_outlined, size: 20, color: theme.colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: _tagController,
+                          focusNode: _tagsFocusNode,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            hintText: 'Add tags (comma separated, e.g., flutter, research, ai)',
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                            fillColor: Colors.transparent,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
+              if (isMobile) ...[
+                if (!isKeyboardOpen || (isKeyboardOpen && !_tagsFocusNode.hasFocus))
+                  _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+              ],
             ],
           ),
         ],
       ),
     );
+  }
+}
+
+class MarkdownTextEditingController extends TextEditingController {
+  MarkdownTextEditingController({super.text});
+
+  @override
+  TextSpan buildTextSpan({required BuildContext context, TextStyle? style, required bool withComposing}) {
+    final text = this.text;
+    final spans = <InlineSpan>[];
+    
+    int lastIndex = 0;
+    final regex = RegExp(
+      r'(\*\*(.*?)\*\*)|(\*(.*?)\*)|(<u>(.*?)</u>)|(~~(.*?)~~)|(<color hex="([^"]+)">([^<]+)</color>)|(<bg hex="([^"]+)">([^<]+)</bg>)',
+    );
+    
+    for (final match in regex.allMatches(text)) {
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(text: text.substring(lastIndex, match.start), style: style));
+      }
+      
+      if (match.group(1) != null) {
+        spans.add(TextSpan(
+          text: match.group(2),
+          style: style?.copyWith(fontWeight: FontWeight.bold) ?? const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      } else if (match.group(3) != null) {
+        spans.add(TextSpan(
+          text: match.group(4),
+          style: style?.copyWith(fontStyle: FontStyle.italic) ?? const TextStyle(fontStyle: FontStyle.italic),
+        ));
+      } else if (match.group(5) != null) {
+        spans.add(TextSpan(
+          text: match.group(6),
+          style: style?.copyWith(decoration: TextDecoration.underline) ?? const TextStyle(decoration: TextDecoration.underline),
+        ));
+      } else if (match.group(7) != null) {
+        spans.add(TextSpan(
+          text: match.group(8),
+          style: style?.copyWith(decoration: TextDecoration.lineThrough) ?? const TextStyle(decoration: TextDecoration.lineThrough),
+        ));
+      } else if (match.group(9) != null) {
+        final hexStr = match.group(10)!;
+        final colorText = match.group(11);
+        Color parsedColor = Colors.black;
+        try {
+          final hex = hexStr.replaceAll('#', '');
+          parsedColor = Color(int.parse('FF$hex', radix: 16));
+        } catch (_) {}
+        spans.add(TextSpan(
+          text: colorText,
+          style: style?.copyWith(color: parsedColor) ?? TextStyle(color: parsedColor),
+        ));
+      } else if (match.group(12) != null) {
+        final hexStr = match.group(13)!;
+        final bgText = match.group(14);
+        Color parsedColor = Colors.yellow;
+        try {
+          final hex = hexStr.replaceAll('#', '');
+          parsedColor = Color(int.parse('FF$hex', radix: 16));
+        } catch (_) {}
+        spans.add(TextSpan(
+          text: bgText,
+          style: style?.copyWith(backgroundColor: parsedColor) ?? TextStyle(backgroundColor: parsedColor),
+        ));
+      }
+      
+      lastIndex = match.end;
+    }
+    
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(text: text.substring(lastIndex), style: style));
+    }
+    
+    return TextSpan(children: spans, style: style);
   }
 }

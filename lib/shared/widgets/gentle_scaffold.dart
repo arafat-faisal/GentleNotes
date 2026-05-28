@@ -27,16 +27,20 @@ class GentleScaffold extends ConsumerWidget {
     super.key,
     required this.body,
     required this.title,
+    this.titleWidget,
     this.floatingActionButton,
     this.actions,
     this.showBackButton = false,
+    this.showBottomNav = true,
   });
 
   final Widget body;
   final String title;
+  final Widget? titleWidget;
   final Widget? floatingActionButton;
   final List<Widget>? actions;
   final bool showBackButton;
+  final bool showBottomNav;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,62 +52,49 @@ class GentleScaffold extends ConsumerWidget {
     if (isMobile) {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: AppBar(
-          title: Text(title),
-          leading: showBackButton
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go('/home');
-                    }
-                  },
-                )
-              : null,
-          actions: actions,
-        ),
+        appBar: _buildAppBar(context, theme),
         body: body,
         floatingActionButton: floatingActionButton,
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF10121F) : Colors.white,
-            border: Border(
-              top: BorderSide(
-                color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
-                width: 1,
-              ),
-            ),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _getBottomNavIndex(currentRoute),
-            onTap: (index) => _onBottomNavTapped(context, index),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedItemColor: const Color(0xFF8B5CF6),
-            unselectedItemColor: isDark ? const Color(0xFF6B5F8A) : const Color(0xFFAA9ECC),
-            showUnselectedLabels: true,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.grid_view_outlined),
-                activeIcon: Icon(Icons.grid_view_rounded),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.assignment_outlined),
-                activeIcon: Icon(Icons.assignment_rounded),
-                label: 'Templates',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.tune_rounded),
-                activeIcon: Icon(Icons.tune_rounded),
-                label: 'Settings',
-              ),
-            ],
-          ),
-        ),
+        bottomNavigationBar: showBottomNav
+            ? Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF10121F) : Colors.white,
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _getBottomNavIndex(currentRoute),
+                  onTap: (index) => _onBottomNavTapped(context, index),
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  selectedItemColor: const Color(0xFF8B5CF6),
+                  unselectedItemColor: isDark ? const Color(0xFF6B5F8A) : const Color(0xFFAA9ECC),
+                  showUnselectedLabels: true,
+                  type: BottomNavigationBarType.fixed,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.grid_view_outlined),
+                      activeIcon: Icon(Icons.grid_view_rounded),
+                      label: 'Home',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.assignment_outlined),
+                      activeIcon: Icon(Icons.assignment_rounded),
+                      label: 'Templates',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.tune_rounded),
+                      activeIcon: Icon(Icons.tune_rounded),
+                      label: 'Settings',
+                    ),
+                  ],
+                ),
+              )
+            : null,
       );
     }
 
@@ -116,22 +107,7 @@ class GentleScaffold extends ConsumerWidget {
           Expanded(
             child: Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
-              appBar: AppBar(
-                title: Text(title),
-                leading: showBackButton
-                    ? IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                        onPressed: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go('/home');
-                          }
-                        },
-                      )
-                    : null,
-                actions: actions,
-              ),
+              appBar: _buildAppBar(context, theme),
               body: body,
               floatingActionButton: floatingActionButton,
             ),
@@ -435,6 +411,79 @@ class GentleScaffold extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, ThemeData theme) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      titleSpacing: 0,
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final backButtonWidth = width * 0.10;
+          final titleWidth = width * 0.50;
+          final actionsWidth = width * 0.40;
+
+          return Row(
+            children: [
+              // Back button container (10%)
+              SizedBox(
+                width: backButtonWidth,
+                child: showBackButton
+                    ? GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/home');
+                          }
+                        },
+                        child: const Center(
+                          child: Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              // Title container (50%)
+              SizedBox(
+                width: titleWidth,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: titleWidget ?? Text(
+                      title,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Actions/Tools container (40%)
+              SizedBox(
+                width: actionsWidth,
+                child: actions != null
+                    ? Align(
+                        alignment: Alignment.centerRight,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: actions!,
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
