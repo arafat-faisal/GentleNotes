@@ -224,6 +224,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
           });
         }
       } else {
+        _quillController.dispose();
+        _quillController = QuillController(
+          document: Document(),
+          selection: const TextSelection.collapsed(offset: 0),
+        );
         _quillController.readOnly = _isPreviewMode;
         _quillController.changes.listen((_) => _markDirty());
         _quillController.addListener(() {
@@ -1692,6 +1697,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                     color: isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
                   ),
                   child: QuillEditor.basic(
+                    key: const ValueKey('focus_mode_quill_editor'),
                     controller: _quillController,
                     focusNode: _editorFocusNode,
                     config: QuillEditorConfig(
@@ -1969,7 +1975,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
           ),
         Column(
           children: [
-            if (!isKeyboardOpen && !isMobile) _buildGentleNoteToolbar(theme, isDark),
+            if (!isKeyboardOpen && !isMobile)
+              _buildGentleNoteToolbar(theme, isDark)
+            else
+              const SizedBox.shrink(),
             Expanded(
               child: Padding(
                 padding: styleContentPadding(_previewStyle).add(const EdgeInsets.all(16.0)),
@@ -1983,6 +1992,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                     color: isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
                   ),
                   child: QuillEditor.basic(
+                    key: const ValueKey('standard_mode_quill_editor'),
                     controller: _quillController,
                     focusNode: _editorFocusNode,
                     config: QuillEditorConfig(
@@ -2060,10 +2070,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
 
       return Column(
         children: [
-          if (showFolderOptions) ...[
-            _buildLayoutSelector(),
-            const Divider(height: 1),
-          ],
+          if (showFolderOptions)
+            _buildLayoutSelector()
+          else
+            const SizedBox.shrink(),
+          if (showFolderOptions)
+            const Divider(height: 1)
+          else
+            const SizedBox.shrink(),
           Expanded(
             child: _markdownLayout == MarkdownLayoutMode.editOnly
                 ? editWidget
@@ -2366,7 +2380,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
         children: [
           Column(
             children: [
-              if (showFolderOptions) ...[
+              if (showFolderOptions)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   child: SingleChildScrollView(
@@ -2498,47 +2512,58 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       ],
                     ),
                   ),
-                ),
-                const Divider(height: 1),
-              ],
+                )
+              else
+                const SizedBox.shrink(),
+              if (showFolderOptions)
+                const Divider(height: 1)
+              else
+                const SizedBox.shrink(),
               Expanded(
                 child: _buildEditorBody(context),
               ),
-              if (!isMobile) ...[
-                if (isKeyboardOpen && !_tagsFocusNode.hasFocus)
-                  _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
-              ],
-              if (!isKeyboardOpen || _tagsFocusNode.hasFocus) ...[
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Row(
-                    children: [
-                      Icon(Icons.local_offer_outlined, size: 20, color: theme.colorScheme.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _tagController,
-                          focusNode: _tagsFocusNode,
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            hintText: 'Add tags (comma separated, e.g., flutter, research, ai)',
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
-                            fillColor: Colors.transparent,
+              if (!isMobile && isKeyboardOpen && !_tagsFocusNode.hasFocus)
+                _buildGentleNoteToolbar(theme, isDark, isAtBottom: true)
+              else
+                const SizedBox.shrink(),
+              Visibility(
+                visible: !isKeyboardOpen || _tagsFocusNode.hasFocus,
+                maintainState: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.local_offer_outlined, size: 20, color: theme.colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _tagController,
+                              focusNode: _tagsFocusNode,
+                              style: const TextStyle(fontSize: 13),
+                              decoration: const InputDecoration(
+                                hintText: 'Add tags (comma separated, e.g., flutter, research, ai)',
+                                border: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                fillColor: Colors.transparent,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-              if (isMobile) ...[
-                if (!isKeyboardOpen || (isKeyboardOpen && !_tagsFocusNode.hasFocus))
-                  _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
-              ],
+              ),
+              if (isMobile && (!isKeyboardOpen || (isKeyboardOpen && !_tagsFocusNode.hasFocus)))
+                _buildGentleNoteToolbar(theme, isDark, isAtBottom: true)
+              else
+                const SizedBox.shrink(),
             ],
           ),
         ],
