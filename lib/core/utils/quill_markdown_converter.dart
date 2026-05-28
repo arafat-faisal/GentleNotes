@@ -239,10 +239,25 @@ class QuillMarkdownConverter {
       } else if (token.startsWith('[') && token.contains('](')) {
         final label = match.group(8) ?? '';
         final url = match.group(9) ?? '';
-        ops.add({
-          'insert': label,
-          'attributes': {'link': url},
-        });
+        if (url.startsWith('audio://')) {
+          final attachmentId = url.replaceFirst('audio://', '');
+          String width = 'full';
+          if (label.startsWith('audio:')) {
+            width = label.substring('audio:'.length);
+          }
+          final dataMap = {
+            'id': attachmentId,
+            'width': width,
+          };
+          ops.add({
+            'insert': {'audio': jsonEncode(dataMap)},
+          });
+        } else {
+          ops.add({
+            'insert': label,
+            'attributes': {'link': url},
+          });
+        }
       } else {
         ops.add({'insert': token});
       }
@@ -359,6 +374,18 @@ class QuillMarkdownConverter {
         if (insert.containsKey('image')) {
           final imageUrl = insert['image'];
           lineBuffer.write('![$imageUrl]($imageUrl)');
+        } else if (insert.containsKey('audio')) {
+          final audioData = insert['audio'];
+          String attachmentId = '';
+          String width = 'full';
+          try {
+            final parsed = jsonDecode(audioData) as Map<String, dynamic>;
+            attachmentId = parsed['id'] as String? ?? '';
+            width = parsed['width'] as String? ?? 'full';
+          } catch (_) {
+            attachmentId = audioData;
+          }
+          lineBuffer.write('[audio:$width](audio://$attachmentId)');
         }
       }
     }

@@ -1,15 +1,21 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../models/models.dart';
+
+class AudioBlockEmbed extends CustomBlockEmbed {
+  const AudioBlockEmbed(String data) : super('audio', data);
+}
 
 class VoiceRecorderBottomSheet extends StatefulWidget {
   final String noteId;
-  final Function(AttachmentModel attachment, String markdownLink) onAttach;
+  final Function(AttachmentModel attachment, BlockEmbed embedBlock) onAttach;
 
   const VoiceRecorderBottomSheet({
     super.key,
@@ -218,9 +224,13 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
       createdAt: DateTime.now(),
     );
 
-    final markdownLink = '\n[🎤 Voice Note: $name](audio://$attachmentId)\n\n';
+    final dataMap = {
+      'id': attachmentId,
+      'width': 'full',
+    };
+    final embedBlock = BlockEmbed.custom(AudioBlockEmbed(jsonEncode(dataMap)));
 
-    widget.onAttach(attachment, markdownLink);
+    widget.onAttach(attachment, embedBlock);
     Navigator.pop(context);
   }
 

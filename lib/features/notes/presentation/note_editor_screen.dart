@@ -31,6 +31,7 @@ import 'widgets/markdown_widget.dart';
 import 'drawing_canvas_screen.dart';
 import 'widgets/image_embed_builder.dart';
 import 'widgets/voice_recorder_bottom_sheet.dart';
+import 'widgets/audio_embed_builder.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -1630,7 +1631,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       autoFocus: false,
                       expands: true,
                       padding: EdgeInsets.zero,
-                      embedBuilders: [ImageEmbedBuilder()],
+                      embedBuilders: [
+                        ImageEmbedBuilder(),
+                        AudioEmbedBuilder(getAttachments: () => _attachments),
+                      ],
                     ),
                   ),
                 ),
@@ -1913,7 +1917,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       autoFocus: false,
                       expands: true,
                       padding: EdgeInsets.zero,
-                      embedBuilders: [ImageEmbedBuilder()],
+                      embedBuilders: [
+                        ImageEmbedBuilder(),
+                        AudioEmbedBuilder(getAttachments: () => _attachments),
+                      ],
                     ),
                   ),
                 ),
@@ -2024,7 +2031,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
       backgroundColor: Colors.transparent,
       builder: (ctx) => VoiceRecorderBottomSheet(
         noteId: _noteId,
-        onAttach: (attachment, markdownLink) {
+        onAttach: (attachment, embedBlock) {
           setState(() {
             _attachments = [..._attachments, attachment];
             _isDirty = true;
@@ -2032,10 +2039,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
 
           final index = _quillController.selection.baseOffset;
           final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
-          _quillController.document.insert(insertIndex, markdownLink);
-          _quillController.updateSelection(
-            TextSelection.collapsed(offset: insertIndex + markdownLink.length),
-            ChangeSource.local,
+          final length = _quillController.selection.extentOffset - index;
+          _quillController.replaceText(
+            insertIndex,
+            length >= 0 ? length : 0,
+            embedBlock,
+            TextSelection.collapsed(offset: insertIndex + 1),
           );
           _saveNote(isAutoSave: true);
         },
