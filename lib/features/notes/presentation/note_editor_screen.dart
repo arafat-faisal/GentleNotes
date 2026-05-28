@@ -30,6 +30,7 @@ import 'widgets/inline_audio_player.dart';
 import 'widgets/markdown_widget.dart';
 import 'drawing_canvas_screen.dart';
 import 'widgets/image_embed_builder.dart';
+import 'widgets/voice_recorder_bottom_sheet.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -83,12 +84,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   PreviewStyle _previewStyle = PreviewStyle.plain;
 
   // ── Voice Notes ──────────────────────────────────────────────────────────
-  final AudioRecorder _audioRecorder = AudioRecorder();
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isRecording = false;
-  String? _recordingPath;
-  Duration _recordingDuration = Duration.zero;
-  Timer? _recordingTimer;
 
   // ── Speech to Text (Voice typing) ────────────────────────────────────────
   final speech_to_text.SpeechToText _speechToText = speech_to_text.SpeechToText();
@@ -281,9 +276,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   @override
   void dispose() {
     _autoSaveTimer?.cancel();
-    _recordingTimer?.cancel();
-    _audioRecorder.dispose();
-    _audioPlayer.dispose();
     if (_isDirty) {
       _saveNote(isAutoSave: true);
     }
@@ -1509,14 +1501,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       child: Row(
                         children: [
                           IconButton(
-                            icon: Icon(
-                              _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                              color: _isRecording ? const Color(0xFFF87171) : const Color(0xFF8B5CF6),
-                            ),
-                            tooltip: _isRecording ? 'Stop Recording' : 'Record Voice Note',
-                            onPressed: _toggleVoiceRecording,
-                          ),
-                          IconButton(
                             icon: const Icon(Icons.draw_rounded, color: Color(0xFF8B5CF6)),
                             tooltip: 'Open Drawing Canvas',
                             onPressed: _openDrawingCanvas,
@@ -2033,120 +2017,28 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   }
 
   // ── Voice Note Recording ──────────────────────────────────────────────────
-  Future<void> _toggleVoiceRecording() async {
-    if (_isRecording) {
-      final path = await _audioRecorder.stop();
-      _recordingTimer?.cancel();
-      setState(() {
-        _isRecording = false;
-        _recordingDuration = Duration.zero;
-      });
-
-      if (path != null) {
-        _showVoiceNotePreviewDialog(path);
-      }
-    } else {
-      try {
-        if (await _audioRecorder.hasPermission()) {
-          final dir = await getTemporaryDirectory();
-          final path = '${dir.path}/voice_note_${const Uuid().v4()}.m4a';
-
-          setState(() {
-            _isRecording = true;
-            _recordingPath = path;
-            _recordingDuration = Duration.zero;
-          });
-
-          await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
-
-          _recordingTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-            setState(() {
-              _recordingDuration += const Duration(seconds: 1);
-            });
-          });
-        }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Recording error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  void _showVoiceNotePreviewDialog(String path) {
-    final minutes = _recordingDuration.inMinutes.toString().padLeft(2, '0');
-    final seconds = (_recordingDuration.inSeconds % 60).toString().padLeft(2, '0');
-
-    showDialog(
+  void _toggleVoiceRecording() {
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.mic_rounded, color: Color(0xFF8B5CF6)),
-            SizedBox(width: 8),
-            Text('Voice Note Recorded'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Duration: $minutes:$seconds',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.play_arrow_rounded, size: 32, color: Color(0xFF8B5CF6)),
-                  onPressed: () => _audioPlayer.play(DeviceFileSource(path)),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.stop_rounded, size: 28, color: Colors.grey),
-                  onPressed: () => _audioPlayer.stop(),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Discard'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final attachmentId = const Uuid().v4();
-              final newAttachment = AttachmentModel(
-                id: attachmentId,
-                noteId: _noteId,
-                type: AttachmentType.audio,
-                name: 'Voice Note ($minutes:$seconds)',
-                pathOrUrl: path,
-                createdAt: DateTime.now(),
-              );
-              setState(() {
-                _attachments = [..._attachments, newAttachment];
-                _isDirty = true;
-              });
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => VoiceRecorderBottomSheet(
+        noteId: _noteId,
+        onAttach: (attachment, markdownLink) {
+          setState(() {
+            _attachments = [..._attachments, attachment];
+            _isDirty = true;
+          });
 
-              final index = _quillController.selection.baseOffset;
-              final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
-              _quillController.document.insert(
-                insertIndex,
-                '\n[🎤 Voice Note: ${newAttachment.name}](audio://${newAttachment.id})\n\n',
-              );
-              _quillController.updateSelection(
-                TextSelection.collapsed(offset: insertIndex + newAttachment.name.length + 30),
-                ChangeSource.local,
-              );
-              _saveNote(isAutoSave: true);
-            },
-            child: const Text('Attach to Note'),
-          ),
-        ],
+          final index = _quillController.selection.baseOffset;
+          final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
+          _quillController.document.insert(insertIndex, markdownLink);
+          _quillController.updateSelection(
+            TextSelection.collapsed(offset: insertIndex + markdownLink.length),
+            ChangeSource.local,
+          );
+          _saveNote(isAutoSave: true);
+        },
       ),
     );
   }
@@ -2265,11 +2157,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(
-                        _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                        color: _isRecording ? const Color(0xFFF87171) : const Color(0xFF8B5CF6),
-                      ),
-                      tooltip: _isRecording ? 'Stop Recording' : 'Record Voice Note',
+                      icon: const Icon(Icons.mic_rounded, color: Color(0xFF8B5CF6)),
+                      tooltip: 'Record Voice Note',
                       onPressed: _toggleVoiceRecording,
                     ),
                     IconButton(
