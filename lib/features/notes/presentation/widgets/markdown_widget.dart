@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pdf/pdf.dart';
+import 'package:flutter/gestures.dart';
 import 'package:uuid/uuid.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:image_picker/image_picker.dart';
@@ -33,8 +34,9 @@ import 'inline_audio_player.dart';
 class MarkdownWidget extends ConsumerWidget {
   final String data;
   final List<AttachmentModel> attachments;
+  final String? fontFamily;
 
-  const MarkdownWidget({super.key, required this.data, required this.attachments});
+  const MarkdownWidget({super.key, required this.data, required this.attachments, this.fontFamily});
 
   List<_CustomBlock> _parseContent(String content) {
     final List<_CustomBlock> blocks = [];
@@ -53,6 +55,13 @@ class MarkdownWidget extends ConsumerWidget {
     bool inDetails = false;
     String detailsSummary = 'Click to expand';
     final List<String> currentDetailsLines = [];
+    
+    bool inBlockquote = false;
+    final List<String> currentBlockquoteLines = [];
+
+    bool inDiv = false;
+    String divStyle = '';
+    final List<String> currentDivLines = [];
 
     final RegExp imageRegex = RegExp(r'!\[(.*?)\]\((.*?)\)');
     final RegExp hrRegex = RegExp(r'^\s*(\*|-|_)\s*\1\s*\1\s*(\1|\s)*$');
@@ -61,17 +70,23 @@ class MarkdownWidget extends ConsumerWidget {
       final trimmed = line.trim();
 
       // HTML details summary block
-      if (trimmed.startsWith('<details>')) {
+      if (trimmed.startsWith(RegExp(r'<details\s*>', caseSensitive: false))) {
+        if (inBlockquote) {
+          blocks.add(_CustomBlock(type: _BlockType.blockquote, text: currentBlockquoteLines.join('\n')));
+          currentBlockquoteLines.clear();
+          inBlockquote = false;
+        }
         inDetails = true;
         detailsSummary = 'Click to expand';
         continue;
       }
       if (inDetails) {
-        if (trimmed.startsWith('<summary>') && trimmed.endsWith('</summary>')) {
-          detailsSummary = trimmed.substring(9, trimmed.length - 10).trim();
+        if (trimmed.startsWith(RegExp(r'<summary\s*>', caseSensitive: false)) && trimmed.endsWith('</summary>')) {
+          final summaryMatch = RegExp(r'<summary\s*>(.*?)</summary>', caseSensitive: false).firstMatch(trimmed);
+          detailsSummary = summaryMatch?.group(1)?.trim() ?? 'Click to expand';
           continue;
         }
-        if (trimmed.startsWith('</details>')) {
+        if (trimmed.startsWith(RegExp(r'</details\s*>', caseSensitive: false))) {
           blocks.add(_CustomBlock(
             type: _BlockType.details,
             text: currentDetailsLines.join('\n'),
@@ -87,6 +102,11 @@ class MarkdownWidget extends ConsumerWidget {
 
       // Block Math $$
       if (trimmed == '\$\$' || (trimmed.startsWith('\$\$') && trimmed.endsWith('\$\$') && trimmed.length > 2)) {
+        if (inBlockquote) {
+          blocks.add(_CustomBlock(type: _BlockType.blockquote, text: currentBlockquoteLines.join('\n')));
+          currentBlockquoteLines.clear();
+          inBlockquote = false;
+        }
         if (inMathBlock) {
           blocks.add(_CustomBlock(
             type: _BlockType.math,
@@ -115,6 +135,11 @@ class MarkdownWidget extends ConsumerWidget {
 
       // Fenced Code Blocks
       if (trimmed.startsWith('```')) {
+        if (inBlockquote) {
+          blocks.add(_CustomBlock(type: _BlockType.blockquote, text: currentBlockquoteLines.join('\n')));
+          currentBlockquoteLines.clear();
+          inBlockquote = false;
+        }
         if (inCodeBlock) {
           blocks.add(_CustomBlock(
             type: _BlockType.code,
@@ -134,6 +159,78 @@ class MarkdownWidget extends ConsumerWidget {
       if (inCodeBlock) {
         currentCodeBlockLines.add(line);
         continue;
+      }
+
+      // Multi-line HTML Div Block collector
+      if (trimmed.startsWith(RegExp(r'<div\s', caseSensitive: false)) && !trimmed.endsWith('</div>') && !inDiv) {
+        if (inBlockquote) {
+          blocks.add(_CustomBlock(type: _BlockType.blockquote, text: currentBlockquoteLines.join('\n')));
+          currentBlockquoteLines.clear();
+          inBlockquote = false;
+        }
+        inDiv = true;
+        final styleMatch = RegExp(r'style="([^"]*)"', caseSensitive: false).firstMatch(line);
+        divStyle = styleMatch?.group(1) ?? '';
+        continue;
+      }
+
+      if (inDiv) {
+        if (trimmed.contains('</div>')) {
+          final parts = line.split('</div>');
+          if (parts.first.isNotEmpty) {
+            currentDivLines.add(parts.first);
+          }
+          final rawText = currentDivLines.join('\n');
+          String processedText = rawText;
+          
+          final style = divStyle.toLowerCase();
+          if (style.contains('color:')) {
+            final colorMatch = RegExp(r'color[:\s]*([#\w]+)').firstMatch(style);
+            if (colorMatch != null) {
+              processedText = '<span style="color:${colorMatch.group(1)}">$processedText</span>';
+            }
+          }
+          if (style.contains('font-weight: bold') || style.contains('font-weight:bold')) {
+            processedText = '**$processedText**';
+          }
+          if (style.contains('font-style: italic') || style.contains('font-style:italic')) {
+            processedText = '*$processedText*';
+          }
+          if (style.contains('text-decoration: underline') || style.contains('text-decoration:underline')) {
+            processedText = '<u>$processedText</u>';
+          }
+          if (style.contains('text-align:')) {
+            final alignMatch = RegExp(r'text-align[:\s]*(left|center|right|justify)').firstMatch(style);
+            if (alignMatch != null) {
+              processedText = '<div align="${alignMatch.group(1)}">$processedText</div>';
+            }
+          }
+
+          blocks.add(_CustomBlock(type: _BlockType.paragraph, text: processedText));
+          currentDivLines.clear();
+          inDiv = false;
+          continue;
+        }
+        currentDivLines.add(line);
+        continue;
+      }
+
+      // Blockquotes collector (groups consecutive blockquotes)
+      if (trimmed.startsWith('>')) {
+        inBlockquote = true;
+        String rest = trimmed.substring(1);
+        if (rest.startsWith(' ')) rest = rest.substring(1);
+        currentBlockquoteLines.add(rest);
+        continue;
+      } else {
+        if (inBlockquote) {
+          blocks.add(_CustomBlock(
+            type: _BlockType.blockquote,
+            text: currentBlockquoteLines.join('\n'),
+          ));
+          currentBlockquoteLines.clear();
+          inBlockquote = false;
+        }
       }
 
       // Tables
@@ -175,10 +272,39 @@ class MarkdownWidget extends ConsumerWidget {
         continue;
       }
 
-      // Embedded HTML div block styling
-      if (trimmed.startsWith('<div') && trimmed.endsWith('</div>')) {
-        final content = trimmed.replaceAll(RegExp(r'<[^>]+>'), '').trim();
-        blocks.add(_CustomBlock(type: _BlockType.paragraph, text: content));
+      // Single line HTML div block styling
+      if (trimmed.startsWith(RegExp(r'<div\s', caseSensitive: false)) && trimmed.endsWith('</div>')) {
+        final styleMatch = RegExp(r'style="([^"]*)"', caseSensitive: false).firstMatch(line);
+        final style = styleMatch?.group(1) ?? '';
+        final innerMatch = RegExp(r'<div[^>]*>([\s\S]*?)</div>', caseSensitive: false).firstMatch(trimmed);
+        String innerText = innerMatch?.group(1) ?? trimmed.replaceAll(RegExp(r'<[^>]+>', caseSensitive: false), '').trim();
+        
+        String processedText = innerText;
+        if (style.isNotEmpty) {
+          final s = style.toLowerCase();
+          if (s.contains('color:')) {
+            final colorMatch = RegExp(r'color[:\s]*([#\w]+)').firstMatch(s);
+            if (colorMatch != null) {
+              processedText = '<span style="color:${colorMatch.group(1)}">$processedText</span>';
+            }
+          }
+          if (s.contains('font-weight: bold') || s.contains('font-weight:bold')) {
+            processedText = '**$processedText**';
+          }
+          if (s.contains('font-style: italic') || s.contains('font-style:italic')) {
+            processedText = '*$processedText*';
+          }
+          if (s.contains('text-decoration: underline') || s.contains('text-decoration:underline')) {
+            processedText = '<u>$processedText</u>';
+          }
+          if (s.contains('text-align:')) {
+            final alignMatch = RegExp(r'text-align[:\s]*(left|center|right|justify)').firstMatch(s);
+            if (alignMatch != null) {
+              processedText = '<div align="${alignMatch.group(1)}">$processedText</div>';
+            }
+          }
+        }
+        blocks.add(_CustomBlock(type: _BlockType.paragraph, text: processedText));
         continue;
       }
 
@@ -196,32 +322,18 @@ class MarkdownWidget extends ConsumerWidget {
       }
 
       // Headings
-      if (line.startsWith('# ')) {
-        blocks.add(_CustomBlock(type: _BlockType.heading1, text: line.substring(2)));
-      } else if (line.startsWith('## ')) {
-        blocks.add(_CustomBlock(type: _BlockType.heading2, text: line.substring(3)));
-      } else if (line.startsWith('### ')) {
-        blocks.add(_CustomBlock(type: _BlockType.heading3, text: line.substring(4)));
-      } else if (line.startsWith('#### ')) {
-        blocks.add(_CustomBlock(type: _BlockType.heading4, text: line.substring(5)));
-      } else if (line.startsWith('##### ')) {
-        blocks.add(_CustomBlock(type: _BlockType.heading5, text: line.substring(6)));
-      } else if (line.startsWith('###### ')) {
-        blocks.add(_CustomBlock(type: _BlockType.heading6, text: line.substring(7)));
-      }
-      // Blockquotes
-      else if (trimmed.startsWith('>')) {
-        var content = trimmed;
-        int level = 0;
-        while (content.startsWith('>')) {
-          level++;
-          content = content.substring(1).trim();
-        }
-        blocks.add(_CustomBlock(
-          type: _BlockType.blockquote,
-          text: content,
-          level: level,
-        ));
+      if (trimmed.startsWith('# ')) {
+        blocks.add(_CustomBlock(type: _BlockType.heading1, text: trimmed.substring(2)));
+      } else if (trimmed.startsWith('## ')) {
+        blocks.add(_CustomBlock(type: _BlockType.heading2, text: trimmed.substring(3)));
+      } else if (trimmed.startsWith('### ')) {
+        blocks.add(_CustomBlock(type: _BlockType.heading3, text: trimmed.substring(4)));
+      } else if (trimmed.startsWith('#### ')) {
+        blocks.add(_CustomBlock(type: _BlockType.heading4, text: trimmed.substring(5)));
+      } else if (trimmed.startsWith('##### ')) {
+        blocks.add(_CustomBlock(type: _BlockType.heading5, text: trimmed.substring(6)));
+      } else if (trimmed.startsWith('###### ')) {
+        blocks.add(_CustomBlock(type: _BlockType.heading6, text: trimmed.substring(7)));
       }
       // Checklists
       else if (trimmed.startsWith('- [ ]') || trimmed.startsWith('[ ]')) {
@@ -267,6 +379,13 @@ class MarkdownWidget extends ConsumerWidget {
         if (trimmed.isEmpty) continue;
         blocks.add(_CustomBlock(type: _BlockType.paragraph, text: line));
       }
+    }
+
+    if (inBlockquote && currentBlockquoteLines.isNotEmpty) {
+      blocks.add(_CustomBlock(
+        type: _BlockType.blockquote,
+        text: currentBlockquoteLines.join('\n'),
+      ));
     }
 
     if (inTable && currentTableRows.isNotEmpty) {
@@ -335,20 +454,26 @@ class MarkdownWidget extends ConsumerWidget {
           child: Divider(thickness: 1.5, color: theme.colorScheme.outlineVariant),
         );
       case _BlockType.blockquote:
+        final innerBlocks = _parseContent(block.text);
         return Padding(
-          padding: EdgeInsets.only(left: 12.0 * block.level, top: 8, bottom: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Container(
             decoration: BoxDecoration(
               border: Border(
                 left: BorderSide(
-                  color: theme.colorScheme.primary.withOpacity(0.5),
+                  color: theme.colorScheme.primary.withOpacity(0.4),
                   width: 3.5,
                 ),
               ),
-              color: theme.colorScheme.surfaceVariant.withOpacity(0.15),
+              color: theme.colorScheme.surfaceVariant.withOpacity(0.1),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: _renderInlineText(context, block.text, theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic, color: theme.colorScheme.onSurfaceVariant)),
+            padding: const EdgeInsets.only(left: 12, top: 8, bottom: 8, right: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: innerBlocks.map((subBlock) {
+                return _buildBlockWidget(context, subBlock, activeCodeTheme, theme);
+              }).toList(),
+            ),
           ),
         );
       case _BlockType.bullet:
@@ -378,7 +503,7 @@ class MarkdownWidget extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${block.altText}. ', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+              Text('${block.altText}. ', style: (theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold) ?? const TextStyle()).copyWith(fontFamily: fontFamily)),
               Expanded(
                 child: _renderInlineText(context, block.text, theme.textTheme.bodyMedium),
               ),
@@ -514,7 +639,7 @@ class MarkdownWidget extends ConsumerWidget {
         final codeText = block.text;
         final language = block.altText ?? 'code';
         final highlighter = GentleSyntaxHighlighter(context, activeCodeTheme);
-        final formattedSpan = highlighter.format(codeText);
+        final formattedSpan = highlighter.format(codeText, language);
 
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 12),
@@ -598,6 +723,8 @@ class MarkdownWidget extends ConsumerWidget {
       case _BlockType.table:
         if (block.tableData == null || block.tableData!.isEmpty) return const SizedBox();
         final headers = block.tableData!.first;
+        if (headers.isEmpty) return const SizedBox();
+        final int columnCount = headers.length;
         final rows = block.tableData!.skip(1).toList();
 
         return Container(
@@ -616,8 +743,14 @@ class MarkdownWidget extends ConsumerWidget {
                 );
               }).toList(),
               rows: rows.map((row) {
+                final List<String> cells = List.from(row);
+                if (cells.length < columnCount) {
+                  cells.addAll(List.filled(columnCount - cells.length, ''));
+                } else if (cells.length > columnCount) {
+                  cells.removeRange(columnCount, cells.length);
+                }
                 return DataRow(
-                  cells: row.map((cell) {
+                  cells: cells.map((cell) {
                     return DataCell(
                       _renderInlineText(context, cell, theme.textTheme.bodyMedium),
                     );
@@ -652,9 +785,10 @@ class MarkdownWidget extends ConsumerWidget {
         default: align = TextAlign.left;
       }
     }
-    final spans = _parseInlineSpans(context, processedText, baseStyle ?? const TextStyle());
+    final TextStyle finalStyle = (baseStyle ?? const TextStyle()).copyWith(fontFamily: fontFamily);
+    final spans = _parseInlineSpans(context, processedText, finalStyle);
     return RichText(
-      text: TextSpan(children: spans),
+      text: TextSpan(children: spans, style: finalStyle),
       textAlign: align,
       textWidthBasis: TextWidthBasis.parent,
     );
@@ -662,9 +796,14 @@ class MarkdownWidget extends ConsumerWidget {
 
   List<InlineSpan> _parseInlineSpans(BuildContext context, String text, TextStyle baseStyle) {
     final List<InlineSpan> spans = [];
-    // Extended regex: adds <mark>, <span style="color:">, <u>, ~~, **, *, `, links
+    final theme = Theme.of(context);
+    final isDarkTheme = theme.brightness == Brightness.dark;
+    
+    // Extended regex: adds <mark>, <span style="color:">, <u>, ~~, **, *, `, links, and inline math
     final RegExp inlineRegex = RegExp(
-      r'(\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*|~~.*?~~|`.*?`|<u>.*?</u>|<mark[^>]*>.*?</mark>|<span[^>]*>.*?</span>|\[.*?\]\(.*?\)|https?://\S+)',
+      r'(<https?://[^>]+>'
+      r'|\*\*\*.*?\*\*\*|\*\*.*?\*\*|\*.*?\*|~~.*?~~|`.*?`|<u>.*?</u>|<mark[^>]*>.*?</mark>|<span[^>]*>.*?</span>|\[.*?\]\(.*?\)|https?://[^\s<>]+|\$\$[^$]+\$\$'
+      r'|\$[^$\n]+\$)',
       dotAll: true,
     );
 
@@ -679,7 +818,44 @@ class MarkdownWidget extends ConsumerWidget {
 
       final token = match.group(1)!;
 
-      if (token.startsWith('***') && token.endsWith('***')) {
+      if (token.startsWith('<http') && token.endsWith('>')) {
+        final url = token.substring(1, token.length - 1);
+        spans.add(TextSpan(
+          text: url,
+          style: baseStyle.copyWith(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Opening Link: $url'),
+                  backgroundColor: Colors.blue,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+        ));
+      } else if (token.startsWith('http://') || token.startsWith('https://')) {
+        spans.add(TextSpan(
+          text: token,
+          style: baseStyle.copyWith(
+            color: Colors.blue,
+            decoration: TextDecoration.underline,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Opening Link: $token'),
+                  backgroundColor: Colors.blue,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+        ));
+      } else if (token.startsWith('***') && token.endsWith('***')) {
         spans.addAll(_parseInlineSpans(
           context,
           token.substring(3, token.length - 3),
@@ -706,11 +882,12 @@ class MarkdownWidget extends ConsumerWidget {
       } else if (token.startsWith('`') && token.endsWith('`')) {
         spans.add(TextSpan(
           text: token.substring(1, token.length - 1),
-          style: TextStyle(
+          style: baseStyle.copyWith(
             fontFamily: 'Courier',
             fontSize: (baseStyle.fontSize ?? 14) - 1,
-            backgroundColor: Colors.grey.shade200,
-            color: Colors.red.shade800,
+            backgroundColor: isDarkTheme ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            color: isDarkTheme ? const Color(0xFFF472B6) : const Color(0xFFE11D48),
+            fontWeight: baseStyle.fontWeight ?? FontWeight.w500,
           ),
         ));
       } else if (token.startsWith('<u>') && token.endsWith('</u>')) {
@@ -719,6 +896,27 @@ class MarkdownWidget extends ConsumerWidget {
           token.substring(3, token.length - 4),
           baseStyle.copyWith(decoration: TextDecoration.underline),
         ));
+      } else if (token.startsWith('\$\$') && token.endsWith('\$\$') && token.length > 4) {
+        final formula = token.substring(2, token.length - 2);
+        spans.add(TextSpan(
+          text: formula,
+          style: baseStyle.copyWith(
+            fontFamily: 'Georgia',
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.bold,
+            color: isDarkTheme ? const Color(0xFF93C5FD) : const Color(0xFF1E3A8A),
+          ),
+        ));
+      } else if (token.startsWith('\$') && token.endsWith('\$') && token.length >= 2) {
+        final formula = token.substring(1, token.length - 1);
+        spans.add(TextSpan(
+          text: formula,
+          style: baseStyle.copyWith(
+            fontFamily: 'Georgia',
+            fontStyle: FontStyle.italic,
+            color: isDarkTheme ? const Color(0xFF93C5FD) : const Color(0xFF1E3A8A),
+          ),
+        ));
       } else if (token.startsWith('<mark')) {
         // Parse: <mark style="background:#HEX">text</mark>
         final bgMatch = RegExp(r'background[:\s]*([#\w]+)').firstMatch(token);
@@ -726,8 +924,7 @@ class MarkdownWidget extends ConsumerWidget {
         final innerText = innerMatch?.group(1) ?? token;
         Color bgColor = const Color(0xFFFFFF00);
         if (bgMatch != null) {
-          final hexStr = bgMatch.group(1)!.replaceAll('#', '');
-          if (hexStr.length == 6) bgColor = Color(int.parse('FF$hexStr', radix: 16));
+          bgColor = _parseCssColor(bgMatch.group(1)!, bgColor);
         }
         spans.addAll(_parseInlineSpans(
           context, 
@@ -739,10 +936,9 @@ class MarkdownWidget extends ConsumerWidget {
         final colorMatch = RegExp(r'color[:\s]*([#\w]+)').firstMatch(token);
         final innerMatch = RegExp(r'<span[^>]*>(.*?)</span>', dotAll: true).firstMatch(token);
         final innerText = innerMatch?.group(1) ?? token;
-        Color textColor = baseStyle.color ?? Colors.black;
+        Color textColor = baseStyle.color ?? (isDarkTheme ? Colors.white : Colors.black);
         if (colorMatch != null) {
-          final hexStr = colorMatch.group(1)!.replaceAll('#', '');
-          if (hexStr.length == 6) textColor = Color(int.parse('FF$hexStr', radix: 16));
+          textColor = _parseCssColor(colorMatch.group(1)!, textColor);
         }
         spans.addAll(_parseInlineSpans(
           context, 
@@ -773,9 +969,14 @@ class MarkdownWidget extends ConsumerWidget {
             ));
           }
         } else {
-          spans.add(WidgetSpan(
-            child: GestureDetector(
-              onTap: () {
+          spans.add(TextSpan(
+            text: label,
+            style: baseStyle.copyWith(
+              color: Colors.blue,
+              decoration: TextDecoration.underline,
+            ),
+            recognizer: TapGestureRecognizer()
+              ..onTap = () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Opening Link: $url'),
@@ -784,36 +985,12 @@ class MarkdownWidget extends ConsumerWidget {
                   ),
                 );
               },
-              child: Text(
-                label,
-                style: baseStyle.copyWith(
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
           ));
         }
       } else {
-        spans.add(WidgetSpan(
-          child: GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Opening Link: $token'),
-                  backgroundColor: Colors.blue,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-            child: Text(
-              token,
-              style: baseStyle.copyWith(
-                color: Colors.blue,
-                decoration: TextDecoration.underline,
-              ),
-            ),
-          ),
+        spans.add(TextSpan(
+          text: token,
+          style: baseStyle,
         ));
       }
 
@@ -828,6 +1005,48 @@ class MarkdownWidget extends ConsumerWidget {
     }
 
     return spans;
+  }
+
+  Color _parseCssColor(String colorStr, Color defaultColor) {
+    try {
+      final clean = colorStr.trim().toLowerCase();
+      if (clean.startsWith('#')) {
+        final hex = clean.replaceAll('#', '');
+        if (hex.length == 6) {
+          return Color(int.parse('FF$hex', radix: 16));
+        } else if (hex.length == 3) {
+          final r = hex[0];
+          final g = hex[1];
+          final b = hex[2];
+          return Color(int.parse('FF$r$r$g$g$b$b', radix: 16));
+        } else if (hex.length == 8) {
+          return Color(int.parse(hex, radix: 16));
+        }
+      }
+      
+      const colorMap = {
+        'red': Colors.red,
+        'blue': Colors.blue,
+        'green': Colors.green,
+        'yellow': Colors.yellow,
+        'orange': Colors.orange,
+        'purple': Colors.purple,
+        'pink': Colors.pink,
+        'teal': Colors.teal,
+        'grey': Colors.grey,
+        'gray': Colors.grey,
+        'black': Colors.black,
+        'white': Colors.white,
+        'indigo': Colors.indigo,
+        'cyan': Colors.cyan,
+        'brown': Colors.brown,
+        'amber': Colors.amber,
+      };
+      
+      return colorMap[clean] ?? defaultColor;
+    } catch (_) {
+      return defaultColor;
+    }
   }
 
   Widget _buildImageBlock(_CustomBlock block) {
@@ -955,7 +1174,32 @@ class MarkdownWidget extends ConsumerWidget {
         itemCount: blocks.length,
         itemBuilder: (context, index) {
           final block = blocks[index];
-          return _buildBlockWidget(context, block, activeCodeTheme, theme);
+          try {
+            return _buildBlockWidget(context, block, activeCodeTheme, theme);
+          } catch (e, stack) {
+            debugPrint('Error rendering block: $e\n$stack');
+            return Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Failed to render block of type: ${block.type.name}',
+                      style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
         },
       ),
     );
@@ -1006,7 +1250,7 @@ class GentleSyntaxHighlighter {
 
   GentleSyntaxHighlighter(this.context, this.theme);
 
-  TextSpan format(String code) {
+  TextSpan format(String code, [String? language]) {
     final List<TextSpan> spans = [];
     final lines = code.split('\n');
     final isDark = theme.contains('dark') || theme == 'monokai';
@@ -1015,55 +1259,108 @@ class GentleSyntaxHighlighter {
     final stringStyle = TextStyle(color: isDark ? const Color(0xFF10B981) : const Color(0xFF047857));
     final commentStyle = TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF64748B), fontStyle: FontStyle.italic);
     final numberStyle = TextStyle(color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1));
+    final keyStyle = TextStyle(color: isDark ? const Color(0xFFF472B6) : const Color(0xFFDB2777), fontWeight: FontWeight.bold);
     final defaultStyle = TextStyle(color: isDark ? Colors.white : Colors.black87);
 
-    final keywords = {
-      'class', 'struct', 'enum', 'void', 'int', 'double', 'float', 'bool', 'string', 'final', 'const',
-      'var', 'let', 'function', 'def', 'import', 'from', 'as', 'return', 'if', 'else', 'for', 'while',
-      'switch', 'case', 'break', 'continue', 'true', 'false', 'null', 'package', 'public',
-      'private', 'protected', 'extends', 'implements', 'override', 'async', 'await', 'yield'
-    };
-
-    final keywordRegex = RegExp('\\b(${keywords.join('|')})\\b');
-    final stringRegex = RegExp(r"'(.*?)'|&quot;(.*?)&quot;|\u0022(.*?)\u0022");
-    final numberRegex = RegExp(r'\b\d+(\.\d+)?\b');
-    final commentRegex = RegExp(r'//.*|#.*|/\*[\s\S]*?\*/');
-
-    final combinedRegex = RegExp(
-      '(${commentRegex.pattern})|(${stringRegex.pattern})|(${keywordRegex.pattern})|(${numberRegex.pattern})',
-      multiLine: true,
-    );
+    final lang = language?.toLowerCase().trim().replaceAll('.', '') ?? 'code';
 
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
-      int lastIndex = 0;
 
-      for (final match in combinedRegex.allMatches(line)) {
-        if (match.start > lastIndex) {
-          spans.add(TextSpan(text: line.substring(lastIndex, match.start), style: defaultStyle));
+      if (lang == 'env') {
+        final eqIdx = line.indexOf('=');
+        if (eqIdx != -1) {
+          final key = line.substring(0, eqIdx);
+          final value = line.substring(eqIdx);
+          spans.add(TextSpan(text: key, style: keyStyle));
+          spans.add(TextSpan(text: value, style: stringStyle));
+        } else {
+          spans.add(TextSpan(text: line, style: defaultStyle));
+        }
+      } else if (lang == 'yaml' || lang == 'yml') {
+        final colIdx = line.indexOf(':');
+        if (colIdx != -1 && !line.trim().startsWith('#')) {
+          final key = line.substring(0, colIdx + 1);
+          final value = line.substring(colIdx + 1);
+          spans.add(TextSpan(text: key, style: keyStyle));
+          spans.add(TextSpan(text: value, style: stringStyle));
+        } else if (line.trim().startsWith('#')) {
+          spans.add(TextSpan(text: line, style: commentStyle));
+        } else {
+          spans.add(TextSpan(text: line, style: defaultStyle));
+        }
+      } else {
+        RegExp combinedRegex;
+        
+        if (lang == 'json') {
+          combinedRegex = RegExp(
+            r'("(?:\\.|[^"\\])*"\s*:)|'
+            r'("(?:\\.|[^"\\])*")|'
+            r'(\b\d+(?:\.\d+)?\b)|'
+            r'(\b(?:true|false|null)\b)',
+            multiLine: true,
+          );
+        } else if (lang == 'sql') {
+          final sqlKeywords = [
+            'select', 'insert', 'update', 'delete', 'from', 'where', 'join', 'inner', 'left', 'right',
+            'outer', 'on', 'order', 'by', 'group', 'having', 'limit', 'offset', 'and', 'or', 'not',
+            'in', 'is', 'null', 'into', 'values', 'create', 'table', 'drop', 'alter', 'index', 'key',
+            'primary', 'foreign', 'references', 'desc', 'asc', 'as', 'set', 'union', 'all'
+          ];
+          
+          combinedRegex = RegExp(
+            r'(--.*)|'
+            r"('(?:\\.|[^'\\])*'|&quot;(?:\\.|[^&])*&quot;|\u0022(?:\\.|[^\u0022\\])*\u0022)|"
+            r'(\b\d+(?:\.\d+)?\b)|'
+            r'(\b(?:' + sqlKeywords.join('|') + r')\b)',
+            multiLine: true,
+            caseSensitive: false,
+          );
+        } else {
+          final keywords = {
+            'class', 'struct', 'enum', 'void', 'int', 'double', 'float', 'bool', 'string', 'final', 'const',
+            'var', 'let', 'function', 'def', 'import', 'from', 'as', 'return', 'if', 'else', 'elif', 'for', 'while',
+            'switch', 'case', 'break', 'continue', 'true', 'false', 'null', 'package', 'public',
+            'private', 'protected', 'extends', 'implements', 'override', 'async', 'await', 'yield', 'in',
+            'try', 'except', 'catch', 'finally', 'throw', 'new', 'delete', 'namespace', 'using', 'std', 'cout', 'endl'
+          };
+          combinedRegex = RegExp(
+            r'(//.*|#.*|/\*[\s\S]*?\*/)|'
+            r"('(?:\\.|[^'\\])*'|&quot;(?:\\.|[^&])*&quot;|\u0022(?:\\.|[^\u0022\\])*\u0022)|"
+            r'(\b\d+(?:\.\d+)?\b)|'
+            r'(\b(?:' + keywords.join('|') + r')\b)',
+            multiLine: true,
+          );
         }
 
-        final matchedText = match.group(0)!;
-        if (match.group(1) != null) {
-          spans.add(TextSpan(text: matchedText, style: commentStyle));
-        } else if (match.group(2) != null) {
-          spans.add(TextSpan(text: matchedText, style: stringStyle));
-        } else if (match.group(5) != null) {
-          spans.add(TextSpan(text: matchedText, style: keywordStyle));
-        } else {
-          if (keywords.contains(matchedText)) {
-            spans.add(TextSpan(text: matchedText, style: keywordStyle));
-          } else if (double.tryParse(matchedText) != null) {
+        int lastIndex = 0;
+        for (final match in combinedRegex.allMatches(line)) {
+          if (match.start > lastIndex) {
+            spans.add(TextSpan(text: line.substring(lastIndex, match.start), style: defaultStyle));
+          }
+
+          final matchedText = match.group(0)!;
+          if (match.group(1) != null) {
+            if (lang == 'json') {
+              spans.add(TextSpan(text: matchedText, style: keyStyle));
+            } else {
+              spans.add(TextSpan(text: matchedText, style: commentStyle));
+            }
+          } else if (match.group(2) != null) {
+            spans.add(TextSpan(text: matchedText, style: stringStyle));
+          } else if (match.group(3) != null) {
             spans.add(TextSpan(text: matchedText, style: numberStyle));
+          } else if (match.group(4) != null) {
+            spans.add(TextSpan(text: matchedText, style: keywordStyle));
           } else {
             spans.add(TextSpan(text: matchedText, style: defaultStyle));
           }
+          lastIndex = match.end;
         }
-        lastIndex = match.end;
-      }
 
-      if (lastIndex < line.length) {
-        spans.add(TextSpan(text: line.substring(lastIndex), style: defaultStyle));
+        if (lastIndex < line.length) {
+          spans.add(TextSpan(text: line.substring(lastIndex), style: defaultStyle));
+        }
       }
 
       if (i < lines.length - 1) {

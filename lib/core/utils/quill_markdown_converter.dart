@@ -24,6 +24,7 @@ class QuillMarkdownConverter {
     final lines = markdown.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
     
     bool inCodeBlock = false;
+    String codeBlockLang = '';
     final codeBlockLines = <String>[];
     
     for (int i = 0; i < lines.length; i++) {
@@ -32,16 +33,19 @@ class QuillMarkdownConverter {
       // 1. Code Block Toggle
       if (line.trim().startsWith('```')) {
         if (inCodeBlock) {
-          final codeText = codeBlockLines.join('\n');
-          ops.add({'insert': codeText});
-          ops.add({
-            'insert': '\n',
-            'attributes': {'code-block': true}
-          });
+          for (final blockLine in codeBlockLines) {
+            ops.add({'insert': blockLine});
+            ops.add({
+              'insert': '\n',
+              'attributes': {'code-block': codeBlockLang.isNotEmpty ? codeBlockLang : true}
+            });
+          }
           codeBlockLines.clear();
           inCodeBlock = false;
+          codeBlockLang = '';
         } else {
           inCodeBlock = true;
+          codeBlockLang = line.trim().substring(3).trim();
         }
         continue;
       }
@@ -51,8 +55,18 @@ class QuillMarkdownConverter {
         continue;
       }
       
+      // Check for horizontal rule: *** or --- or ___
+      final isHr = RegExp(r'^\s*(\*|-|_)\s*\1\s*\1\s*(\1|\s)*$').hasMatch(line);
+      if (isHr) {
+        ops.add({
+          'insert': {'horizontal-rule': ''}
+        });
+        ops.add({'insert': '\n'});
+        continue;
+      }
+      
       // 2. Process non-code line block types
-      String processedLine = line;
+      String processedLine = line.trimLeft();
       final blockAttrs = <String, dynamic>{};
       
       // Alignment Tag Check: <div align="center">...</div>
@@ -64,14 +78,16 @@ class QuillMarkdownConverter {
       
       // Check block-level formatting
       final headerMatch = RegExp(r'^(#{1,6})\s+(.*)$').firstMatch(processedLine);
-      final checklistCheckedMatch = RegExp(r'^(-\s*\[[xX]\]\s*)(.*)$').firstMatch(processedLine);
-      final checklistUncheckedMatch = RegExp(r'^(-\s*\[\s\]\s*)(.*)$').firstMatch(processedLine);
+      final checklistCheckedMatch = RegExp(r'^([-\*+]\s*\[[xX]\]\s*)(.*)$').firstMatch(processedLine);
+      final checklistUncheckedMatch = RegExp(r'^([-\*+]\s*\[\s\]\s*)(.*)$').firstMatch(processedLine);
       final bulletMatch = RegExp(r'^([-\*+]\s+)(.*)$').firstMatch(processedLine);
       final orderedMatch = RegExp(r'^(\d+\.\s+)(.*)$').firstMatch(processedLine);
       final blockquoteMatch = RegExp(r'^(\>\s*)(.*)$').firstMatch(processedLine);
       
       if (headerMatch != null) {
-        blockAttrs['header'] = headerMatch.group(1)!.length;
+        int level = headerMatch.group(1)!.length;
+        if (level > 3) level = 3;
+        blockAttrs['header'] = level;
         processedLine = headerMatch.group(2)!;
       } else if (checklistCheckedMatch != null) {
         blockAttrs['list'] = 'checked';
@@ -92,8 +108,11 @@ class QuillMarkdownConverter {
       
       // Check indent level (based on leading spaces)
       final leadingSpaces = line.length - line.trimLeft().length;
-      if (leadingSpaces >= 4) {
-        blockAttrs['indent'] = leadingSpaces ~/ 4;
+      if (leadingSpaces > 0) {
+        final indentLevel = (leadingSpaces / 2).floor();
+        if (indentLevel > 0) {
+          blockAttrs['indent'] = indentLevel;
+        }
       }
 
       // Parse inline markers in processedLine
@@ -113,11 +132,13 @@ class QuillMarkdownConverter {
     
     // Close open code block if necessary
     if (inCodeBlock && codeBlockLines.isNotEmpty) {
-      ops.add({'insert': codeBlockLines.join('\n')});
-      ops.add({
-        'insert': '\n',
-        'attributes': {'code-block': true}
-      });
+      for (final blockLine in codeBlockLines) {
+        ops.add({'insert': blockLine});
+        ops.add({
+          'insert': '\n',
+          'attributes': {'code-block': codeBlockLang.isNotEmpty ? codeBlockLang : true}
+        });
+      }
     }
     
     // Quill requires document to end with a single newline if not already present
@@ -134,7 +155,8 @@ class QuillMarkdownConverter {
     
     final ops = <Map<String, dynamic>>[];
     final regex = RegExp(
-      r'(\*\*\*.*?\*\*\*'
+      r'(<https?://[^>]+>'
+      r'|\*\*\*.*?\*\*\* '
       r'|\*\*.*?\*\*'
       r'|\*.*?\*'
       r'|~~.*?~~'
@@ -144,6 +166,7 @@ class QuillMarkdownConverter {
       r'|<span style="color:([^"]*)">(.*?)</span>'
       r'|!\[(.*?)\]\((.*?)\)'
       r'|\[(.*?)\]\((.*?)\)'
+      r'|https?://[^\s<>]+'
       r')',
       dotAll: true,
     );
@@ -159,7 +182,18 @@ class QuillMarkdownConverter {
       
       final token = match.group(0)!;
       
-      if (token.startsWith('***') && token.endsWith('***') && token.length >= 6) {
+      if (token.startsWith('<http') && token.endsWith('>')) {
+        final url = token.substring(1, token.length - 1);
+        ops.add({
+          'insert': url,
+          'attributes': {'link': url},
+        });
+      } else if (token.startsWith('http://') || token.startsWith('https://')) {
+        ops.add({
+          'insert': token,
+          'attributes': {'link': token},
+        });
+      } else if (token.startsWith('***') && token.endsWith('***') && token.length >= 6) {
         final inner = token.substring(3, token.length - 3);
         final innerOps = _parseInlineMarkdown(inner);
         for (final op in innerOps) {
@@ -287,6 +321,10 @@ class QuillMarkdownConverter {
       
       List<Map<String, dynamic>> currentLineOps = [];
       
+      bool inCodeBlock = false;
+      String currentCodeBlockLang = '';
+      final codeBlockLines = <String>[];
+      
       for (final op in ops) {
         if (op is! Map) continue;
         final insert = op['insert'];
@@ -310,7 +348,29 @@ class QuillMarkdownConverter {
                 });
               }
               
-              buffer.write(_processLine(currentLineOps, attributes));
+              final blockAttrs = attributes;
+              final codeBlockAttr = blockAttrs?['code-block'];
+              
+              if (codeBlockAttr != null) {
+                if (!inCodeBlock) {
+                  inCodeBlock = true;
+                  currentCodeBlockLang = codeBlockAttr is String ? codeBlockAttr : '';
+                }
+                final lineText = _processCodeLine(currentLineOps);
+                codeBlockLines.add(lineText);
+              } else {
+                if (inCodeBlock) {
+                  buffer.write('```$currentCodeBlockLang\n');
+                  buffer.write(codeBlockLines.join('\n'));
+                  buffer.write('\n```\n');
+                  codeBlockLines.clear();
+                  inCodeBlock = false;
+                  currentCodeBlockLang = '';
+                }
+                
+                buffer.write(_processLine(currentLineOps, blockAttrs));
+              }
+              
               currentLineOps = [];
               start = newlineIndex + 1;
             }
@@ -323,7 +383,11 @@ class QuillMarkdownConverter {
         }
       }
       
-      if (currentLineOps.isNotEmpty) {
+      if (inCodeBlock) {
+        buffer.write('```$currentCodeBlockLang\n');
+        buffer.write(codeBlockLines.join('\n'));
+        buffer.write('\n```\n');
+      } else if (currentLineOps.isNotEmpty) {
         buffer.write(_processLine(currentLineOps, null));
       }
       
@@ -331,6 +395,17 @@ class QuillMarkdownConverter {
     } catch (e) {
       return deltaJsonStr;
     }
+  }
+
+  static String _processCodeLine(List<Map<String, dynamic>> lineOps) {
+    final buf = StringBuffer();
+    for (final op in lineOps) {
+      final insert = op['insert'];
+      if (insert is String) {
+        buf.write(insert);
+      }
+    }
+    return buf.toString();
   }
 
   static String _processLine(List<Map<String, dynamic>> lineOps, Map<String, dynamic>? blockAttrs) {
@@ -386,6 +461,8 @@ class QuillMarkdownConverter {
             attachmentId = audioData;
           }
           lineBuffer.write('[audio:$width](audio://$attachmentId)');
+        } else if (insert.containsKey('horizontal-rule') || insert.containsKey('divider')) {
+          lineBuffer.write('***');
         }
       }
     }
@@ -405,8 +482,9 @@ class QuillMarkdownConverter {
         indentPrefix = '    ' * indent;
       }
 
-      if (codeBlock == true) {
-        return '$indentPrefix```\n$lineText\n```\n';
+      if (codeBlock == true || codeBlock is String) {
+        final lang = codeBlock is String ? codeBlock : '';
+        return '$indentPrefix```$lang\n$lineText\n```\n';
       }
       
       if (blockquote == true) {

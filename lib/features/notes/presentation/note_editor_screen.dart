@@ -14,11 +14,13 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:speech_to_text/speech_to_text.dart' as speech_to_text;
 
 import '../../../core/widgets/gentle_scaffold.dart';
 import '../../../core/utils/quill_markdown_converter.dart';
 import '../../../core/utils/responsive_helper.dart';
+import '../../../core/utils/clipboard_helper.dart';
 import '../../../models/models.dart';
 import '../../folders/data/folders_repository.dart';
 import '../../notes/data/notes_repository.dart';
@@ -33,6 +35,7 @@ import 'drawing_canvas_screen.dart';
 import 'widgets/image_embed_builder.dart';
 import 'widgets/voice_recorder_bottom_sheet.dart';
 import 'widgets/audio_embed_builder.dart';
+import 'widgets/horizontal_rule_embed_builder.dart';
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -85,6 +88,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   bool _isFullScreen = false;
   bool _isFocusMode = false;
 
+  String get _currentFontFamily {
+    return _noteType == NoteType.mixed
+        ? 'Georgia'
+        : (_noteType == NoteType.code ? 'Courier' : 'Inter');
+  }
+
   // ── Preview background ───────────────────────────────────────────────────
   Color? _previewBgColor;
   String? _previewBgImagePath;
@@ -115,6 +124,23 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadNoteOrTemplate();
+      setupClipboardPasteListener(
+        context,
+        _editorFocusNode,
+        (dataUrl, fileName) {
+          final index = _quillController.selection.baseOffset;
+          final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
+          _quillController.replaceText(
+            insertIndex,
+            0,
+            BlockEmbed.image(dataUrl),
+            TextSelection.collapsed(offset: insertIndex + 1),
+          );
+        },
+        (plainText, htmlText) {
+          _handlePasteText(plainText, htmlText);
+        },
+      );
     });
 
     _titleController.addListener(_markDirty);
@@ -304,6 +330,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
 
   @override
   void dispose() {
+    disposeClipboardPasteListener();
     _autoSaveTimer?.cancel();
     if (_isDirty) {
       _saveNote(isAutoSave: true);
@@ -318,6 +345,174 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     _titleFocusNode.dispose();
     _tagsFocusNode.dispose();
     super.dispose();
+  }
+
+  String _convertHtmlToMarkdown(String html) {
+    String result = html;
+    
+    // Replace headings
+    result = result.replaceAllMapped(RegExp(r'<h1[^>]*>([\s\S]*?)</h1>', caseSensitive: false), (m) => '# ${m[1]}\n\n');
+    result = result.replaceAllMapped(RegExp(r'<h2[^>]*>([\s\S]*?)</h2>', caseSensitive: false), (m) => '## ${m[1]}\n\n');
+    result = result.replaceAllMapped(RegExp(r'<h3[^>]*>([\s\S]*?)</h3>', caseSensitive: false), (m) => '### ${m[1]}\n\n');
+    result = result.replaceAllMapped(RegExp(r'<h4[^>]*>([\s\S]*?)</h4>', caseSensitive: false), (m) => '#### ${m[1]}\n\n');
+    result = result.replaceAllMapped(RegExp(r'<h5[^>]*>([\s\S]*?)</h5>', caseSensitive: false), (m) => '##### ${m[1]}\n\n');
+    result = result.replaceAllMapped(RegExp(r'<h6[^>]*>([\s\S]*?)</h6>', caseSensitive: false), (m) => '###### ${m[1]}\n\n');
+    
+    // Replace bold & strong
+    result = result.replaceAllMapped(RegExp(r'<strong[^>]*>([\s\S]*?)</strong>|<b[^>]*>([\s\S]*?)</b>', caseSensitive: false), (m) => '**${m[1] ?? m[2]}**');
+    
+    // Replace italic & em
+    result = result.replaceAllMapped(RegExp(r'<em[^>]*>([\s\S]*?)</em>|<i[^>]*>([\s\S]*?)</i>', caseSensitive: false), (m) => '*${m[1] ?? m[2]}*');
+    
+    // Replace underline
+    result = result.replaceAllMapped(RegExp(r'<u[^>]*>([\s\S]*?)</u>', caseSensitive: false), (m) => '<u>${m[1]}</u>');
+    
+    // Replace strike
+    result = result.replaceAllMapped(RegExp(r'<strike[^>]*>([\s\S]*?)</strike>|<s[^>]*>([\s\S]*?)</s>|<del[^>]*>([\s\S]*?)</del>', caseSensitive: false), (m) => '~~${m[1] ?? m[2] ?? m[3]}~~');
+    
+    // Replace lists
+    // Unordered
+    result = result.replaceAllMapped(RegExp(r'<ul[^>]*>([\s\S]*?)</ul>', caseSensitive: false), (m) {
+      var listContent = m[1]!;
+      listContent = listContent.replaceAllMapped(RegExp(r'<li[^>]*>([\s\S]*?)</li>', caseSensitive: false), (li) {
+        var content = li[1]!;
+        // Check for checked checkbox
+        if (RegExp(r'<input[^>]*type="checkbox"[^>]*checked', caseSensitive: false).hasMatch(content)) {
+          content = content.replaceAll(RegExp(r'<input[^>]*>', caseSensitive: false), '');
+          return '- [x] ${content.trim()}\n';
+        }
+        // Check for unchecked checkbox
+        if (RegExp(r'<input[^>]*type="checkbox"', caseSensitive: false).hasMatch(content)) {
+          content = content.replaceAll(RegExp(r'<input[^>]*>', caseSensitive: false), '');
+          return '- [ ] ${content.trim()}\n';
+        }
+        return '- ${content.trim()}\n';
+      });
+      return '$listContent\n';
+    });
+    // Ordered
+    result = result.replaceAllMapped(RegExp(r'<ol[^>]*>([\s\S]*?)</ol>', caseSensitive: false), (m) {
+      var listContent = m[1]!;
+      int index = 1;
+      listContent = listContent.replaceAllMapped(RegExp(r'<li[^>]*>([\s\S]*?)</li>', caseSensitive: false), (li) => '${index++}. ${li[1]?.trim()}\n');
+      return '$listContent\n';
+    });
+    
+    // Replace code blocks and inline code
+    result = result.replaceAllMapped(RegExp(r'<pre[^>]*><code[^>]*>([\s\S]*?)</code></pre>', caseSensitive: false), (m) => '```\n${m[1]}\n```\n\n');
+    result = result.replaceAllMapped(RegExp(r'<code[^>]*>([\s\S]*?)</code>', caseSensitive: false), (m) => '`${m[1]}`');
+    
+    // Replace links
+    result = result.replaceAllMapped(RegExp(r'<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)</a>', caseSensitive: false), (m) => '[${m[2]}](${m[1]})');
+    
+    // Replace line breaks & paragraphs
+    result = result.replaceAll(RegExp(r'<br[^>]*>', caseSensitive: false), '\n');
+    result = result.replaceAllMapped(RegExp(r'<p[^>]*>([\s\S]*?)</p>', caseSensitive: false), (m) => '${m[1]}\n\n');
+    
+    // Strip remaining tags except div, span, mark, u, details, summary
+    result = result.replaceAll(RegExp(r'<(?!/?(div|span|mark|u|details|summary)\b)[^>]+>', caseSensitive: false), '');
+    
+    // Clean up entities
+    result = result
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&nbsp;', ' ');
+        
+    return result;
+  }
+
+  bool _detectMarkdown(String text) {
+    if (text.isEmpty) return false;
+    
+    final headingRegex = RegExp(r'^#{1,6}\s+', multiLine: true);
+    final bulletRegex = RegExp(r'^(\s*)[-*+]\s+', multiLine: true);
+    final orderedRegex = RegExp(r'^(\s*)\d+\.\s+', multiLine: true);
+    final checklistRegex = RegExp(r'^(\s*)[-*+]\s+\[[\s_xX]?\]\s+', multiLine: true);
+    final codeBlockRegex = RegExp(r'```');
+    final blockquoteRegex = RegExp(r'^(\s*)>\s+', multiLine: true);
+    final tableRegex = RegExp(r'^\s*\|.*\|', multiLine: true);
+    final inlineFormatRegex = RegExp(r'\*\*.*?\*\*|\*.*?\*|~~.*?~~|`.*?`|<u>.*?</u>');
+    final linkRegex = RegExp(r'\[.*?\]\(.*?\)');
+    final hrRegex = RegExp(r'^\s*(\*|-|_)\s*\1\s*\1\s*(\1|\s)*$', multiLine: true);
+    final mathRegex = RegExp(r'\$\$|\\int_');
+    
+    return headingRegex.hasMatch(text) ||
+        bulletRegex.hasMatch(text) ||
+        orderedRegex.hasMatch(text) ||
+        checklistRegex.hasMatch(text) ||
+        codeBlockRegex.hasMatch(text) ||
+        blockquoteRegex.hasMatch(text) ||
+        tableRegex.hasMatch(text) ||
+        inlineFormatRegex.hasMatch(text) ||
+        linkRegex.hasMatch(text) ||
+        hrRegex.hasMatch(text) ||
+        mathRegex.hasMatch(text);
+  }
+
+  Future<void> _handlePasteText(String plainText, [String? htmlText]) async {
+    String textToParse = plainText;
+    
+    if (htmlText != null && htmlText.isNotEmpty) {
+      textToParse = _convertHtmlToMarkdown(htmlText);
+    }
+    
+    final isMarkdown = _detectMarkdown(textToParse);
+    
+    if (isMarkdown) {
+      final ops = QuillMarkdownConverter.markdownToDeltaOps(textToParse);
+      
+      if (ops.isNotEmpty && !textToParse.endsWith('\n')) {
+        final lastOp = ops.last;
+        if (lastOp['insert'] == '\n' && (lastOp['attributes'] == null || (lastOp['attributes'] as Map).isEmpty)) {
+          ops.removeLast();
+        }
+      }
+      
+      final index = _quillController.selection.baseOffset;
+      final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
+      final length = _quillController.selection.extentOffset - index;
+      
+      final change = Delta();
+      if (insertIndex > 0) {
+        change.retain(insertIndex);
+      }
+      if (length > 0) {
+        change.delete(length);
+      }
+      
+      int pastedLength = 0;
+      for (final op in ops) {
+        final insertVal = op['insert'];
+        final attrs = op['attributes'] as Map<String, dynamic>?;
+        
+        change.insert(insertVal, attrs);
+        if (insertVal is String) {
+          pastedLength += insertVal.length;
+        } else {
+          pastedLength += 1;
+        }
+      }
+      
+      _quillController.document.compose(change, ChangeSource.local);
+      _quillController.updateSelection(
+        TextSelection.collapsed(offset: insertIndex + pastedLength),
+        ChangeSource.local,
+      );
+    } else {
+      final index = _quillController.selection.baseOffset;
+      final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
+      final length = _quillController.selection.extentOffset - index;
+      
+      _quillController.replaceText(
+        insertIndex,
+        length,
+        plainText,
+        TextSelection.collapsed(offset: insertIndex + plainText.length),
+      );
+    }
   }
 
   // --- ACTIONS HANDLERS ---
@@ -1909,19 +2104,47 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                     height: _noteType == NoteType.mixed ? 1.75 : 1.5,
                     color: isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
                   ),
-                  child: QuillEditor.basic(
-                    key: const ValueKey('focus_mode_quill_editor'),
-                    controller: _quillController,
-                    focusNode: _editorFocusNode,
-                    config: QuillEditorConfig(
-                      placeholder: _noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
-                      autoFocus: false,
-                      expands: true,
-                      padding: EdgeInsets.zero,
-                      embedBuilders: [
-                        ImageEmbedBuilder(),
-                        AudioEmbedBuilder(getAttachments: () => _attachments),
-                      ],
+                  child: Actions(
+                    actions: <Type, Action<Intent>>{
+                      PasteTextIntent: CallbackAction<PasteTextIntent>(
+                        onInvoke: (intent) {
+                          Clipboard.getData(Clipboard.kTextPlain).then((data) {
+                            if (data != null && data.text != null) {
+                              _handlePasteText(data.text!);
+                            }
+                          });
+                          return null;
+                        },
+                      ),
+                    },
+                    child: QuillEditor.basic(
+                      key: const ValueKey('focus_mode_quill_editor'),
+                      controller: _quillController,
+                      focusNode: _editorFocusNode,
+                      config: QuillEditorConfig(
+                        placeholder: _noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
+                        autoFocus: false,
+                        expands: true,
+                        padding: EdgeInsets.zero,
+                        embedBuilders: [
+                          ImageEmbedBuilder(),
+                          AudioEmbedBuilder(getAttachments: () => _attachments),
+                          HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
+                          HorizontalRuleEmbedBuilder(key: 'divider'),
+                        ],
+                        customActions: <Type, Action<Intent>>{
+                          PasteTextIntent: CallbackAction<PasteTextIntent>(
+                            onInvoke: (intent) {
+                              Clipboard.getData(Clipboard.kTextPlain).then((data) {
+                                if (data != null && data.text != null) {
+                                  _handlePasteText(data.text!);
+                                }
+                              });
+                              return null;
+                            },
+                          ),
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -1939,7 +2162,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bgColor = _previewBgColor ?? (isDark ? const Color(0xFF0D0B18) : Colors.white);
-    final isMarkdownPreview = _noteType == NoteType.markdown;
+    final isMarkdownPreview = _noteType == NoteType.markdown && _isPreviewMode;
 
     return Scaffold(
       backgroundColor: _previewBgImagePath != null ? Colors.transparent : bgColor,
@@ -1989,6 +2212,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                               child: MarkdownWidget(
                                 data: QuillMarkdownConverter.deltaToMarkdown(jsonEncode(_quillController.document.toDelta().toJson())),
                                 attachments: _attachments,
+                                fontFamily: _currentFontFamily,
                               ),
                             ),
                           ],
@@ -2003,6 +2227,25 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    icon: Icon(
+                      _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
+                      size: 20,
+                      color: _isPreviewMode ? const Color(0xFF10B981) : theme.colorScheme.primary,
+                    ),
+                    tooltip: _isPreviewMode ? 'Back to Editor' : 'Preview (Reader View)',
+                    onPressed: () {
+                      setState(() {
+                        _isPreviewMode = !_isPreviewMode;
+                        _quillController.readOnly = _isPreviewMode;
+                      });
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.85),
+                      padding: const EdgeInsets.all(6),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   IconButton(
                     icon: Icon(Icons.palette_outlined, size: 20,
                         color: (_previewBgColor != null || _previewBgImagePath != null)
@@ -2128,18 +2371,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-                child: Text(
-                  _titleController.text.isEmpty ? 'Untitled Note' : _titleController.text,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Outfit',
-                    color: isDark ? Colors.white : const Color(0xFF111827),
+              if (!_isFullScreen) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                  child: Text(
+                    _titleController.text.isEmpty ? 'Untitled Note' : _titleController.text,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                      color: isDark ? Colors.white : const Color(0xFF111827),
+                    ),
                   ),
                 ),
-              ),
-              Divider(height: 1, color: isDark ? const Color(0xFF1E1A30) : const Color(0xFFE9E6F5)),
+                Divider(height: 1, color: isDark ? const Color(0xFF1E1A30) : const Color(0xFFE9E6F5)),
+              ],
               Expanded(
                 child: Stack(
                   children: [
@@ -2152,6 +2397,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       child: MarkdownWidget(
                         data: markdown.isEmpty ? '*Nothing here yet…*' : markdown,
                         attachments: _attachments,
+                        fontFamily: _currentFontFamily,
                       ),
                     ),
                   ],
@@ -2204,19 +2450,47 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                     height: _noteType == NoteType.mixed ? 1.75 : 1.5,
                     color: isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
                   ),
-                  child: QuillEditor.basic(
-                    key: const ValueKey('standard_mode_quill_editor'),
-                    controller: _quillController,
-                    focusNode: _editorFocusNode,
-                    config: QuillEditorConfig(
-                      placeholder: _noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
-                      autoFocus: false,
-                      expands: true,
-                      padding: EdgeInsets.zero,
-                      embedBuilders: [
-                        ImageEmbedBuilder(),
-                        AudioEmbedBuilder(getAttachments: () => _attachments),
-                      ],
+                  child: Actions(
+                    actions: <Type, Action<Intent>>{
+                      PasteTextIntent: CallbackAction<PasteTextIntent>(
+                        onInvoke: (intent) {
+                          Clipboard.getData(Clipboard.kTextPlain).then((data) {
+                            if (data != null && data.text != null) {
+                              _handlePasteText(data.text!);
+                            }
+                          });
+                          return null;
+                        },
+                      ),
+                    },
+                    child: QuillEditor.basic(
+                      key: const ValueKey('standard_mode_quill_editor'),
+                      controller: _quillController,
+                      focusNode: _editorFocusNode,
+                      config: QuillEditorConfig(
+                        placeholder: _noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
+                        autoFocus: false,
+                        expands: true,
+                        padding: EdgeInsets.zero,
+                        embedBuilders: [
+                          ImageEmbedBuilder(),
+                          AudioEmbedBuilder(getAttachments: () => _attachments),
+                          HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
+                          HorizontalRuleEmbedBuilder(key: 'divider'),
+                        ],
+                        customActions: <Type, Action<Intent>>{
+                          PasteTextIntent: CallbackAction<PasteTextIntent>(
+                            onInvoke: (intent) {
+                              Clipboard.getData(Clipboard.kTextPlain).then((data) {
+                                if (data != null && data.text != null) {
+                                  _handlePasteText(data.text!);
+                                }
+                              });
+                              return null;
+                            },
+                          ),
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -2276,6 +2550,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
             child: MarkdownWidget(
               data: QuillMarkdownConverter.deltaToMarkdown(jsonEncode(_quillController.document.toDelta().toJson())),
               attachments: _attachments,
+              fontFamily: _currentFontFamily,
             ),
           ),
         ],
