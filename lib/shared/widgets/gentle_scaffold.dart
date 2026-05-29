@@ -32,6 +32,7 @@ class GentleScaffold extends ConsumerWidget {
     this.actions,
     this.showBackButton = false,
     this.showBottomNav = true,
+    this.appBar,
   });
 
   final Widget body;
@@ -41,6 +42,7 @@ class GentleScaffold extends ConsumerWidget {
   final List<Widget>? actions;
   final bool showBackButton;
   final bool showBottomNav;
+  final PreferredSizeWidget? appBar;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,7 +54,7 @@ class GentleScaffold extends ConsumerWidget {
     if (isMobile) {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: _buildAppBar(context, theme),
+        appBar: appBar ?? _buildAppBar(context, theme),
         body: body,
         floatingActionButton: floatingActionButton,
         bottomNavigationBar: showBottomNav
@@ -107,7 +109,7 @@ class GentleScaffold extends ConsumerWidget {
           Expanded(
             child: Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
-              appBar: _buildAppBar(context, theme),
+              appBar: appBar ?? _buildAppBar(context, theme),
               body: body,
               floatingActionButton: floatingActionButton,
             ),
