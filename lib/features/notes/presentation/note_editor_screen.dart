@@ -2720,9 +2720,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   }
 
   PreferredSizeWidget _buildCustomAppBar(ThemeData theme, bool isDark) {
-    final double appBarHeight = _isToolsTabSelected ? 112.0 : 56.0;
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
+    final double appBarContentHeight = _isToolsTabSelected ? 112.0 : 56.0;
     return PreferredSize(
-      preferredSize: Size.fromHeight(appBarHeight),
+      preferredSize: Size.fromHeight(appBarContentHeight + statusBarHeight),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF10121F) : Colors.white,
@@ -2740,134 +2741,109 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
               // Row 1 (Navigation & Core Utility)
               SizedBox(
                 height: 56.0,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final width = constraints.maxWidth;
-                    // Dynamically calculate action width based on remaining screen space
-                    const double backButtonWidth = 48.0;
-                    final double actionsWidth = width * 0.48; // Allocate up to 48% of screen to actions
-                    
-                    return Row(
-                      children: [
-                        // Back arrow
-                        SizedBox(
-                          width: backButtonWidth,
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                            onPressed: () {
-                              if (Navigator.of(context).canPop()) {
-                                Navigator.of(context).pop();
-                              } else {
-                                context.go('/home');
-                              }
-                            },
+                child: Row(
+                  children: [
+                    // Back arrow
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      onPressed: () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    // Title Text Field
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: TextField(
+                          controller: _titleController,
+                          focusNode: _titleFocusNode,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
-                        ),
-                        // Title Text Field
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: TextField(
-                              controller: _titleController,
-                              focusNode: _titleFocusNode,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Note Title...',
-                                hintStyle: TextStyle(
-                                  color: isDark ? Colors.white38 : Colors.black38,
-                                  fontSize: 18,
-                                ),
-                                border: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                contentPadding: EdgeInsets.zero,
-                                fillColor: Colors.transparent,
-                              ),
+                          decoration: InputDecoration(
+                            hintText: 'Note Title...',
+                            hintStyle: TextStyle(
+                              color: isDark ? Colors.white38 : Colors.black38,
+                              fontSize: 18,
                             ),
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                            fillColor: Colors.transparent,
                           ),
                         ),
-                        // Primary action icons (scrollable horizontally if they overflow)
-                        SizedBox(
-                          width: actionsWidth,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                                    color: _isPinned ? theme.colorScheme.secondary : const Color(0xFF8B5CF6),
-                                    tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
-                                    onPressed: () {
-                                      setState(() {
-                                        _isPinned = !_isPinned;
-                                        _isDirty = true;
-                                      });
-                                      _saveNote(isAutoSave: true);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF8B5CF6)),
-                                    tooltip: 'Zen Writing Mode (Focus)',
-                                    onPressed: () => setState(() => _isFocusMode = true),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      _isToolsTabSelected ? Icons.handyman_rounded : Icons.handyman_outlined,
-                                      color: const Color(0xFF8B5CF6),
-                                    ),
-                                    tooltip: 'Tools',
-                                    onPressed: () {
-                                      setState(() {
-                                        _isToolsTabSelected = !_isToolsTabSelected;
-                                      });
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
-                                      color: _isPreviewMode ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
-                                    ),
-                                    tooltip: _isPreviewMode ? 'Back to Editor' : 'Preview (Reader View)',
-                                    onPressed: () {
-                                      setState(() {
-                                        _isPreviewMode = !_isPreviewMode;
-                                        _quillController.readOnly = _isPreviewMode;
-                                      });
-                                    },
-                                  ),
-                                  PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8B5CF6)),
-                                    onSelected: (val) {
-                                      if (val == 'save') _saveNote();
-                                      if (val == 'share') _handleShare(context);
-                                      if (val == 'md') _handleExportMarkdown(context);
-                                      if (val == 'pdf') _handlePrintPdf(context);
-                                      if (val == 'delete') _handleDeleteNote(context);
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
-                                      const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
-                                      const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
-                                      const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF8B5CF6)), SizedBox(width: 8), Text('Export PDF')])),
-                                      const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Primary minimalist action icons
+                    IconButton(
+                      icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                      color: _isPinned ? theme.colorScheme.secondary : const Color(0xFF8B5CF6),
+                      tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
+                      onPressed: () {
+                        setState(() {
+                          _isPinned = !_isPinned;
+                          _isDirty = true;
+                        });
+                        _saveNote(isAutoSave: true);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF8B5CF6)),
+                      tooltip: 'Zen Writing Mode (Focus)',
+                      onPressed: () => setState(() => _isFocusMode = true),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isToolsTabSelected ? Icons.handyman_rounded : Icons.handyman_outlined,
+                        color: const Color(0xFF8B5CF6),
+                      ),
+                      tooltip: 'Tools',
+                      onPressed: () {
+                        setState(() {
+                          _isToolsTabSelected = !_isToolsTabSelected;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
+                        color: _isPreviewMode ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
+                      ),
+                      tooltip: _isPreviewMode ? 'Back to Editor' : 'Preview (Reader View)',
+                      onPressed: () {
+                        setState(() {
+                          _isPreviewMode = !_isPreviewMode;
+                          _quillController.readOnly = _isPreviewMode;
+                        });
+                      },
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8B5CF6)),
+                      onSelected: (val) {
+                        if (val == 'save') _saveNote();
+                        if (val == 'share') _handleShare(context);
+                        if (val == 'md') _handleExportMarkdown(context);
+                        if (val == 'pdf') _handlePrintPdf(context);
+                        if (val == 'delete') _handleDeleteNote(context);
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
+                        const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
+                        const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
+                        const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF8B5CF6)), SizedBox(width: 8), Text('Export PDF')])),
+                        const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
                       ],
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
               
