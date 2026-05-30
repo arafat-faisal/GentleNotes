@@ -2740,106 +2740,134 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
               // Row 1 (Navigation & Core Utility)
               SizedBox(
                 height: 56.0,
-                child: Row(
-                  children: [
-                    // Back arrow
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-                      onPressed: () {
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        } else {
-                          context.go('/home');
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 4),
-                    // Title Text Field
-                    Expanded(
-                      child: TextField(
-                        controller: _titleController,
-                        focusNode: _titleFocusNode,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Note Title...',
-                          hintStyle: TextStyle(
-                            color: isDark ? Colors.white38 : Colors.black38,
-                            fontSize: 18,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    // Dynamically calculate action width based on remaining screen space
+                    const double backButtonWidth = 48.0;
+                    final double actionsWidth = width * 0.48; // Allocate up to 48% of screen to actions
+                    
+                    return Row(
+                      children: [
+                        // Back arrow
+                        SizedBox(
+                          width: backButtonWidth,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                            onPressed: () {
+                              if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else {
+                                context.go('/home');
+                              }
+                            },
                           ),
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.zero,
-                          fillColor: Colors.transparent,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Primary minimalist action icons
-                    IconButton(
-                      icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                      color: _isPinned ? theme.colorScheme.secondary : const Color(0xFF8B5CF6),
-                      tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
-                      onPressed: () {
-                        setState(() {
-                          _isPinned = !_isPinned;
-                          _isDirty = true;
-                        });
-                        _saveNote(isAutoSave: true);
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF8B5CF6)),
-                      tooltip: 'Zen Writing Mode (Focus)',
-                      onPressed: () => setState(() => _isFocusMode = true),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        _isToolsTabSelected ? Icons.handyman_rounded : Icons.handyman_outlined,
-                        color: const Color(0xFF8B5CF6),
-                      ),
-                      tooltip: 'Tools',
-                      onPressed: () {
-                        setState(() {
-                          _isToolsTabSelected = !_isToolsTabSelected;
-                        });
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
-                        color: _isPreviewMode ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
-                      ),
-                      tooltip: _isPreviewMode ? 'Back to Editor' : 'Preview (Reader View)',
-                      onPressed: () {
-                        setState(() {
-                          _isPreviewMode = !_isPreviewMode;
-                          _quillController.readOnly = _isPreviewMode;
-                        });
-                      },
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8B5CF6)),
-                      onSelected: (val) {
-                        if (val == 'save') _saveNote();
-                        if (val == 'share') _handleShare(context);
-                        if (val == 'md') _handleExportMarkdown(context);
-                        if (val == 'pdf') _handlePrintPdf(context);
-                        if (val == 'delete') _handleDeleteNote(context);
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
-                        const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
-                        const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
-                        const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF8B5CF6)), SizedBox(width: 8), Text('Export PDF')])),
-                        const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
+                        // Title Text Field
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: TextField(
+                              controller: _titleController,
+                              focusNode: _titleFocusNode,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Note Title...',
+                                hintStyle: TextStyle(
+                                  color: isDark ? Colors.white38 : Colors.black38,
+                                  fontSize: 18,
+                                ),
+                                border: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                fillColor: Colors.transparent,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Primary action icons (scrollable horizontally if they overflow)
+                        SizedBox(
+                          width: actionsWidth,
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+                                    color: _isPinned ? theme.colorScheme.secondary : const Color(0xFF8B5CF6),
+                                    tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
+                                    onPressed: () {
+                                      setState(() {
+                                        _isPinned = !_isPinned;
+                                        _isDirty = true;
+                                      });
+                                      _saveNote(isAutoSave: true);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF8B5CF6)),
+                                    tooltip: 'Zen Writing Mode (Focus)',
+                                    onPressed: () => setState(() => _isFocusMode = true),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      _isToolsTabSelected ? Icons.handyman_rounded : Icons.handyman_outlined,
+                                      color: const Color(0xFF8B5CF6),
+                                    ),
+                                    tooltip: 'Tools',
+                                    onPressed: () {
+                                      setState(() {
+                                        _isToolsTabSelected = !_isToolsTabSelected;
+                                      });
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
+                                      color: _isPreviewMode ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
+                                    ),
+                                    tooltip: _isPreviewMode ? 'Back to Editor' : 'Preview (Reader View)',
+                                    onPressed: () {
+                                      setState(() {
+                                        _isPreviewMode = !_isPreviewMode;
+                                        _quillController.readOnly = _isPreviewMode;
+                                      });
+                                    },
+                                  ),
+                                  PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8B5CF6)),
+                                    onSelected: (val) {
+                                      if (val == 'save') _saveNote();
+                                      if (val == 'share') _handleShare(context);
+                                      if (val == 'md') _handleExportMarkdown(context);
+                                      if (val == 'pdf') _handlePrintPdf(context);
+                                      if (val == 'delete') _handleDeleteNote(context);
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
+                                      const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
+                                      const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
+                                      const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF8B5CF6)), SizedBox(width: 8), Text('Export PDF')])),
+                                      const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
               
@@ -2869,65 +2897,84 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildToolIcon(
-                              icon: Icons.mic_rounded,
-                              color: const Color(0xFF8B5CF6),
-                              tooltip: 'Record Voice Note',
-                              onTap: _toggleVoiceRecording,
-                            ),
-                            _buildToolIcon(
-                              icon: Icons.draw_rounded,
-                              color: const Color(0xFF8B5CF6),
-                              tooltip: 'Open Drawing Canvas',
-                              onTap: _openDrawingCanvas,
-                            ),
-                            _buildToolIcon(
-                              icon: Icons.calendar_month_rounded,
-                              color: const Color(0xFF8B5CF6),
-                              tooltip: 'Calendar & Reminders',
-                              onTap: () => context.push('/calendar'),
-                            ),
-                            PopupMenuButton<PreviewStyle>(
-                              tooltip: 'Preview Style',
-                              icon: const Icon(Icons.style_rounded, size: 20, color: Color(0xFF8B5CF6)),
-                              offset: const Offset(0, 36),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                side: BorderSide(
-                                  color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
-                                  width: 1,
-                                ),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final List<Widget> toolButtons = [
+                              _buildToolIcon(
+                                icon: Icons.mic_rounded,
+                                color: const Color(0xFF8B5CF6),
+                                tooltip: 'Record Voice Note',
+                                onTap: _toggleVoiceRecording,
                               ),
-                              onSelected: (style) {
-                                setState(() {
-                                  _previewStyle = style;
-                                });
-                              },
-                              itemBuilder: (context) => [
-                                _previewStyleMenuItem(PreviewStyle.plain, Icons.article_outlined, 'Plain'),
-                                _previewStyleMenuItem(PreviewStyle.notebook, Icons.menu_book_outlined, 'Ruled Notebook'),
-                                _previewStyleMenuItem(PreviewStyle.grid, Icons.grid_on_rounded, 'Graph Grid'),
-                                _previewStyleMenuItem(PreviewStyle.leaf, Icons.eco_outlined, 'Aged Paper'),
-                                _previewStyleMenuItem(PreviewStyle.spiral, Icons.view_agenda_outlined, 'Spiral Ruled'),
-                                _previewStyleMenuItem(PreviewStyle.dark, Icons.nights_stay_outlined, 'Dark Parchment'),
-                              ],
-                            ),
-                            _buildToolIcon(
-                              icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
-                              color: _isFavorite ? const Color(0xFFF43F5E) : const Color(0xFF8B5CF6),
-                              tooltip: _isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
-                              onTap: () {
-                                setState(() {
-                                  _isFavorite = !_isFavorite;
-                                  _isDirty = true;
-                                });
-                                _saveNote(isAutoSave: true);
-                              },
-                            ),
-                          ],
+                              _buildToolIcon(
+                                icon: Icons.draw_rounded,
+                                color: const Color(0xFF8B5CF6),
+                                tooltip: 'Open Drawing Canvas',
+                                onTap: _openDrawingCanvas,
+                              ),
+                              _buildToolIcon(
+                                icon: Icons.calendar_month_rounded,
+                                color: const Color(0xFF8B5CF6),
+                                tooltip: 'Calendar & Reminders',
+                                onTap: () => context.push('/calendar'),
+                              ),
+                              PopupMenuButton<PreviewStyle>(
+                                tooltip: 'Preview Style',
+                                icon: const Icon(Icons.style_rounded, size: 20, color: Color(0xFF8B5CF6)),
+                                offset: const Offset(0, 36),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: BorderSide(
+                                    color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
+                                    width: 1,
+                                  ),
+                                ),
+                                onSelected: (style) {
+                                  setState(() {
+                                    _previewStyle = style;
+                                  });
+                                },
+                                itemBuilder: (context) => [
+                                  _previewStyleMenuItem(PreviewStyle.plain, Icons.article_outlined, 'Plain'),
+                                  _previewStyleMenuItem(PreviewStyle.notebook, Icons.menu_book_outlined, 'Ruled Notebook'),
+                                  _previewStyleMenuItem(PreviewStyle.grid, Icons.grid_on_rounded, 'Graph Grid'),
+                                  _previewStyleMenuItem(PreviewStyle.leaf, Icons.eco_outlined, 'Aged Paper'),
+                                  _previewStyleMenuItem(PreviewStyle.spiral, Icons.view_agenda_outlined, 'Spiral Ruled'),
+                                  _previewStyleMenuItem(PreviewStyle.dark, Icons.nights_stay_outlined, 'Dark Parchment'),
+                                ],
+                              ),
+                              _buildToolIcon(
+                                icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: _isFavorite ? const Color(0xFFF43F5E) : const Color(0xFF8B5CF6),
+                                tooltip: _isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+                                onTap: () {
+                                  setState(() {
+                                    _isFavorite = !_isFavorite;
+                                    _isDirty = true;
+                                  });
+                                  _saveNote(isAutoSave: true);
+                                },
+                              ),
+                            ];
+
+                            if (constraints.maxWidth < 250) {
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: toolButtons.map((w) => Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                                    child: w,
+                                  )).toList(),
+                                ),
+                              );
+                            }
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: toolButtons,
+                            );
+                          },
                         ),
                       ),
                     ),
