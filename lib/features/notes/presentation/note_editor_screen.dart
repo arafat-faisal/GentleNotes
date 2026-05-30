@@ -2798,8 +2798,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                     ),
                     IconButton(
                       icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF8B5CF6)),
-                      tooltip: 'Zen Writing Mode (Focus)',
-                      onPressed: () => setState(() => _isFocusMode = true),
+                      tooltip: 'Fullscreen Mode',
+                      onPressed: () {
+                        setState(() {
+                          _isFullScreen = true;
+                        });
+                      },
                     ),
                     IconButton(
                       icon: Icon(
@@ -2831,15 +2835,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                       onSelected: (val) {
                         if (val == 'save') _saveNote();
                         if (val == 'share') _handleShare(context);
-                        if (val == 'md') _handleExportMarkdown(context);
-                        if (val == 'pdf') _handlePrintPdf(context);
                         if (val == 'delete') _handleDeleteNote(context);
                       },
                       itemBuilder: (context) => [
                         const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
                         const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
-                        const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
-                        const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_rounded, color: Color(0xFF8B5CF6)), SizedBox(width: 8), Text('Export PDF')])),
                         const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
                       ],
                     ),
@@ -2893,6 +2893,28 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                                 color: const Color(0xFF8B5CF6),
                                 tooltip: 'Calendar & Reminders',
                                 onTap: () => context.push('/calendar'),
+                              ),
+                              _buildToolIcon(
+                                icon: Icons.center_focus_strong_rounded,
+                                color: const Color(0xFF8B5CF6),
+                                tooltip: 'Zen Writing Mode (Focus)',
+                                onTap: () {
+                                  setState(() {
+                                    _isFocusMode = true;
+                                  });
+                                },
+                              ),
+                              _buildToolIcon(
+                                icon: Icons.article_outlined,
+                                color: const Color(0xFF8B5CF6),
+                                tooltip: 'Export as Markdown (MD)',
+                                onTap: () => _handleExportMarkdown(context),
+                              ),
+                              _buildToolIcon(
+                                icon: Icons.picture_as_pdf_rounded,
+                                color: const Color(0xFF8B5CF6),
+                                tooltip: 'Export as PDF',
+                                onTap: () => _handlePrintPdf(context),
                               ),
                               PopupMenuButton<PreviewStyle>(
                                 tooltip: 'Preview Style',
