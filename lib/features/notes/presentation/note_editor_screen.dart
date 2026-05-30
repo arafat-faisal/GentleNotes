@@ -76,7 +76,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   MarkdownLayoutMode _markdownLayout = MarkdownLayoutMode.splitView;
   bool _isPreviewMode = false;
   String? _activeToolbarGroup;
-  bool _isToolsTabSelected = true;
+  bool _isToolsTabSelected = false;
 
   String? _activeColorMode;
   bool _showCustomColorPicker = false;
@@ -2705,13 +2705,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        onTap: _isToolsTabSelected ? onTap : null,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
           child: Icon(
             icon,
-            color: _isToolsTabSelected ? color : color.withOpacity(0.3),
+            color: color,
             size: 20,
           ),
         ),
@@ -2720,10 +2720,19 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   }
 
   PreferredSizeWidget _buildCustomAppBar(ThemeData theme, bool isDark) {
+    final double appBarHeight = _isToolsTabSelected ? 112.0 : 56.0;
     return PreferredSize(
-      preferredSize: const Size.fromHeight(112.0),
+      preferredSize: Size.fromHeight(appBarHeight),
       child: Container(
-        color: isDark ? const Color(0xFF10121F) : Colors.white,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF10121F) : Colors.white,
+          border: Border(
+            bottom: BorderSide(
+              color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
+              width: 1.0,
+            ),
+          ),
+        ),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2790,6 +2799,18 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
                     ),
                     IconButton(
                       icon: Icon(
+                        _isToolsTabSelected ? Icons.handyman_rounded : Icons.handyman_outlined,
+                        color: const Color(0xFF8B5CF6),
+                      ),
+                      tooltip: 'Tools',
+                      onPressed: () {
+                        setState(() {
+                          _isToolsTabSelected = !_isToolsTabSelected;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
                         _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
                         color: _isPreviewMode ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
                       ),
@@ -2823,179 +2844,95 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
               ),
               
               // Row 2 (Functional Tabs or Categorized Groups)
-              Container(
-                height: 46.0,
-                margin: const EdgeInsets.fromLTRB(12.0, 0.0, 12.0, 8.0),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFF8B5CF6).withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(14.0),
-                  border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFF8B5CF6).withOpacity(0.12),
-                    width: 1.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.15 : 0.02),
-                      blurRadius: 8.0,
-                      offset: const Offset(0.0, 3.0),
+              if (_isToolsTabSelected)
+                Container(
+                  height: 46.0,
+                  margin: const EdgeInsets.fromLTRB(12.0, 0.0, 12.0, 8.0),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFF8B5CF6).withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(14.0),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFF8B5CF6).withOpacity(0.12),
+                      width: 1.0,
                     ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14.0),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Row(
-                        children: [
-                          // Glassmorphic Tab Button: Tools
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isToolsTabSelected = !_isToolsTabSelected;
-                              });
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
-                              decoration: BoxDecoration(
-                                color: _isToolsTabSelected
-                                    ? (isDark ? Colors.white.withOpacity(0.10) : const Color(0xFF8B5CF6).withOpacity(0.12))
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10.0),
-                                border: Border.all(
-                                  color: _isToolsTabSelected
-                                      ? (isDark ? Colors.white.withOpacity(0.15) : const Color(0xFF8B5CF6).withOpacity(0.25))
-                                      : Colors.transparent,
-                                  width: 1.0,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.15 : 0.02),
+                        blurRadius: 8.0,
+                        offset: const Offset(0.0, 3.0),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14.0),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildToolIcon(
+                              icon: Icons.mic_rounded,
+                              color: const Color(0xFF8B5CF6),
+                              tooltip: 'Record Voice Note',
+                              onTap: _toggleVoiceRecording,
+                            ),
+                            _buildToolIcon(
+                              icon: Icons.draw_rounded,
+                              color: const Color(0xFF8B5CF6),
+                              tooltip: 'Open Drawing Canvas',
+                              onTap: _openDrawingCanvas,
+                            ),
+                            _buildToolIcon(
+                              icon: Icons.calendar_month_rounded,
+                              color: const Color(0xFF8B5CF6),
+                              tooltip: 'Calendar & Reminders',
+                              onTap: () => context.push('/calendar'),
+                            ),
+                            PopupMenuButton<PreviewStyle>(
+                              tooltip: 'Preview Style',
+                              icon: const Icon(Icons.style_rounded, size: 20, color: Color(0xFF8B5CF6)),
+                              offset: const Offset(0, 36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                side: BorderSide(
+                                  color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
+                                  width: 1,
                                 ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.handyman_rounded,
-                                    size: 15,
-                                    color: _isToolsTabSelected ? const Color(0xFF8B5CF6) : theme.colorScheme.onSurface.withOpacity(0.55),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Tools',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: _isToolsTabSelected ? const Color(0xFF8B5CF6) : theme.colorScheme.onSurface.withOpacity(0.55),
-                                    ),
-                                  ),
-                                  if (_isToolsTabSelected) ...[
-                                    const SizedBox(width: 5),
-                                    Container(
-                                      width: 4.5,
-                                      height: 4.5,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF8B5CF6),
-                                        shape: BoxShape.circle,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                              onSelected: (style) {
+                                setState(() {
+                                  _previewStyle = style;
+                                });
+                              },
+                              itemBuilder: (context) => [
+                                _previewStyleMenuItem(PreviewStyle.plain, Icons.article_outlined, 'Plain'),
+                                _previewStyleMenuItem(PreviewStyle.notebook, Icons.menu_book_outlined, 'Ruled Notebook'),
+                                _previewStyleMenuItem(PreviewStyle.grid, Icons.grid_on_rounded, 'Graph Grid'),
+                                _previewStyleMenuItem(PreviewStyle.leaf, Icons.eco_outlined, 'Aged Paper'),
+                                _previewStyleMenuItem(PreviewStyle.spiral, Icons.view_agenda_outlined, 'Spiral Ruled'),
+                                _previewStyleMenuItem(PreviewStyle.dark, Icons.nights_stay_outlined, 'Dark Parchment'),
+                              ],
                             ),
-                          ),
-                          
-                          // Subtle vertical divider
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 10.0),
-                            width: 1.0,
-                            height: 18.0,
-                            color: isDark ? Colors.white12 : Colors.black12,
-                          ),
-                          
-                          // Active content of Tools Tab
-                          Expanded(
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 200),
-                              opacity: _isToolsTabSelected ? 1.0 : 0.2,
-                              child: _isToolsTabSelected
-                                  ? Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        _buildToolIcon(
-                                          icon: Icons.mic_rounded,
-                                          color: const Color(0xFF8B5CF6),
-                                          tooltip: 'Record Voice Note',
-                                          onTap: _toggleVoiceRecording,
-                                        ),
-                                        _buildToolIcon(
-                                          icon: Icons.draw_rounded,
-                                          color: const Color(0xFF8B5CF6),
-                                          tooltip: 'Open Drawing Canvas',
-                                          onTap: _openDrawingCanvas,
-                                        ),
-                                        _buildToolIcon(
-                                          icon: Icons.calendar_month_rounded,
-                                          color: const Color(0xFF8B5CF6),
-                                          tooltip: 'Calendar & Reminders',
-                                          onTap: () => context.push('/calendar'),
-                                        ),
-                                        PopupMenuButton<PreviewStyle>(
-                                          tooltip: 'Preview Style',
-                                          icon: const Icon(Icons.style_rounded, size: 20, color: Color(0xFF8B5CF6)),
-                                          offset: const Offset(0, 36),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(14),
-                                            side: BorderSide(
-                                              color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          onSelected: (style) {
-                                            setState(() {
-                                              _previewStyle = style;
-                                            });
-                                          },
-                                          itemBuilder: (context) => [
-                                            _previewStyleMenuItem(PreviewStyle.plain, Icons.article_outlined, 'Plain'),
-                                            _previewStyleMenuItem(PreviewStyle.notebook, Icons.menu_book_outlined, 'Ruled Notebook'),
-                                            _previewStyleMenuItem(PreviewStyle.grid, Icons.grid_on_rounded, 'Graph Grid'),
-                                            _previewStyleMenuItem(PreviewStyle.leaf, Icons.eco_outlined, 'Aged Paper'),
-                                            _previewStyleMenuItem(PreviewStyle.spiral, Icons.view_agenda_outlined, 'Spiral Ruled'),
-                                            _previewStyleMenuItem(PreviewStyle.dark, Icons.nights_stay_outlined, 'Dark Parchment'),
-                                          ],
-                                        ),
-                                        _buildToolIcon(
-                                          icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
-                                          color: _isFavorite ? const Color(0xFFF43F5E) : const Color(0xFF8B5CF6),
-                                          tooltip: _isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
-                                          onTap: () {
-                                            setState(() {
-                                              _isFavorite = !_isFavorite;
-                                              _isDirty = true;
-                                            });
-                                            _saveNote(isAutoSave: true);
-                                          },
-                                        ),
-                                      ],
-                                    )
-                                  : Center(
-                                      child: Text(
-                                        'Tab collapsed. Tap "Tools" to expand.',
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          color: isDark ? Colors.white30 : Colors.black38,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ),
+                            _buildToolIcon(
+                              icon: _isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: _isFavorite ? const Color(0xFFF43F5E) : const Color(0xFF8B5CF6),
+                              tooltip: _isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
+                              onTap: () {
+                                setState(() {
+                                  _isFavorite = !_isFavorite;
+                                  _isDirty = true;
+                                });
+                                _saveNote(isAutoSave: true);
+                              },
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
