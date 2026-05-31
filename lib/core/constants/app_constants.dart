@@ -28,6 +28,8 @@ class AppConstants {
   static const String prefAutoSave = 'autoSaveEnabled';
   static const String prefCodeTheme = 'activeCodeTheme';
   static const String prefUserRole = 'userRole';
+  static const String prefEditorLayout = 'editorLayout';
+  static const String prefThemePreset = 'themePreset';
   static const String prefHasSeededV1 = 'has_seeded_v1';
   static const String prefHasSeededV2 = 'has_seeded_v2';
 

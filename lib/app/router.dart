@@ -6,7 +6,7 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/splash_screen.dart';
 import '../features/home/presentation/onboarding_screen.dart';
 import '../features/folders/presentation/folder_detail_screen.dart';
-import '../features/notes/presentation/note_editor_screen.dart';
+import '../features/editor/presentation/editor_screen.dart';
 import '../features/templates/presentation/templates_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/about_screen.dart';
@@ -40,7 +40,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final folderId = state.uri.queryParameters['folderId'];
           final templateId = state.uri.queryParameters['templateId'];
-          return NoteEditorScreen(
+          return EditorScreen(
             noteId: null,
             initialFolderId: folderId,
             initialTemplateId: templateId,
@@ -51,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notes/edit/:id',
         builder: (context, state) {
           final noteId = state.pathParameters['id']!;
-          return NoteEditorScreen(noteId: noteId);
+          return EditorScreen(noteId: noteId);
         },
       ),
       GoRoute(

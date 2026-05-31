@@ -1,0 +1,4 @@
+enum EditorViewMode {
+  basic,
+  advanced,
+}

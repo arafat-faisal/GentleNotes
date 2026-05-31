@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../../../models/models.dart';
-import '../../../services/notification_service.dart';
+import '../../core/services/notification_service.dart';
 import '../notes/data/notes_repository.dart';
 
 // ─── Reminder Model ────────────────────────────────────────────────────────────

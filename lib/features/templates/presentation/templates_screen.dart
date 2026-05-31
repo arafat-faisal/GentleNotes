@@ -6,7 +6,8 @@ import 'package:uuid/uuid.dart';
 import '../../../core/widgets/gentle_scaffold.dart';
 import '../../../models/models.dart';
 import '../data/templates_repository.dart';
-import '../../../services/export_import_service.dart';
+import '../../../core/services/export_import_service.dart';
+
 
 class TemplatesScreen extends ConsumerStatefulWidget {
   const TemplatesScreen({super.key});

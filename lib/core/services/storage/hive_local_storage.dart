@@ -1,15 +1,6 @@
 /// Hive-backed implementation of [ILocalStorage].
-///
-/// This is the single concrete implementation of the storage interface.
-/// All persistence logic lives here — the rest of the app talks only to
-/// the [ILocalStorage] abstraction, never to this class directly.
-///
-/// To swap the backend (e.g., migrate to Drift/SQLite), create a new class
-/// that implements [ILocalStorage] and update the provider in
-/// [storageProvider] — zero UI changes required.
 library hive_local_storage;
 
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,6 +9,9 @@ import 'package:uuid/uuid.dart';
 import '../../constants/app_constants.dart';
 import '../../models/models.dart';
 import 'i_local_storage.dart';
+import 'note_storage.dart';
+import 'folder_storage.dart';
+import 'settings_storage.dart';
 
 class HiveLocalStorage implements ILocalStorage {
   late Box _foldersBox;
@@ -25,6 +19,10 @@ class HiveLocalStorage implements ILocalStorage {
   late Box _templatesBox;
   late Box _settingsBox;
   late SharedPreferences _sharedPrefs;
+
+  late NoteStorage _noteStorage;
+  late FolderStorage _folderStorage;
+  late SettingsStorage _settingsStorage;
 
   // ── Singleton ───────────────────────────────────────────────────────────────
   static final HiveLocalStorage _instance = HiveLocalStorage._internal();
@@ -43,111 +41,50 @@ class HiveLocalStorage implements ILocalStorage {
     _settingsBox = await Hive.openBox(AppConstants.settingsBox);
     _sharedPrefs = await SharedPreferences.getInstance();
 
+    _noteStorage = NoteStorage(notesBox: _notesBox);
+    _folderStorage = FolderStorage(foldersBox: _foldersBox, notesBox: _notesBox);
+    _settingsStorage = SettingsStorage(sharedPrefs: _sharedPrefs);
+
     await _seedInitialDataIfNeeded();
   }
 
   // ── Settings ────────────────────────────────────────────────────────────────
 
   @override
-  AppSettingsModel getSettings() {
-    final theme = _sharedPrefs.getString(AppConstants.prefThemeMode) ?? 'system';
-    final accent = _sharedPrefs.getString(AppConstants.prefAccentColor) ?? AppConstants.defaultAccentHex;
-    final layout = _sharedPrefs.getString(AppConstants.prefLayoutMode) ?? 'grid';
-    final editor = _sharedPrefs.getString(AppConstants.prefEditorMode) ?? 'markdown';
-    final noteType = _sharedPrefs.getString(AppConstants.prefDefaultNoteType) ?? 'mixed';
-    final autoSave = _sharedPrefs.getBool(AppConstants.prefAutoSave) ?? true;
-    final codeTheme = _sharedPrefs.getString(AppConstants.prefCodeTheme) ?? AppConstants.defaultCodeTheme;
-
-    return AppSettingsModel(
-      themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == theme, orElse: () => ThemeModeSetting.system),
-      accentColorHex: accent,
-      layoutMode: LayoutMode.values.firstWhere((e) => e.name == layout, orElse: () => LayoutMode.grid),
-      editorMode: EditorMode.values.firstWhere((e) => e.name == editor, orElse: () => EditorMode.markdown),
-      defaultNoteType: NoteType.values.firstWhere((e) => e.name == noteType, orElse: () => NoteType.markdown),
-      autoSaveEnabled: autoSave,
-      activeCodeTheme: codeTheme,
-    );
-  }
+  AppSettingsModel getSettings() => _settingsStorage.getSettings();
 
   @override
-  Future<void> saveSettings(AppSettingsModel settings) async {
-    await _sharedPrefs.setString(AppConstants.prefThemeMode, settings.themeMode.name);
-    await _sharedPrefs.setString(AppConstants.prefAccentColor, settings.accentColorHex);
-    await _sharedPrefs.setString(AppConstants.prefLayoutMode, settings.layoutMode.name);
-    await _sharedPrefs.setString(AppConstants.prefEditorMode, settings.editorMode.name);
-    await _sharedPrefs.setString(AppConstants.prefDefaultNoteType, settings.defaultNoteType.name);
-    await _sharedPrefs.setBool(AppConstants.prefAutoSave, settings.autoSaveEnabled);
-    await _sharedPrefs.setString(AppConstants.prefCodeTheme, settings.activeCodeTheme);
-  }
+  Future<void> saveSettings(AppSettingsModel settings) => _settingsStorage.saveSettings(settings);
 
   // ── User Role ────────────────────────────────────────────────────────────────
 
   @override
-  UserRole getUserRole() {
-    final roleStr = _sharedPrefs.getString(AppConstants.prefUserRole) ?? 'subscriber';
-    return UserRole.values.firstWhere((e) => e.name == roleStr, orElse: () => UserRole.subscriber);
-  }
+  UserRole getUserRole() => _settingsStorage.getUserRole();
 
   @override
-  Future<void> saveUserRole(UserRole role) async {
-    await _sharedPrefs.setString(AppConstants.prefUserRole, role.name);
-  }
+  Future<void> saveUserRole(UserRole role) => _settingsStorage.saveUserRole(role);
 
   // ── Folders ──────────────────────────────────────────────────────────────────
 
   @override
-  List<FolderModel> getFolders() {
-    final List<FolderModel> folders = [];
-    for (var key in _foldersBox.keys) {
-      final val = _foldersBox.get(key);
-      if (val is Map) {
-        folders.add(FolderModel.fromMap(Map<String, dynamic>.from(val)));
-      }
-    }
-    folders.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    return folders;
-  }
+  List<FolderModel> getFolders() => _folderStorage.getFolders();
 
   @override
-  Future<void> saveFolder(FolderModel folder) async {
-    await _foldersBox.put(folder.id, folder.toMap());
-  }
+  Future<void> saveFolder(FolderModel folder) => _folderStorage.saveFolder(folder);
 
   @override
-  Future<void> deleteFolder(String id) async {
-    await _foldersBox.delete(id);
-    // Orphan notes are unlinked from the deleted folder (not deleted themselves).
-    final notes = getNotes().where((n) => n.folderId == id);
-    for (var note in notes) {
-      await saveNote(note.copyWith(folderId: null));
-    }
-  }
+  Future<void> deleteFolder(String id) => _folderStorage.deleteFolder(id);
 
   // ── Notes ────────────────────────────────────────────────────────────────────
 
   @override
-  List<NoteModel> getNotes() {
-    final List<NoteModel> notes = [];
-    for (var key in _notesBox.keys) {
-      final val = _notesBox.get(key);
-      if (val is Map) {
-        notes.add(NoteModel.fromMap(Map<String, dynamic>.from(val)));
-      }
-    }
-    // Sort: most recently updated first by default.
-    notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return notes;
-  }
+  List<NoteModel> getNotes() => _noteStorage.getNotes();
 
   @override
-  Future<void> saveNote(NoteModel note) async {
-    await _notesBox.put(note.id, note.toMap());
-  }
+  Future<void> saveNote(NoteModel note) => _noteStorage.saveNote(note);
 
   @override
-  Future<void> deleteNote(String id) async {
-    await _notesBox.delete(id);
-  }
+  Future<void> deleteNote(String id) => _noteStorage.deleteNote(id);
 
   // ── Templates ────────────────────────────────────────────────────────────────
 
@@ -173,7 +110,7 @@ class HiveLocalStorage implements ILocalStorage {
     final templates = getTemplates();
     try {
       final template = templates.firstWhere((t) => t.id == id);
-      if (template.isBuiltIn) return; // Built-in templates are protected.
+      if (template.isBuiltIn) return;
     } catch (_) {
       return;
     }
@@ -185,19 +122,16 @@ class HiveLocalStorage implements ILocalStorage {
   Future<void> _seedInitialDataIfNeeded() async {
     final bool hasRunBefore = _sharedPrefs.getBool(AppConstants.prefHasSeededV1) ?? false;
     if (hasRunBefore) {
-      // Still check if v2 stress-test note needs seeding.
       await _seedV2IfNeeded();
       return;
     }
 
     final uuid = const Uuid();
 
-    // 1. Seed Built-In Templates
     for (var t in _getBuiltInTemplatesData(uuid)) {
       await saveTemplate(t);
     }
 
-    // 2. Seed Default Folders
     final defaultFolders = [
       FolderModel(id: AppConstants.folderAiMl, name: 'AI/ML Learning', colorHex: '#6366F1', iconName: 'psychology_outlined', createdAt: DateTime.now(), updatedAt: DateTime.now(), sortOrder: 1),
       FolderModel(id: AppConstants.folderHackathons, name: 'Hackathon Ideas', colorHex: '#10B981', iconName: 'lightbulb_outline', createdAt: DateTime.now(), updatedAt: DateTime.now(), sortOrder: 2),
@@ -210,7 +144,6 @@ class HiveLocalStorage implements ILocalStorage {
       await saveFolder(f);
     }
 
-    // 3. Seed Default Notes
     final defaultNotes = [
       NoteModel(
         id: uuid.v4(), folderId: AppConstants.folderAiMl, title: 'Machine Learning Basics',
@@ -302,7 +235,7 @@ class HiveLocalStorage implements ILocalStorage {
 
 ***
 
-## 📚 4. Lists
+## 👑 4. Lists
 
 ### ✅ Unordered
 * Item 1
