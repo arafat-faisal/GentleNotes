@@ -1,39 +1,71 @@
 /// Theme data builder for GentleNotes.
 ///
-/// Provides [lightTheme] and [darkTheme] factory methods that accept a dynamic
-/// accent color so the user can personalize the palette in settings.
+/// When an [AppThemePreset] is active, fully delegates to [ThemePresets]
+/// which provides a rich, complete [ThemeData] for that aesthetic skin.
 ///
-/// All color constants are imported from [AppColors] — never hardcoded here.
+/// When preset == [AppThemePreset.none], falls back to the original
+/// seed-colour approach using [AppColors].
 library app_theme;
 
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'theme_presets.dart';
+import '../../../models/models.dart';
 
 class AppTheme {
   AppTheme._(); // Prevent instantiation
 
-  static ThemeData lightTheme(Color accentColor) {
+  // ── Public entry points ───────────────────────────────────────────────────
+
+  /// Returns the light [ThemeData] for the current settings.
+  ///
+  /// When [preset] is not [AppThemePreset.none] the [accentColor] is ignored
+  /// and the preset's full skin is used instead.
+  static ThemeData lightTheme(
+    Color accentColor, {
+    AppThemePreset preset = AppThemePreset.none,
+  }) {
+    if (preset != AppThemePreset.none) {
+      return ThemePresets.lightThemeData(preset);
+    }
+    return _defaultLight(accentColor);
+  }
+
+  /// Returns the dark [ThemeData] for the current settings.
+  ///
+  /// When [preset] is not [AppThemePreset.none] the [accentColor] is ignored
+  /// and the preset's full skin is used instead.
+  static ThemeData darkTheme(
+    Color accentColor, {
+    AppThemePreset preset = AppThemePreset.none,
+  }) {
+    if (preset != AppThemePreset.none) {
+      return ThemePresets.darkThemeData(preset);
+    }
+    return _defaultDark(accentColor);
+  }
+
+  // ── Default (preset == none) themes ──────────────────────────────────────
+
+  static ThemeData _defaultLight(Color accentColor) {
     final accent = accentColor == Colors.indigo ? AppColors.violet : accentColor;
+
+    final scheme = ColorScheme.fromSeed(
+      seedColor: accent,
+      brightness: Brightness.light,
+      primary: accent,
+      secondary: AppColors.violetLight,
+      surface: AppColors.lightSurface,
+      outline: AppColors.lightBorder,
+      outlineVariant: const Color(0xFFD8D0F0),
+      onPrimary: Colors.white,
+      onSurface: AppColors.lightTextPrimary,
+      error: AppColors.rose,
+    );
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: accent,
-        brightness: Brightness.light,
-        primary: accent,
-        secondary: AppColors.violetLight,
-        surface: AppColors.lightSurface,
-        // ignore: deprecated_member_use
-        background: AppColors.lightBg,
-        // ignore: deprecated_member_use
-        surfaceVariant: const Color(0xFFF0EDFB),
-        outline: AppColors.lightBorder,
-        outlineVariant: const Color(0xFFD8D0F0),
-        onPrimary: Colors.white,
-        onSurface: AppColors.lightTextPrimary,
-        onSurfaceVariant: AppColors.lightTextTertiary,
-        error: AppColors.rose,
-      ),
+      colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.lightBg,
       fontFamily: 'Inter',
       cardTheme: CardThemeData(
@@ -52,13 +84,13 @@ class AppTheme {
         shadowColor: AppColors.violet.withOpacity(0.15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
-        iconTheme: IconThemeData(color: AppColors.lightTextPrimary),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: AppColors.lightTextPrimary),
+        titleTextStyle: const TextStyle(
           fontFamily: 'Outfit',
           color: AppColors.lightTextPrimary,
           fontSize: 20,
@@ -127,28 +159,25 @@ class AppTheme {
     );
   }
 
-  static ThemeData darkTheme(Color accentColor) {
+  static ThemeData _defaultDark(Color accentColor) {
     final accent = accentColor == Colors.indigo ? AppColors.violet : accentColor;
+
+    final scheme = ColorScheme.fromSeed(
+      seedColor: accent,
+      brightness: Brightness.dark,
+      primary: AppColors.violetLight,
+      secondary: AppColors.violetBright,
+      surface: AppColors.darkSurface,
+      outline: AppColors.darkBorder,
+      outlineVariant: const Color(0xFF2D2B45),
+      onPrimary: Colors.white,
+      onSurface: AppColors.darkTextPrimary,
+      error: AppColors.rose,
+    );
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: accent,
-        brightness: Brightness.dark,
-        primary: AppColors.violetLight,
-        secondary: AppColors.violetBright,
-        surface: AppColors.darkSurface,
-        // ignore: deprecated_member_use
-        background: AppColors.darkBg,
-        // ignore: deprecated_member_use
-        surfaceVariant: AppColors.darkCard,
-        outline: AppColors.darkBorder,
-        outlineVariant: const Color(0xFF2D2B45),
-        onPrimary: Colors.white,
-        onSurface: AppColors.darkTextPrimary,
-        onSurfaceVariant: AppColors.darkTextTertiary,
-        error: AppColors.rose,
-      ),
+      colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.darkBg,
       fontFamily: 'Inter',
       cardTheme: const CardThemeData(

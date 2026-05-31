@@ -62,6 +62,16 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
     state = state.copyWith(activeCodeTheme: codeTheme);
     await _repository.saveSettings(state);
   }
+
+  Future<void> updateEditorLayout(EditorLayoutVariant variant) async {
+    state = state.copyWith(editorLayout: variant);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateThemePreset(AppThemePreset preset) async {
+    state = state.copyWith(themePreset: preset);
+    await _repository.saveSettings(state);
+  }
 }
 
 /// Provides the current [AppSettingsModel].

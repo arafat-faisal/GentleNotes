@@ -79,6 +79,139 @@ enum EditorMode {
   markdown;
 }
 
+/// Controls which visual layout variant is used in the note editor.
+enum EditorLayoutVariant {
+  /// The original layout — title in AppBar, dropdowns bar at top, tags at bottom.
+  classic,
+  /// Clean layout — large inline title, minimal chrome, floating toolbar.
+  minimal,
+  /// Two-panel layout — left metadata sidebar + right writing column.
+  notebook,
+  /// Distraction-free full-bleed layout — chrome fades in on interaction.
+  zen,
+  /// Card-style layout — colored cover card header, editor below.
+  cards,
+  /// Diary-style layout — lined notebook background, date header, serif title.
+  journal,
+  /// Scrapbook layout — colorful sticky-note metadata panels.
+  scrapbook,
+  /// Floral petal layout — soft curved gradient header, rounded chrome.
+  petal,
+  /// Dreamy dark gradient layout with sparkle accents.
+  stardust;
+
+  String get displayName {
+    switch (this) {
+      case EditorLayoutVariant.classic:   return 'Classic';
+      case EditorLayoutVariant.minimal:   return 'Minimal';
+      case EditorLayoutVariant.notebook:  return 'Notebook';
+      case EditorLayoutVariant.zen:       return 'Zen';
+      case EditorLayoutVariant.cards:     return 'Cards';
+      case EditorLayoutVariant.journal:   return 'Journal';
+      case EditorLayoutVariant.scrapbook: return 'Scrapbook';
+      case EditorLayoutVariant.petal:     return 'Petal';
+      case EditorLayoutVariant.stardust:  return 'Stardust';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case EditorLayoutVariant.classic:   return 'Original layout with AppBar title and bottom tags bar';
+      case EditorLayoutVariant.minimal:   return 'Clean look with large inline title and minimal chrome';
+      case EditorLayoutVariant.notebook:  return 'Left metadata sidebar with writing panel on right';
+      case EditorLayoutVariant.zen:       return 'Distraction-free full-bleed editor, chrome on tap';
+      case EditorLayoutVariant.cards:     return 'Color card header with editor content below';
+      case EditorLayoutVariant.journal:   return 'Lined diary paper, serif font, date stamp header';
+      case EditorLayoutVariant.scrapbook: return 'Colorful sticky-note panels for metadata';
+      case EditorLayoutVariant.petal:     return 'Curved floral gradient header with soft accents';
+      case EditorLayoutVariant.stardust:  return 'Dark dreamy gradient with sparkle decorations';
+    }
+  }
+
+  /// Whether this is one of the feminine/aesthetic variants.
+  bool get isAesthetic => [
+    EditorLayoutVariant.journal,
+    EditorLayoutVariant.scrapbook,
+    EditorLayoutVariant.petal,
+    EditorLayoutVariant.stardust,
+  ].contains(this);
+}
+
+/// Full-app aesthetic theme presets.
+enum AppThemePreset {
+  none,
+  floralRose,
+  cookiesCream,
+  sakura,
+  lavenderDream,
+  oceanBreeze,
+  midnightStars,
+  cottagecore,
+  candyPop,
+  matchaLatte,
+  cloudPastel;
+
+  String get displayName {
+    switch (this) {
+      case AppThemePreset.none:          return 'Default';
+      case AppThemePreset.floralRose:    return 'Floral Rose';
+      case AppThemePreset.cookiesCream:  return 'Cookies & Cream';
+      case AppThemePreset.sakura:        return 'Sakura';
+      case AppThemePreset.lavenderDream: return 'Lavender Dream';
+      case AppThemePreset.oceanBreeze:   return 'Ocean Breeze';
+      case AppThemePreset.midnightStars: return 'Midnight Stars';
+      case AppThemePreset.cottagecore:   return 'Cottagecore';
+      case AppThemePreset.candyPop:      return 'Candy Pop';
+      case AppThemePreset.matchaLatte:   return 'Matcha Latte';
+      case AppThemePreset.cloudPastel:   return 'Cloud Pastel';
+    }
+  }
+
+  String get emoji {
+    switch (this) {
+      case AppThemePreset.none:          return '✨';
+      case AppThemePreset.floralRose:    return '🌸';
+      case AppThemePreset.cookiesCream:  return '🍪';
+      case AppThemePreset.sakura:        return '🌺';
+      case AppThemePreset.lavenderDream: return '💜';
+      case AppThemePreset.oceanBreeze:   return '🌊';
+      case AppThemePreset.midnightStars: return '🌙';
+      case AppThemePreset.cottagecore:   return '🌿';
+      case AppThemePreset.candyPop:      return '🍬';
+      case AppThemePreset.matchaLatte:   return '🍵';
+      case AppThemePreset.cloudPastel:   return '☁️';
+    }
+  }
+
+  /// Preview swatch colors (for the settings picker card).
+  List<Color> get swatchColors {
+    switch (this) {
+      case AppThemePreset.none:
+        return [Color(0xFF6366F1), Color(0xFFF5F3FF), Color(0xFF090B16)];
+      case AppThemePreset.floralRose:
+        return [Color(0xFFE91E63), Color(0xFFFFF0F3), Color(0xFFFF6B9D)];
+      case AppThemePreset.cookiesCream:
+        return [Color(0xFF8B5E3C), Color(0xFFFFF8F0), Color(0xFFD4956A)];
+      case AppThemePreset.sakura:
+        return [Color(0xFFF06292), Color(0xFFFFF5F8), Color(0xFFF8BBD0)];
+      case AppThemePreset.lavenderDream:
+        return [Color(0xFF9C27B0), Color(0xFFF8F0FF), Color(0xFFCE93D8)];
+      case AppThemePreset.oceanBreeze:
+        return [Color(0xFF0288D1), Color(0xFFF0F8FF), Color(0xFF81D4FA)];
+      case AppThemePreset.midnightStars:
+        return [Color(0xFF9FA8DA), Color(0xFF05050F), Color(0xFF3F51B5)];
+      case AppThemePreset.cottagecore:
+        return [Color(0xFF558B2F), Color(0xFFF4FAF0), Color(0xFF8BC34A)];
+      case AppThemePreset.candyPop:
+        return [Color(0xFFE91E8C), Color(0xFFFFF0FB), Color(0xFFFF80CE)];
+      case AppThemePreset.matchaLatte:
+        return [Color(0xFF689F38), Color(0xFFF5F8F0), Color(0xFFA5C461)];
+      case AppThemePreset.cloudPastel:
+        return [Color(0xFF5C85D6), Color(0xFFF0F8FF), Color(0xFFB3C6F0)];
+    }
+  }
+}
+
 enum AttachmentType {
   image,
   file,
@@ -446,6 +579,8 @@ class AppSettingsModel {
   final NoteType defaultNoteType;
   final bool autoSaveEnabled;
   final String activeCodeTheme;
+  final EditorLayoutVariant editorLayout;
+  final AppThemePreset themePreset;
 
   AppSettingsModel({
     required this.themeMode,
@@ -455,6 +590,8 @@ class AppSettingsModel {
     required this.defaultNoteType,
     required this.autoSaveEnabled,
     required this.activeCodeTheme,
+    this.editorLayout = EditorLayoutVariant.classic,
+    this.themePreset = AppThemePreset.none,
   });
 
   AppSettingsModel copyWith({
@@ -465,6 +602,8 @@ class AppSettingsModel {
     NoteType? defaultNoteType,
     bool? autoSaveEnabled,
     String? activeCodeTheme,
+    EditorLayoutVariant? editorLayout,
+    AppThemePreset? themePreset,
   }) {
     return AppSettingsModel(
       themeMode: themeMode ?? this.themeMode,
@@ -474,6 +613,8 @@ class AppSettingsModel {
       defaultNoteType: defaultNoteType ?? this.defaultNoteType,
       autoSaveEnabled: autoSaveEnabled ?? this.autoSaveEnabled,
       activeCodeTheme: activeCodeTheme ?? this.activeCodeTheme,
+      editorLayout: editorLayout ?? this.editorLayout,
+      themePreset: themePreset ?? this.themePreset,
     );
   }
 
@@ -486,18 +627,28 @@ class AppSettingsModel {
       'defaultNoteType': defaultNoteType.name,
       'autoSaveEnabled': autoSaveEnabled ? 1 : 0,
       'activeCodeTheme': activeCodeTheme,
+      'editorLayout': editorLayout.name,
+      'themePreset': themePreset.name,
     };
   }
 
   factory AppSettingsModel.fromMap(Map<String, dynamic> map) {
     return AppSettingsModel(
       themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == map['themeMode'], orElse: () => ThemeModeSetting.system),
-      accentColorHex: map['accentColorHex'] ?? '#6366F1', // soft Indigo
+      accentColorHex: map['accentColorHex'] ?? '#6366F1',
       layoutMode: LayoutMode.values.firstWhere((e) => e.name == map['layoutMode'], orElse: () => LayoutMode.grid),
       editorMode: EditorMode.values.firstWhere((e) => e.name == map['editorMode'], orElse: () => EditorMode.markdown),
       defaultNoteType: NoteType.values.firstWhere((e) => e.name == map['defaultNoteType'], orElse: () => NoteType.markdown),
       autoSaveEnabled: (map['autoSaveEnabled'] == 1 || map['autoSaveEnabled'] == true || map['autoSaveEnabled'] == null),
       activeCodeTheme: map['activeCodeTheme'] ?? 'vs-dark',
+      editorLayout: EditorLayoutVariant.values.firstWhere(
+        (e) => e.name == map['editorLayout'],
+        orElse: () => EditorLayoutVariant.classic,
+      ),
+      themePreset: AppThemePreset.values.firstWhere(
+        (e) => e.name == map['themePreset'],
+        orElse: () => AppThemePreset.none,
+      ),
     );
   }
 

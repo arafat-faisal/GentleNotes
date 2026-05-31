@@ -90,6 +90,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
   bool _isFullScreen = false;
   bool _isFocusMode = false;
 
+  // ── Zen layout: shows/hides chrome on tap ─────────────────────────────────
+  bool _zenChromeVisible = false;
+
   String get _currentFontFamily {
     return _noteType == NoteType.mixed
         ? 'Georgia'
@@ -2985,22 +2988,1652 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  //  NEW LAYOUT VARIANT BUILDERS
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── Minimal Layout ────────────────────────────────────────────────────────
+  Widget _buildMinimalLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF0D0B18) : const Color(0xFFFBFAFF);
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Slim top bar ──────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                    onPressed: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                    style: IconButton.styleFrom(foregroundColor: accent),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 18),
+                    color: _isPinned ? theme.colorScheme.secondary : accent,
+                    onPressed: () { setState(() { _isPinned = !_isPinned; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                  ),
+                  IconButton(
+                    icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, size: 18),
+                    color: _isFavorite ? const Color(0xFFF43F5E) : accent,
+                    onPressed: () { setState(() { _isFavorite = !_isFavorite; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                  ),
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert_rounded, size: 18, color: accent),
+                    onSelected: (val) {
+                      if (val == 'save') _saveNote();
+                      if (val == 'share') _handleShare(context);
+                      if (val == 'md') _handleExportMarkdown(context);
+                      if (val == 'pdf') _handlePrintPdf(context);
+                      if (val == 'delete') _handleDeleteNote(context);
+                      if (val == 'focus') setState(() => _isFocusMode = true);
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
+                      const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
+                      const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
+                      const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_outlined), SizedBox(width: 8), Text('Export PDF')])),
+                      const PopupMenuItem(value: 'focus', child: Row(children: [Icon(Icons.center_focus_strong_rounded), SizedBox(width: 8), Text('Focus Mode')])),
+                      const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Large inline title ─────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: TextField(
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.5,
+                  height: 1.2,
+                  color: isDark ? Colors.white : const Color(0xFF111827),
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Untitled Note',
+                  hintStyle: TextStyle(fontFamily: 'Outfit', fontSize: 26, fontWeight: FontWeight.w700,
+                      color: isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8)),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+
+            // ── Meta chips (folder, type) ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 6, 24, 0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: _buildMinimalMetaChips(theme, isDark)),
+              ),
+            ),
+
+            Divider(height: 16, indent: 24, endIndent: 24,
+                color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5)),
+
+            // ── Editor body ────────────────────────────────────────────────
+            Expanded(child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+              child: _buildEditorBody(context),
+            )),
+
+            // ── Tags bar ──────────────────────────────────────────────────
+            Visibility(
+              visible: !isKeyboardOpen || _tagsFocusNode.hasFocus,
+              maintainState: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Divider(height: 1, color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5)),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.local_offer_outlined, size: 16, color: accent),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _tagController,
+                            focusNode: _tagsFocusNode,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              hintText: 'Add tags…',
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Floating compact toolbar ───────────────────────────────────
+            if (!isKeyboardOpen || isMobile)
+              _buildMinimalFloatingToolbar(theme, isDark),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildMinimalMetaChips(ThemeData theme, bool isDark) {
+    final accent = theme.colorScheme.primary;
+    final folders = ref.read(foldersProvider);
+    final folder = folders.cast<FolderModel?>().firstWhere((f) => f?.id == _selectedFolderId, orElse: () => null);
+    return [
+      _metaChip(
+        icon: Icons.folder_outlined,
+        label: folder?.name ?? 'No Folder',
+        color: folder?.color ?? (isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8)),
+        isDark: isDark,
+        accent: accent,
+      ),
+      const SizedBox(width: 8),
+      _metaChip(
+        icon: _noteType.icon,
+        label: _noteType.displayName,
+        color: accent,
+        isDark: isDark,
+        accent: accent,
+      ),
+    ];
+  }
+
+  Widget _metaChip({required IconData icon, required String label, required Color color, required bool isDark, required Color accent}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 5),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMinimalFloatingToolbar(ThemeData theme, bool isDark) {
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF1C1829).withOpacity(0.95) : Colors.white.withOpacity(0.95);
+    final border = isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5);
+    final isActive = _activeToolbarGroup != null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isActive)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1C1829) : const Color(0xFFF8F6FF),
+                border: Border(top: BorderSide(color: border)),
+              ),
+              child: _buildSubRow(theme, isDark, accent),
+            ),
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: bg,
+              border: Border(top: BorderSide(color: border)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2))],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ('format', Icons.format_bold, 'Format'),
+                ('color', Icons.palette_outlined, 'Color'),
+                ('heading', Icons.title_rounded, 'Heading'),
+                ('lists', Icons.format_list_bulleted, 'Lists'),
+                ('insert', Icons.add_box_outlined, 'Insert'),
+              ].map((g) {
+                final isGroupActive = _activeToolbarGroup == g.$1;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _activeToolbarGroup = (isGroupActive ? null : g.$1);
+                      if (_activeToolbarGroup != 'color') { _activeColorMode = null; _showCustomColorPicker = false; }
+                    }),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(g.$2, size: 20, color: isGroupActive ? accent : theme.colorScheme.onSurfaceVariant),
+                        const SizedBox(height: 2),
+                        Text(g.$3, style: TextStyle(fontSize: 8, color: isGroupActive ? accent : theme.colorScheme.onSurfaceVariant.withOpacity(0.7))),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Notebook Layout ───────────────────────────────────────────────────────
+  Widget _buildNotebookLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final sidebarBg = isDark ? const Color(0xFF1C1829) : Colors.white;
+    final mainBg = isDark ? const Color(0xFF13111C) : const Color(0xFFF8F6FF);
+    final border = isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5);
+    final folders = ref.watch(foldersProvider);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    // On mobile hide sidebar when keyboard is open (no room)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final sidebarWidth = screenWidth < 400 ? 160.0 : 200.0;
+
+    Widget sidebar = SizedBox(
+      width: sidebarWidth,
+      child: Container(
+        color: sidebarBg,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Back + save row ──────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: border)),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 15),
+                    onPressed: () {
+                      _saveNote();
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        context.go('/home');
+                      }
+                    },
+                    style: IconButton.styleFrom(
+                      foregroundColor: accent,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.save_outlined, size: 15),
+                    onPressed: _saveNote,
+                    style: IconButton.styleFrom(
+                      foregroundColor: accent,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Scrollable metadata section ──────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                      child: Text('TITLE',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    // Title field
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                      child: TextField(
+                        controller: _titleController,
+                        focusNode: _titleFocusNode,
+                        maxLines: 3,
+                        minLines: 1,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : const Color(0xFF111827),
+                          height: 1.3,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Untitled',
+                          hintStyle: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? const Color(0xFF3D3557)
+                                : const Color(0xFFD1CBE8),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+
+                    Divider(height: 1, indent: 14, endIndent: 14, color: border),
+                    const SizedBox(height: 8),
+
+                    // Folder label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+                      child: Text('FOLDER',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    // Folder dropdown — constrained to sidebar width
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String?>(
+                          value: _selectedFolderId,
+                          isExpanded: true,
+                          isDense: true,
+                          hint: Row(
+                            children: [
+                              Icon(Icons.folder_outlined,
+                                  size: 12,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.5)),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text('No Folder',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.5))),
+                              ),
+                            ],
+                          ),
+                          items: [
+                            DropdownMenuItem<String?>(
+                              value: null,
+                              child: Row(children: [
+                                const Icon(Icons.folder_off_outlined, size: 12),
+                                const SizedBox(width: 4),
+                                const Flexible(
+                                    child: Text('No Folder',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 11))),
+                              ]),
+                            ),
+                            ...folders.map((f) => DropdownMenuItem<String?>(
+                                  value: f.id,
+                                  child: Row(children: [
+                                    Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: BoxDecoration(
+                                            color: f.color,
+                                            shape: BoxShape.circle)),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                        child: Text(f.name,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 11))),
+                                  ]),
+                                )),
+                          ],
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedFolderId = val;
+                              _isDirty = true;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Note Type label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+                      child: Text('TYPE',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<NoteType>(
+                          value: _noteType,
+                          isExpanded: true,
+                          isDense: true,
+                          items: NoteType.values
+                              .map((t) => DropdownMenuItem<NoteType>(
+                                    value: t,
+                                    child: Row(children: [
+                                      Icon(t.icon, size: 12, color: accent),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                          child: Text(t.displayName,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontSize: 11))),
+                                    ]),
+                                  ))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _noteType = val;
+                                _isDirty = true;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    Divider(height: 1, indent: 14, endIndent: 14, color: border),
+                    const SizedBox(height: 8),
+
+                    // Tags label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+                      child: Text('TAGS',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.local_offer_outlined,
+                              size: 12, color: accent.withOpacity(0.7)),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: TextField(
+                              controller: _tagController,
+                              focusNode: _tagsFocusNode,
+                              style: const TextStyle(fontSize: 11),
+                              decoration: const InputDecoration(
+                                hintText: 'tag1, tag2…',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    Divider(height: 1, indent: 14, endIndent: 14, color: border),
+                    const SizedBox(height: 4),
+
+                    // Pin / Fave / More actions
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              _isPinned
+                                  ? Icons.push_pin
+                                  : Icons.push_pin_outlined,
+                              size: 16,
+                            ),
+                            color: _isPinned ? accent : null,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(
+                                minWidth: 30, minHeight: 30),
+                            onPressed: () {
+                              setState(() {
+                                _isPinned = !_isPinned;
+                                _isDirty = true;
+                              });
+                              _saveNote(isAutoSave: true);
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              _isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              size: 16,
+                            ),
+                            color: _isFavorite
+                                ? const Color(0xFFF43F5E)
+                                : null,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(
+                                minWidth: 30, minHeight: 30),
+                            onPressed: () {
+                              setState(() {
+                                _isFavorite = !_isFavorite;
+                                _isDirty = true;
+                              });
+                              _saveNote(isAutoSave: true);
+                            },
+                          ),
+                          const Spacer(),
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_horiz_rounded,
+                                size: 16, color: accent),
+                            padding: const EdgeInsets.all(4),
+                            onSelected: (val) {
+                              if (val == 'share') _handleShare(context);
+                              if (val == 'md') _handleExportMarkdown(context);
+                              if (val == 'pdf') _handlePrintPdf(context);
+                              if (val == 'delete') _handleDeleteNote(context);
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                  value: 'share',
+                                  child: Row(children: [
+                                    Icon(Icons.share_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Share')
+                                  ])),
+                              const PopupMenuItem(
+                                  value: 'md',
+                                  child: Row(children: [
+                                    Icon(Icons.article_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Export MD')
+                                  ])),
+                              const PopupMenuItem(
+                                  value: 'pdf',
+                                  child: Row(children: [
+                                    Icon(Icons.picture_as_pdf_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Export PDF')
+                                  ])),
+                              const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(children: [
+                                    Icon(Icons.delete_outline,
+                                        color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Delete',
+                                        style: TextStyle(color: Colors.red))
+                                  ])),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    Widget editorPanel = Column(
+      children: [
+        _buildGentleNoteToolbar(theme, isDark),
+        Expanded(child: _buildEditorBody(context)),
+        if (isKeyboardOpen)
+          _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+      ],
+    );
+
+    // On very narrow screens (e.g. small phones), hide sidebar when keyboard opens
+    final showSidebar = !isKeyboardOpen || screenWidth >= 500;
+
+    return Scaffold(
+      backgroundColor: mainBg,
+      body: SafeArea(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (showSidebar) ...[
+              sidebar,
+              Container(width: 1, color: border),
+            ],
+            Expanded(child: editorPanel),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Zen Layout ────────────────────────────────────────────────────────────
+
+  Widget _buildZenLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF090B16) : const Color(0xFFFDFCFF);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: GestureDetector(
+        onTap: () => setState(() => _zenChromeVisible = !_zenChromeVisible),
+        behavior: HitTestBehavior.translucent,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // ── Editor fills entire screen ─────────────────────────────
+              Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 48, 32, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _titleController,
+                            focusNode: _titleFocusNode,
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                              color: isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF111827),
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Begin…',
+                              hintStyle: TextStyle(fontFamily: 'Outfit', fontSize: 28, fontWeight: FontWeight.w700,
+                                  color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE9E6F5)),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Expanded(child: DefaultTextStyle(
+                            style: TextStyle(
+                              fontFamily: _noteType == NoteType.mixed ? 'Georgia' : (_noteType == NoteType.code ? 'Courier' : 'Inter'),
+                              fontSize: 16,
+                              height: 1.7,
+                              color: isDark ? Colors.white.withOpacity(0.85) : const Color(0xFF1A1A2E),
+                            ),
+                            child: QuillEditor.basic(
+                              key: const ValueKey('zen_quill_editor'),
+                              controller: _quillController,
+                              focusNode: _editorFocusNode,
+                              config: QuillEditorConfig(
+                                placeholder: 'Write freely…',
+                                autoFocus: false,
+                                expands: true,
+                                padding: EdgeInsets.zero,
+                                embedBuilders: [
+                                  ImageEmbedBuilder(),
+                                  AudioEmbedBuilder(getAttachments: () => _attachments),
+                                  HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
+                                  HorizontalRuleEmbedBuilder(key: 'divider'),
+                                ],
+                              ),
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (isKeyboardOpen)
+                    _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+                ],
+              ),
+
+              // ── Fade-in chrome overlay ─────────────────────────────────
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: _zenChromeVisible ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  ignoring: !_zenChromeVisible,
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: bg.withOpacity(0.95),
+                          border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF252234) : const Color(0xFFEEEBFF))),
+                        ),
+                        child: Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                              onPressed: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                              style: IconButton.styleFrom(foregroundColor: accent),
+                            ),
+                            const Spacer(),
+                            Text('Zen', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: accent.withOpacity(0.6), letterSpacing: 1)),
+                            const Spacer(),
+                            IconButton(
+                              icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 18),
+                              color: _isPinned ? accent : accent.withOpacity(0.5),
+                              onPressed: () { setState(() { _isPinned = !_isPinned; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                            ),
+                            PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert_rounded, size: 18, color: accent.withOpacity(0.7)),
+                              onSelected: (val) {
+                                if (val == 'save') _saveNote();
+                                if (val == 'share') _handleShare(context);
+                                if (val == 'delete') _handleDeleteNote(context);
+                              },
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
+                                const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
+                                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete Note', style: TextStyle(color: Colors.red))])),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Cards Layout ──────────────────────────────────────────────────────────
+  Widget _buildCardsLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF13111C) : const Color(0xFFF5F3FF);
+    final cardBg = isDark ? const Color(0xFF1E1B2C) : Colors.white;
+    final border = isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5);
+    final folders = ref.watch(foldersProvider);
+    final folder = folders.cast<FolderModel?>().firstWhere((f) => f?.id == _selectedFolderId, orElse: () => null);
+    final coverColor = folder?.color ?? accent;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final isMobile = ResponsiveHelper.isMobile(context);
+
+    // Generate the note card header colour from colorHex
+    Color headerColor;
+    try {
+      final hex = _colorHex.replaceAll('#', '');
+      headerColor = hex == 'FFFFFF' || hex == 'ffffff'
+          ? coverColor
+          : Color(int.parse('FF$hex', radix: 16));
+    } catch (_) {
+      headerColor = coverColor;
+    }
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Color cover card ──────────────────────────────────────────
+            Container(
+              color: headerColor,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                        onPressed: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                        style: IconButton.styleFrom(foregroundColor: Colors.white),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 18),
+                        color: Colors.white,
+                        onPressed: () { setState(() { _isPinned = !_isPinned; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                      ),
+                      IconButton(
+                        icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, size: 18),
+                        color: Colors.white,
+                        onPressed: () { setState(() { _isFavorite = !_isFavorite; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert_rounded, size: 18, color: Colors.white),
+                        onSelected: (val) {
+                          if (val == 'save') _saveNote();
+                          if (val == 'share') _handleShare(context);
+                          if (val == 'md') _handleExportMarkdown(context);
+                          if (val == 'pdf') _handlePrintPdf(context);
+                          if (val == 'delete') _handleDeleteNote(context);
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(value: 'save', child: Row(children: [Icon(Icons.save_outlined), SizedBox(width: 8), Text('Save Note')])),
+                          const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined), SizedBox(width: 8), Text('Share Note')])),
+                          const PopupMenuItem(value: 'md', child: Row(children: [Icon(Icons.article_outlined), SizedBox(width: 8), Text('Export MD')])),
+                          const PopupMenuItem(value: 'pdf', child: Row(children: [Icon(Icons.picture_as_pdf_outlined), SizedBox(width: 8), Text('Export PDF')])),
+                          const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                    child: TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      style: const TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                        height: 1.2,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: 'Untitled Note',
+                        hintStyle: TextStyle(fontFamily: 'Outfit', fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white54),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Meta chips row ────────────────────────────────────────────
+            Container(
+              color: cardBg,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // Color picker chips
+                    ...(['#FFFFFF', '#FEE2E2', '#FEF3C7', '#ECFDF5', '#E0F2FE', '#F3E8FF', '#FDF4FF']).map((c) {
+                      final isSelected = _colorHex == c;
+                      final col = c == '#FFFFFF' ? Colors.grey.shade300 : Color(int.parse('FF${c.replaceAll('#', '')}', radix: 16));
+                      return GestureDetector(
+                        onTap: () => setState(() { _colorHex = c; _isDirty = true; }),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          width: 18,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: col,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: isSelected ? theme.colorScheme.onSurface : Colors.grey.shade400, width: isSelected ? 2 : 0.5),
+                          ),
+                        ),
+                      );
+                    }),
+                    Container(width: 1, height: 18, color: border, margin: const EdgeInsets.symmetric(horizontal: 8)),
+                    DropdownButtonHideUnderline(
+                      child: DropdownButton<NoteType>(
+                        value: _noteType,
+                        isDense: true,
+                        items: NoteType.values.map((t) => DropdownMenuItem<NoteType>(value: t, child: Row(children: [Icon(t.icon, size: 13, color: accent), const SizedBox(width: 4), Text(t.displayName, style: const TextStyle(fontSize: 11))]))).toList(),
+                        onChanged: (val) { if (val != null) setState(() { _noteType = val; _isDirty = true; }); },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(height: 1, color: border),
+
+            // ── Main editor card ──────────────────────────────────────────
+            Expanded(
+              child: Container(
+                color: cardBg,
+                child: _buildEditorBody(context),
+              ),
+            ),
+
+            // ── Tags bar ──────────────────────────────────────────────────
+            Visibility(
+              visible: !isKeyboardOpen || _tagsFocusNode.hasFocus,
+              maintainState: true,
+              child: Container(
+                color: cardBg,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.local_offer_outlined, size: 16, color: accent),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _tagController,
+                        focusNode: _tagsFocusNode,
+                        style: const TextStyle(fontSize: 13),
+                        decoration: const InputDecoration(hintText: 'Add tags…', border: InputBorder.none, contentPadding: EdgeInsets.zero),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Bottom toolbar ─────────────────────────────────────────────
+            if (isMobile || isKeyboardOpen)
+              _buildGentleNoteToolbar(theme, isDark, isAtBottom: true)
+            else
+              const SizedBox.shrink(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Shared sub-row helper (for Minimal toolbar) ───────────────────────────
+  Widget _buildSubRow(ThemeData theme, bool isDark, Color accentColor) {
+    final style = _quillController.getSelectionStyle();
+    final isBold = !_titleFocusNode.hasFocus && style.containsKey(Attribute.bold.key);
+    final isItalic = !_titleFocusNode.hasFocus && style.containsKey(Attribute.italic.key);
+    final isUnderline = !_titleFocusNode.hasFocus && style.containsKey(Attribute.underline.key);
+    final isStrike = !_titleFocusNode.hasFocus && style.containsKey(Attribute.strikeThrough.key);
+    final isCode = style.containsKey(Attribute.inlineCode.key);
+    final isH1 = style.attributes[Attribute.header.key]?.value == 1;
+    final isH2 = style.attributes[Attribute.header.key]?.value == 2;
+    final isH3 = style.attributes[Attribute.header.key]?.value == 3;
+    final listVal = style.attributes[Attribute.list.key]?.value;
+    final isBullet = listVal == 'bullet';
+    final isOrdered = listVal == 'ordered';
+    final isChecklist = listVal == 'checked' || listVal == 'unchecked';
+
+    Widget sub(IconData icon, String tooltip, VoidCallback onTap, {bool active = false}) {
+      return Tooltip(
+        message: tooltip,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: active ? accentColor.withOpacity(0.15) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 20, color: active ? accentColor : theme.colorScheme.onSurface),
+          ),
+        ),
+      );
+    }
+
+    Widget subText(String text, String tooltip, VoidCallback onTap, {bool active = false}) {
+      return Tooltip(
+        message: tooltip,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: active ? accentColor.withOpacity(0.15) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
+                color: active ? accentColor : theme.colorScheme.onSurface)),
+          ),
+        ),
+      );
+    }
+
+    switch (_activeToolbarGroup) {
+      case 'format':
+        return Row(children: [
+          sub(Icons.format_bold, 'Bold', () { if (!_titleFocusNode.hasFocus) _quillController.formatSelection(isBold ? Attribute.clone(Attribute.bold, null) : Attribute.bold); }, active: isBold),
+          sub(Icons.format_italic, 'Italic', () { if (!_titleFocusNode.hasFocus) _quillController.formatSelection(isItalic ? Attribute.clone(Attribute.italic, null) : Attribute.italic); }, active: isItalic),
+          sub(Icons.format_underlined, 'Underline', () { if (!_titleFocusNode.hasFocus) _quillController.formatSelection(isUnderline ? Attribute.clone(Attribute.underline, null) : Attribute.underline); }, active: isUnderline),
+          sub(Icons.format_strikethrough, 'Strikethrough', () { if (!_titleFocusNode.hasFocus) _quillController.formatSelection(isStrike ? Attribute.clone(Attribute.strikeThrough, null) : Attribute.strikeThrough); }, active: isStrike),
+          sub(Icons.code_rounded, 'Code', () => _quillController.formatSelection(isCode ? Attribute.clone(Attribute.inlineCode, null) : Attribute.inlineCode), active: isCode),
+        ]);
+      case 'color':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            TextButton.icon(
+              onPressed: () => setState(() { _activeColorMode = 'text'; _showCustomColorPicker = false; }),
+              icon: Icon(Icons.format_color_text, color: accentColor),
+              label: Text('Text Color', style: TextStyle(color: theme.colorScheme.onSurface)),
+            ),
+            TextButton.icon(
+              onPressed: () => setState(() { _activeColorMode = 'highlight'; _showCustomColorPicker = false; }),
+              icon: Icon(Icons.highlight, color: accentColor),
+              label: Text('Highlight', style: TextStyle(color: theme.colorScheme.onSurface)),
+            ),
+          ],
+        );
+      case 'heading':
+        return Row(children: [
+          subText('H1', 'Heading 1', () => _quillController.formatSelection(isH1 ? Attribute.clone(Attribute.header, null) : Attribute.h1), active: isH1),
+          subText('H2', 'Heading 2', () => _quillController.formatSelection(isH2 ? Attribute.clone(Attribute.header, null) : Attribute.h2), active: isH2),
+          subText('H3', 'Heading 3', () => _quillController.formatSelection(isH3 ? Attribute.clone(Attribute.header, null) : Attribute.h3), active: isH3),
+        ]);
+      case 'lists':
+        return Row(children: [
+          sub(Icons.format_list_bulleted, 'Bullet List', () => _quillController.formatSelection(isBullet ? Attribute.clone(Attribute.list, null) : Attribute.ul), active: isBullet),
+          sub(Icons.format_list_numbered, 'Numbered List', () => _quillController.formatSelection(isOrdered ? Attribute.clone(Attribute.list, null) : Attribute.ol), active: isOrdered),
+          sub(Icons.check_box_outlined, 'Checklist', () => _quillController.formatSelection(isChecklist ? Attribute.clone(Attribute.list, null) : Attribute.unchecked), active: isChecklist),
+        ]);
+      case 'insert':
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            sub(Icons.image_outlined, 'Insert Image', _insertImageDialog),
+            sub(Icons.mic_outlined, 'Voice Note', _toggleVoiceRecording),
+            sub(Icons.mic_none_outlined, 'Dictation', _toggleSpeechToText, active: _isSpeechListening),
+            sub(Icons.draw_outlined, 'Drawing', _openDrawingCanvas),
+          ]),
+        );
+    }
+    return const SizedBox.shrink();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  MAIN BUILD — dispatches to layout variant
+  // ══════════════════════════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final folders = ref.watch(foldersProvider);
     final isDark = theme.brightness == Brightness.dark;
+    final settings = ref.watch(settingsProvider);
+
+    // Full-screen and focus modes bypass layout variants
+    if (_isFullScreen) return _buildFullScreenBody();
+    if (_isFocusMode) return _buildFocusModeBody();
+
+    // Dispatch to selected layout variant
+    switch (settings.editorLayout) {
+      case EditorLayoutVariant.minimal:
+        return _buildMinimalLayout();
+      case EditorLayoutVariant.notebook:
+        return _buildNotebookLayout();
+      case EditorLayoutVariant.zen:
+        return _buildZenLayout();
+      case EditorLayoutVariant.cards:
+        return _buildCardsLayout();
+      case EditorLayoutVariant.journal:
+        return _buildJournalLayout();
+      case EditorLayoutVariant.scrapbook:
+        return _buildScrapbookLayout();
+      case EditorLayoutVariant.petal:
+        return _buildPetalLayout();
+      case EditorLayoutVariant.stardust:
+        return _buildStardustLayout();
+      case EditorLayoutVariant.classic:
+        return _buildClassicLayout(theme, isDark);
+    }
+  }
+
+  // ── Journal Layout ─────────────────────────────────────────────────────────
+  Widget _buildJournalLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF0F1A0A) : const Color(0xFFFFFDF5);
+    final lineColor = isDark ? const Color(0xFF1E2D15) : const Color(0xFFE2EDD0);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final now = DateTime.now();
+    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final dateStr = '${months[now.month - 1]} ${now.day}, ${now.year}';
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Date header ──────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(isDark ? 0.18 : 0.09),
+                border: Border(bottom: BorderSide(color: lineColor, width: 1)),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                    child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: accent),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_today_rounded, size: 13, color: accent),
+                        const SizedBox(width: 5),
+                        Text(dateStr, style: TextStyle(fontSize: 12, color: accent, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(Icons.save_outlined, size: 18, color: accent),
+                    onPressed: _saveNote,
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                ],
+              ),
+            ),
+            // ── Title ────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+              child: TextField(
+                controller: _titleController,
+                focusNode: _titleFocusNode,
+                maxLines: 2,
+                minLines: 1,
+                style: TextStyle(
+                  fontFamily: 'Outfit',
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : const Color(0xFF1A2E08),
+                  height: 1.2,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Dear Diary…',
+                  hintStyle: TextStyle(
+                    fontFamily: 'Outfit',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: lineColor.withOpacity(2),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+              ),
+            ),
+            Divider(height: 1, indent: 20, endIndent: 20, color: accent.withOpacity(0.3)),
+            // ── Ruled-line editor ────────────────────────────────────────
+            Expanded(
+              child: Stack(
+                children: [
+                  // Ruled lines background
+                  LayoutBuilder(builder: (ctx, box) {
+                    const lineHeight = 28.0;
+                    final count = (box.maxHeight / lineHeight).ceil() + 1;
+                    return Column(
+                      children: List.generate(count, (_) => Container(
+                        height: lineHeight,
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: lineColor, width: 1)),
+                        ),
+                      )),
+                    );
+                  }),
+                  // Left red margin line
+                  Positioned(
+                    left: 48,
+                    top: 0,
+                    bottom: 0,
+                    child: Container(width: 1.5, color: const Color(0xFFFFB3B3).withOpacity(isDark ? 0.3 : 0.7)),
+                  ),
+                  // Quill editor padded to feel like writing on ruled paper
+                  Padding(
+                    padding: const EdgeInsets.only(left: 56, right: 16, top: 4),
+                    child: _buildEditorBody(context),
+                  ),
+                ],
+              ),
+            ),
+            if (isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Scrapbook Layout ────────────────────────────────────────────────────────
+  Widget _buildScrapbookLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF160A1A) : const Color(0xFFFFF8FF);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    // Sticky note colors
+    final stickyColors = [
+      (bg: isDark ? const Color(0xFF2E1030) : const Color(0xFFFFE4F6), border: const Color(0xFFFF69B4)),
+      (bg: isDark ? const Color(0xFF0E2030) : const Color(0xFFE4F0FF), border: const Color(0xFF69B4FF)),
+      (bg: isDark ? const Color(0xFF102010) : const Color(0xFFE4FFE8), border: const Color(0xFF69C880)),
+    ];
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Back + Save bar ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: accent),
+                    onPressed: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                  ),
+                  const Spacer(),
+                  IconButton(icon: Icon(Icons.save_outlined, size: 18, color: accent), onPressed: _saveNote),
+                ],
+              ),
+            ),
+            // ── Sticky-note metadata panels ──────────────────────────────
+            SizedBox(
+              height: 88,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  // Title sticky
+                  _scrapbookSticky(
+                    bgColor: stickyColors[0].bg,
+                    borderColor: stickyColors[0].border,
+                    label: 'TITLE',
+                    child: TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      maxLines: 2,
+                      minLines: 1,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF1A0030)),
+                      decoration: const InputDecoration(hintText: 'Note title…', border: InputBorder.none, contentPadding: EdgeInsets.zero, isDense: true),
+                    ),
+                    isDark: isDark,
+                    width: 130,
+                  ),
+                  const SizedBox(width: 8),
+                  // Tags sticky
+                  _scrapbookSticky(
+                    bgColor: stickyColors[2].bg,
+                    borderColor: stickyColors[2].border,
+                    label: 'TAGS',
+                    child: TextField(
+                      controller: _tagController,
+                      focusNode: _tagsFocusNode,
+                      style: const TextStyle(fontSize: 11),
+                      decoration: const InputDecoration(hintText: 'tag1, tag2…', border: InputBorder.none, contentPadding: EdgeInsets.zero, isDense: true),
+                    ),
+                    isDark: isDark,
+                    width: 110,
+                  ),
+                  const SizedBox(width: 8),
+                  // Actions sticky
+                  _scrapbookSticky(
+                    bgColor: stickyColors[1].bg,
+                    borderColor: stickyColors[1].border,
+                    label: 'ACTIONS',
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () { setState(() { _isPinned = !_isPinned; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                          child: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 18, color: _isPinned ? accent : null),
+                        ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () { setState(() { _isFavorite = !_isFavorite; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                          child: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, size: 18, color: _isFavorite ? const Color(0xFFF43F5E) : null),
+                        ),
+                      ],
+                    ),
+                    isDark: isDark,
+                    width: 100,
+                  ),
+                ],
+              ),
+            ),
+            // ── Editor card ──────────────────────────────────────────────
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF200A28) : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accent.withOpacity(0.2)),
+                  boxShadow: [BoxShadow(color: accent.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4))],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Column(
+                    children: [
+                      if (!isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark),
+                      Expanded(child: _buildEditorBody(context)),
+                      if (isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _scrapbookSticky({
+    required Color bgColor,
+    required Color borderColor,
+    required String label,
+    required Widget child,
+    required bool isDark,
+    required double width,
+  }) {
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor.withOpacity(0.5)),
+        boxShadow: [BoxShadow(color: borderColor.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: borderColor, letterSpacing: 0.8)),
+          const SizedBox(height: 4),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+
+  // ── Petal Layout ────────────────────────────────────────────────────────────
+  Widget _buildPetalLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = theme.colorScheme.primary;
+    final bg = isDark ? const Color(0xFF1A0710) : const Color(0xFFFFF5F9);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    final headerGradient = isDark
+        ? [const Color(0xFF9B1B5A), const Color(0xFF4A0B2A)]
+        : [const Color(0xFFFF9EC8), const Color(0xFFFFCDE0)];
+
+    return Scaffold(
+      backgroundColor: bg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Curved petal header ──────────────────────────────────────
+            ClipPath(
+              clipper: _PetalHeaderClipper(),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: headerGradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back + actions
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                          child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.white),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () { setState(() { _isPinned = !_isPinned; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                          child: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 18, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: () { setState(() { _isFavorite = !_isFavorite; _isDirty = true; }); _saveNote(isAutoSave: true); },
+                          child: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, size: 18, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        GestureDetector(
+                          onTap: _saveNote,
+                          child: const Icon(Icons.save_outlined, size: 18, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Title
+                    TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      maxLines: 2,
+                      minLines: 1,
+                      style: const TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.2,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Beautiful title…',
+                        hintStyle: TextStyle(fontFamily: 'Outfit', fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.55)),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // ── Toolbar + Editor ─────────────────────────────────────────
+            if (!isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark),
+            Expanded(child: _buildEditorBody(context)),
+            // ── Rounded pill meta row ────────────────────────────────────
+            if (!isKeyboardOpen)
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _petalChip(icon: Icons.local_offer_outlined, label: _tagController.text.isEmpty ? 'Tags' : _tagController.text, accent: accent, isDark: isDark),
+                      const SizedBox(width: 6),
+                      _petalChip(icon: Icons.folder_outlined, label: 'Folder', accent: accent, isDark: isDark),
+                    ],
+                  ),
+                ),
+              ),
+            if (isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _petalChip({required IconData icon, required String label, required Color accent, required bool isDark}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(isDark ? 0.18 : 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accent.withOpacity(0.25)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: accent),
+        const SizedBox(width: 5),
+        Text(label, style: TextStyle(fontSize: 11, color: accent, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+      ]),
+    );
+  }
+
+  // ── Stardust Layout ─────────────────────────────────────────────────────────
+  Widget _buildStardustLayout() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    const starPrimary = Color(0xFFCFA8FF);
+    const starSecondary = Color(0xFFE8D0FF);
+    final bgTop = isDark ? const Color(0xFF07031A) : const Color(0xFF150A38);
+    final bgBot = isDark ? const Color(0xFF110A2E) : const Color(0xFF2A1060);
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [bgTop, bgBot],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // ── Decorative stars ───────────────────────────────────────
+              ..._buildStarParticles(),
+              // ── Content ────────────────────────────────────────────────
+              Column(
+                children: [
+                  // Toolbar
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: starPrimary),
+                          onPressed: () { _saveNote(); if (Navigator.of(context).canPop()) Navigator.of(context).pop(); else context.go('/home'); },
+                        ),
+                        const Spacer(),
+                        IconButton(icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: starPrimary), onPressed: _saveNote),
+                      ],
+                    ),
+                  ),
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                    child: TextField(
+                      controller: _titleController,
+                      focusNode: _titleFocusNode,
+                      maxLines: 2,
+                      minLines: 1,
+                      style: const TextStyle(
+                        fontFamily: 'Outfit',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: starSecondary,
+                        height: 1.2,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '✨ A dream note…',
+                        hintStyle: TextStyle(fontFamily: 'Outfit', fontSize: 22, fontWeight: FontWeight.w700, color: starPrimary.withOpacity(0.4)),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  // Editor on frosted glass card
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: starPrimary.withOpacity(0.2)),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Column(
+                          children: [
+                            if (!isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark),
+                            Expanded(child: _buildEditorBody(context)),
+                            if (isKeyboardOpen) _buildGentleNoteToolbar(theme, isDark, isAtBottom: true),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildStarParticles() {
+    const stars = [
+      (left: 20.0, top: 40.0, size: 2.0, opacity: 0.8),
+      (left: 80.0, top: 15.0, size: 1.5, opacity: 0.6),
+      (left: 150.0, top: 60.0, size: 2.5, opacity: 0.9),
+      (left: 250.0, top: 25.0, size: 1.5, opacity: 0.7),
+      (left: 310.0, top: 70.0, size: 2.0, opacity: 0.8),
+      (left: 50.0, top: 120.0, size: 1.0, opacity: 0.5),
+      (left: 190.0, top: 100.0, size: 1.5, opacity: 0.6),
+      (left: 340.0, top: 130.0, size: 1.0, opacity: 0.4),
+      (left: 120.0, top: 160.0, size: 2.0, opacity: 0.7),
+      (left: 280.0, top: 180.0, size: 1.5, opacity: 0.5),
+    ];
+    return stars.map((s) => Positioned(
+      left: s.left,
+      top: s.top,
+      child: Opacity(
+        opacity: s.opacity,
+        child: Container(
+          width: s.size,
+          height: s.size,
+          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+        ),
+      ),
+    )).toList();
+  }
+
+  /// Original layout — preserved exactly as it was before this refactor.
+  Widget _buildClassicLayout(ThemeData theme, bool isDark) {
+    final folders = ref.watch(foldersProvider);
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     final showFolderOptions = !isKeyboardOpen || !_editorFocusNode.hasFocus;
     final isMobile = ResponsiveHelper.isMobile(context);
-    
-    if (_isFullScreen) {
-      return _buildFullScreenBody();
-    }
-
-    if (_isFocusMode) {
-      return _buildFocusModeBody();
-    }
 
     final colors = [
       '#FFFFFF',
@@ -3211,5 +4844,26 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> with Single
       ),
     );
   }
+}
+
+/// Custom clipper for the petal layout's curved header.
+class _PetalHeaderClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 16);
+    path.quadraticBezierTo(
+      size.width / 2,
+      size.height + 10,
+      size.width,
+      size.height - 16,
+    );
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_PetalHeaderClipper old) => false;
 }
 
