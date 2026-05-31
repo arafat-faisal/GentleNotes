@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../../models/models.dart';
+import '../../../../folders/presentation/controllers/folders_controller.dart';
+import '../../../../notes/presentation/controllers/notes_controller.dart';
+import '../../../../../core/services/export_import_service.dart';
 import '../../../domain/entities/block_entity.dart';
 import '../../../domain/entities/block_type.dart';
-import '../../../../../core/utils/responsive_helper.dart';
-import '../editor_blocks_list.dart';
+import '../editor_body_widget.dart';
 import '../panels/floating_toolbar.dart';
-import '../panels/metadata_panel.dart';
 
-class NotebookLayout extends StatelessWidget {
+class NotebookLayout extends ConsumerWidget {
   final String noteId;
+  final EditorMode editorMode;
+  final QuillController? quillController;
+  final FocusNode? editorFocusNode;
   final TextEditingController titleController;
   final TextEditingController tagController;
   final String? selectedFolderId;
@@ -37,6 +45,9 @@ class NotebookLayout extends StatelessWidget {
   const NotebookLayout({
     super.key,
     required this.noteId,
+    required this.editorMode,
+    this.quillController,
+    this.editorFocusNode,
     required this.titleController,
     required this.tagController,
     required this.selectedFolderId,
@@ -64,87 +75,417 @@ class NotebookLayout extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isMobile = ResponsiveHelper.isMobile(context);
+    final accent = theme.colorScheme.primary;
 
-    final panelBg = isDark ? const Color(0xFF13111C) : const Color(0xFFF7F5FC);
-    final borderCol = isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5);
+    final sidebarBg = isDark ? const Color(0xFF1C1829) : Colors.white;
+    final mainBg = isDark ? const Color(0xFF13111C) : const Color(0xFFF8F6FF);
+    final borderCol = isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5);
+
+    final folders = ref.watch(foldersProvider);
+
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Show sidebar if keyboard is not open, or if the screen is wide enough (>= 500)
+    final showSidebar = !isKeyboardOpen || screenWidth >= 500;
+    final sidebarWidth = screenWidth < 400 ? 160.0 : (screenWidth < 600 ? 200.0 : 300.0);
+
+    Widget sidebar = SizedBox(
+      width: sidebarWidth,
+      child: Container(
+        color: sidebarBg,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Slim top bar ──────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: borderCol)),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 15),
+                    onPressed: () {
+                      onSave();
+                      Navigator.pop(context);
+                    },
+                    style: IconButton.styleFrom(
+                      foregroundColor: accent,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.save_outlined, size: 15),
+                    onPressed: onSave,
+                    style: IconButton.styleFrom(
+                      foregroundColor: accent,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Scrollable metadata section ──────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                      child: Text('TITLE',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    // Title field
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                      child: TextField(
+                        controller: titleController,
+                        maxLines: 3,
+                        minLines: 1,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : const Color(0xFF111827),
+                          height: 1.3,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Untitled',
+                          hintStyle: TextStyle(
+                            fontFamily: 'Outfit',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+
+                    Divider(height: 1, indent: 14, endIndent: 14, color: borderCol),
+                    const SizedBox(height: 8),
+
+                    // Folder label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+                      child: Text('FOLDER',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String?>(
+                          value: selectedFolderId,
+                          isExpanded: true,
+                          isDense: true,
+                          hint: Row(
+                            children: [
+                              Icon(Icons.folder_outlined, size: 12, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text('No Folder',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withOpacity(0.5))),
+                              ),
+                            ],
+                          ),
+                          items: [
+                            const DropdownMenuItem<String?>(
+                              value: null,
+                              child: Row(children: [
+                                Icon(Icons.folder_off_outlined, size: 12),
+                                SizedBox(width: 4),
+                                Flexible(child: Text('No Folder', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11))),
+                              ]),
+                            ),
+                            ...folders.map((f) => DropdownMenuItem<String?>(
+                                  value: f.id,
+                                  child: Row(children: [
+                                    Container(width: 7, height: 7, decoration: BoxDecoration(color: f.color, shape: BoxShape.circle)),
+                                    const SizedBox(width: 6),
+                                    Flexible(child: Text(f.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11))),
+                                  ]),
+                                )),
+                          ],
+                          onChanged: onFolderChanged,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Note Type label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+                      child: Text('TYPE',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<NoteType>(
+                          value: noteType,
+                          isExpanded: true,
+                          isDense: true,
+                          items: NoteType.values
+                              .map((t) => DropdownMenuItem<NoteType>(
+                                    value: t,
+                                    child: Row(children: [
+                                      Icon(t.icon, size: 12, color: accent),
+                                      const SizedBox(width: 5),
+                                      Flexible(child: Text(t.displayName, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11))),
+                                    ]),
+                                  ))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              onNoteTypeChanged(val);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    Divider(height: 1, indent: 14, endIndent: 14, color: borderCol),
+                    const SizedBox(height: 8),
+
+                    // Tags label
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
+                      child: Text('TAGS',
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: accent,
+                              letterSpacing: 0.8)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.local_offer_outlined, size: 12, color: accent.withOpacity(0.7)),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: TextField(
+                              controller: tagController,
+                              style: const TextStyle(fontSize: 11),
+                              decoration: const InputDecoration(
+                                hintText: 'tag1, tag2…',
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                isDense: true,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+                    Divider(height: 1, indent: 14, endIndent: 14, color: borderCol),
+                    const SizedBox(height: 4),
+
+                    // Pin / Fave / Actions
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 16),
+                            color: isPinned ? accent : null,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                            onPressed: () => onPinChanged(!isPinned),
+                          ),
+                          IconButton(
+                            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, size: 16),
+                            color: isFavorite ? const Color(0xFFF43F5E) : null,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                            onPressed: () => onFavoriteChanged(!isFavorite),
+                          ),
+                          const Spacer(),
+                          PopupMenuButton<String>(
+                            icon: Icon(Icons.more_horiz_rounded, size: 16, color: accent),
+                            padding: const EdgeInsets.all(4),
+                            onSelected: (val) async {
+                              if (val == 'share') {
+                                onSave();
+                                final note = ref.read(notesProvider).firstWhere((n) => n.id == noteId);
+                                final folders = ref.read(foldersProvider);
+                                final folder = folders.cast<FolderModel?>().firstWhere(
+                                      (f) => f?.id == selectedFolderId,
+                                      orElse: () => null,
+                                    );
+                                ExportImportService().shareNote(note, folderName: folder?.name);
+                              }
+                              if (val == 'md') {
+                                onSave();
+                                final note = ref.read(notesProvider).firstWhere((n) => n.id == noteId);
+                                final markdown = ExportImportService().exportNoteAsMarkdown(note);
+                                await Share.share(markdown, subject: '${note.title}.md');
+                              }
+                              if (val == 'pdf') onPrintPdf();
+                              if (val == 'delete') {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: const Text('Delete Note'),
+                                      content: const Text('Are you sure you want to permanently delete this note?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            await ref.read(notesProvider.notifier).deleteNote(noteId);
+                                            if (context.mounted) {
+                                              Navigator.pop(context);
+                                              context.pop();
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'share',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.share_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Share'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'md',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.article_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Export MD'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'pdf',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.picture_as_pdf_outlined),
+                                    SizedBox(width: 8),
+                                    Text('Export PDF'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline, color: Colors.red),
+                                    SizedBox(width: 8),
+                                    Text('Delete Note', style: TextStyle(color: Colors.red)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0D0B18) : Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            onSave();
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text('Notebook Mode', style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(icon: const Icon(Icons.picture_as_pdf_rounded), onPressed: onPrintPdf, tooltip: 'Export PDF'),
-          IconButton(icon: const Icon(Icons.save_rounded), onPressed: onSave, tooltip: 'Save note'),
-        ],
-      ),
+      backgroundColor: mainBg,
       body: SafeArea(
         child: Stack(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Left metadata sidebar panel (if desktop/tablet)
-                if (!isMobile)
-                  Container(
-                    width: 300,
-                    decoration: BoxDecoration(
-                      color: panelBg,
-                      border: Border(right: BorderSide(color: borderCol, width: 1)),
-                    ),
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      child: MetadataPanel(
-                        selectedFolderId: selectedFolderId,
-                        onFolderChanged: onFolderChanged,
-                        noteType: noteType,
-                        onNoteTypeChanged: onNoteTypeChanged,
-                        isPinned: isPinned,
-                        onPinChanged: onPinChanged,
-                        isFavorite: isFavorite,
-                        onFavoriteChanged: onFavoriteChanged,
-                        colorHex: colorHex,
-                        onColorChanged: onColorChanged,
-                        tagController: tagController,
-                      ),
-                    ),
-                  ),
-
-                // Right main content column
+                if (showSidebar) ...[
+                  sidebar,
+                  Container(width: 1, color: borderCol),
+                ],
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(24.0, 16.0, 24.0, 80.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        TextField(
-                          controller: titleController,
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontFamily: 'Outfit',
-                            fontWeight: FontWeight.bold,
+                        // If sidebar is hidden (e.g. mobile keyboard open), show a slim title input
+                        if (!showSidebar) ...[
+                          TextField(
+                            controller: titleController,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontFamily: 'Outfit',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Enter title...',
+                              hintStyle: TextStyle(color: theme.hintColor.withOpacity(0.3)),
+                              border: InputBorder.none,
+                              isDense: true,
+                            ),
                           ),
-                          decoration: InputDecoration(
-                            hintText: 'Enter title...',
-                            hintStyle: TextStyle(color: theme.hintColor.withOpacity(0.3)),
-                            border: InputBorder.none,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Divider(thickness: 1),
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 4),
+                          const Divider(thickness: 1),
+                          const SizedBox(height: 8),
+                        ],
+
                         Expanded(
-                          child: EditorBlocksList(
+                          child: EditorBodyWidget(
+                            editorMode: editorMode,
+                            quillController: quillController,
+                            editorFocusNode: editorFocusNode,
+                            noteType: noteType,
+                            attachments: const [],
                             blocks: blocks,
                             focusNodes: focusNodes,
                             scrollController: scrollController,
@@ -156,40 +497,6 @@ class NotebookLayout extends StatelessWidget {
                 ),
               ],
             ),
-
-            // Settings Sheet activator for mobile
-            if (isMobile)
-              Positioned(
-                bottom: 80,
-                right: 16,
-                child: FloatingActionButton.small(
-                  backgroundColor: theme.colorScheme.primary,
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (ctx) => SingleChildScrollView(
-                        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-                        child: MetadataPanel(
-                          selectedFolderId: selectedFolderId,
-                          onFolderChanged: onFolderChanged,
-                          noteType: noteType,
-                          onNoteTypeChanged: onNoteTypeChanged,
-                          isPinned: isPinned,
-                          onPinChanged: onPinChanged,
-                          isFavorite: isFavorite,
-                          onFavoriteChanged: onFavoriteChanged,
-                          colorHex: colorHex,
-                          onColorChanged: onColorChanged,
-                          tagController: tagController,
-                        ),
-                      ),
-                    );
-                  },
-                  child: const Icon(Icons.settings_outlined, color: Colors.white),
-                ),
-              ),
 
             // Floating format bar
             Positioned(
@@ -206,6 +513,7 @@ class NotebookLayout extends StatelessWidget {
                   canRedo: canRedo,
                   isSpeechListening: isSpeechListening,
                   onSpeechToggle: onSpeechToggle,
+                  quillController: quillController,
                 ),
               ),
             ),

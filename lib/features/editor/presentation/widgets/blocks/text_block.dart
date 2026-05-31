@@ -55,7 +55,7 @@ class _TextBlockState extends State<TextBlock> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final fontStyle = theme.textTheme.bodyLarge?.copyWith(
-      fontFamily: 'Inter',
+      fontFamily: theme.textTheme.bodyLarge?.fontFamily ?? 'Inter',
       height: 1.5,
     );
 
@@ -86,7 +86,7 @@ class _TextBlockState extends State<TextBlock> {
           hintText: 'Type something...',
           hintStyle: theme.textTheme.bodyLarge?.copyWith(
             color: theme.hintColor.withOpacity(0.4),
-            fontFamily: 'Inter',
+            fontFamily: theme.textTheme.bodyLarge?.fontFamily ?? 'Inter',
           ),
           border: InputBorder.none,
           focusedBorder: InputBorder.none,

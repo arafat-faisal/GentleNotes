@@ -39,6 +39,26 @@ class EditorPreferencesPanel extends ConsumerWidget {
           ),
           const Divider(indent: 16, endIndent: 16),
           ListTile(
+            leading: const Icon(Icons.edit_note_rounded),
+            title: const Text('Editor Mode'),
+            subtitle: const Text('Continuous text or block-based editor'),
+            trailing: DropdownButton<EditorMode>(
+              value: settings.editorMode,
+              items: EditorMode.values.map((mode) {
+                return DropdownMenuItem(
+                  value: mode,
+                  child: Text(mode.displayName, style: const TextStyle(fontSize: 13)),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  ref.read(settingsProvider.notifier).updateEditorMode(val);
+                }
+              },
+            ),
+          ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
             leading: const Icon(Icons.code_rounded),
             title: const Text('Code Preview Theme'),
             subtitle: const Text('Select visual syntax highlight theme'),

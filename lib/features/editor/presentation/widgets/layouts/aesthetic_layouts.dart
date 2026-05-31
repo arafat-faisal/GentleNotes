@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../../models/models.dart';
 import '../../../domain/entities/block_entity.dart';
 import '../../../domain/entities/block_type.dart';
@@ -14,6 +15,10 @@ import 'cards_layout.dart';
 class AestheticLayout extends StatelessWidget {
   final EditorLayoutVariant variant;
   final String noteId;
+  final EditorMode editorMode;
+  final QuillController? quillController;
+  final FocusNode? editorFocusNode;
+  final List<AttachmentModel> attachments;
   final TextEditingController titleController;
   final TextEditingController tagController;
   final String? selectedFolderId;
@@ -43,6 +48,10 @@ class AestheticLayout extends StatelessWidget {
     super.key,
     required this.variant,
     required this.noteId,
+    required this.editorMode,
+    this.quillController,
+    this.editorFocusNode,
+    required this.attachments,
     required this.titleController,
     required this.tagController,
     required this.selectedFolderId,
@@ -80,7 +89,7 @@ class AestheticLayout extends StatelessWidget {
 
     switch (variant) {
       case EditorLayoutVariant.journal:
-        backgroundColor = isDark ? const Color(0xFF131A0B) : const Color(0xFFF9FDF5);
+        backgroundColor = isDark ? const Color(0xFF0F1A0A) : const Color(0xFFFFFDF5);
         body = JournalLayout(layout: this);
         break;
 
@@ -109,7 +118,7 @@ class AestheticLayout extends StatelessWidget {
 
       case EditorLayoutVariant.cards:
       default:
-        backgroundColor = isDark ? const Color(0xFF13111C) : const Color(0xFFF5F3FF);
+        backgroundColor = isDark ? const Color(0xFF0F0B1E) : const Color(0xFFF9F7FF);
         body = CardsLayout(layout: this);
         break;
     }
@@ -138,6 +147,7 @@ class AestheticLayout extends StatelessWidget {
                     canRedo: canRedo,
                     isSpeechListening: isSpeechListening,
                     onSpeechToggle: onSpeechToggle,
+                    quillController: quillController,
                   ),
                 ),
               ),

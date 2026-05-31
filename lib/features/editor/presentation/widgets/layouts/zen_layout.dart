@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../../models/models.dart';
+import '../../../../folders/presentation/controllers/folders_controller.dart';
+import '../../../../notes/presentation/controllers/notes_controller.dart';
+import '../../../../../core/services/export_import_service.dart';
 import '../../../domain/entities/block_entity.dart';
 import '../../../domain/entities/block_type.dart';
-import '../editor_blocks_list.dart';
+import '../editor_body_widget.dart';
 import '../panels/floating_toolbar.dart';
 import '../panels/metadata_panel.dart';
 
-class ZenLayout extends StatefulWidget {
+class ZenLayout extends ConsumerStatefulWidget {
   final String noteId;
+  final EditorMode editorMode;
+  final QuillController? quillController;
+  final FocusNode? editorFocusNode;
   final TextEditingController titleController;
   final TextEditingController tagController;
   final String? selectedFolderId;
@@ -36,6 +46,9 @@ class ZenLayout extends StatefulWidget {
   const ZenLayout({
     super.key,
     required this.noteId,
+    required this.editorMode,
+    this.quillController,
+    this.editorFocusNode,
     required this.titleController,
     required this.tagController,
     required this.selectedFolderId,
@@ -63,10 +76,10 @@ class ZenLayout extends StatefulWidget {
   });
 
   @override
-  State<ZenLayout> createState() => _ZenLayoutState();
+  ConsumerState<ZenLayout> createState() => _ZenLayoutState();
 }
 
-class _ZenLayoutState extends State<ZenLayout> {
+class _ZenLayoutState extends ConsumerState<ZenLayout> {
   bool _chromeVisible = true;
 
   @override
@@ -75,9 +88,10 @@ class _ZenLayoutState extends State<ZenLayout> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF07050E) : const Color(0xFFFBFBFC),
+      backgroundColor: isDark ? const Color(0xFF090B16) : const Color(0xFFFDFCFF),
       body: SafeArea(
         child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
           onTap: () {
             setState(() {
               _chromeVisible = !_chromeVisible;
@@ -88,30 +102,41 @@ class _ZenLayoutState extends State<ZenLayout> {
               // Editor Content Area (always interactive)
               Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 16.0),
+                  padding: const EdgeInsets.fromLTRB(32, 48, 32, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 60), // Space for header
+                      const SizedBox(height: 48), // Space for header
                       TextField(
                         controller: widget.titleController,
-                        style: theme.textTheme.headlineLarge?.copyWith(
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1.5,
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                          height: 1.2,
+                          color: isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF111827),
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Zen Writing...',
+                          hintText: 'Begin…',
                           hintStyle: TextStyle(
-                            color: theme.hintColor.withOpacity(0.15),
+                            fontFamily: 'Outfit',
+                            fontSize: 28,
                             fontWeight: FontWeight.w700,
+                            color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE9E6F5),
                           ),
                           border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
                       Expanded(
-                        child: EditorBlocksList(
+                        child: EditorBodyWidget(
+                          editorMode: widget.editorMode,
+                          quillController: widget.quillController,
+                          editorFocusNode: widget.editorFocusNode,
+                          noteType: widget.noteType,
+                          attachments: const [],
                           blocks: widget.blocks,
                           focusNodes: widget.focusNodes,
                           scrollController: widget.scrollController,
@@ -136,7 +161,7 @@ class _ZenLayoutState extends State<ZenLayout> {
                   child: Container(
                     height: 60,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: isDark ? const Color(0xFF07050E).withOpacity(0.8) : const Color(0xFFFBFBFC).withOpacity(0.8),
+                    color: isDark ? const Color(0xFF090B16).withOpacity(0.8) : const Color(0xFFFDFCFF).withOpacity(0.8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -144,21 +169,39 @@ class _ZenLayoutState extends State<ZenLayout> {
                           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
                           onPressed: () {
                             widget.onSave();
-                            Navigator.pop(context);
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              context.go('/home');
+                            }
                           },
                         ),
-                        const Text(
-                          'Zen Mode',
+                        const Spacer(),
+                        Text(
+                          'Zen',
                           style: TextStyle(
                             fontFamily: 'Outfit',
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2.0,
                             fontSize: 12,
+                            color: theme.colorScheme.primary.withOpacity(0.8),
                           ),
                         ),
+                        const Spacer(),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            IconButton(
+                              icon: Icon(
+                                widget.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                                size: 18,
+                              ),
+                              color: widget.isPinned ? theme.colorScheme.primary : null,
+                              onPressed: () {
+                                widget.onPinChanged(!widget.isPinned);
+                                widget.onSave();
+                              },
+                            ),
                             IconButton(
                               icon: const Icon(Icons.tune_rounded, size: 18),
                               onPressed: () {
@@ -185,9 +228,84 @@ class _ZenLayoutState extends State<ZenLayout> {
                                 );
                               },
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.done_rounded, size: 18),
-                              onPressed: widget.onSave,
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert_rounded, size: 18),
+                              onSelected: (val) async {
+                                if (val == 'save') widget.onSave();
+                                if (val == 'share') {
+                                  widget.onSave();
+                                  final note = ref.read(notesProvider).firstWhere((n) => n.id == widget.noteId);
+                                  final folders = ref.read(foldersProvider);
+                                  final folder = folders.cast<FolderModel?>().firstWhere(
+                                        (f) => f?.id == widget.selectedFolderId,
+                                        orElse: () => null,
+                                      );
+                                  ExportImportService().shareNote(note, folderName: folder?.name);
+                                }
+                                if (val == 'delete') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: const Text('Delete Note'),
+                                        content: const Text('Are you sure you want to permanently delete this note?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () async {
+                                              await ref.read(notesProvider.notifier).deleteNote(widget.noteId);
+                                              if (context.mounted) {
+                                                Navigator.pop(context);
+                                                context.pop();
+                                              }
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red,
+                                              foregroundColor: Colors.white,
+                                            ),
+                                            child: const Text('Delete'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 'save',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.save_outlined),
+                                      SizedBox(width: 8),
+                                      Text('Save Note'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'share',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.share_outlined),
+                                      SizedBox(width: 8),
+                                      Text('Share Note'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete_outline, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('Delete Note', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -217,6 +335,7 @@ class _ZenLayoutState extends State<ZenLayout> {
                       canRedo: widget.canRedo,
                       isSpeechListening: widget.isSpeechListening,
                       onSpeechToggle: widget.onSpeechToggle,
+                      quillController: widget.quillController,
                     ),
                   ),
                 ),

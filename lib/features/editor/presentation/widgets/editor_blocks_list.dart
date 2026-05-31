@@ -10,6 +10,7 @@ class EditorBlocksList extends ConsumerWidget {
   final ScrollController scrollController;
   final bool shrinkWrap;
   final ScrollPhysics? physics;
+  final bool isReorderable;
 
   const EditorBlocksList({
     super.key,
@@ -18,11 +19,39 @@ class EditorBlocksList extends ConsumerWidget {
     required this.scrollController,
     this.shrinkWrap = false,
     this.physics,
+    this.isReorderable = true,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(editorBlockControllerProvider.notifier);
+
+    if (!isReorderable) {
+      return ListView.builder(
+        controller: scrollController,
+        shrinkWrap: shrinkWrap,
+        physics: physics,
+        itemCount: blocks.length,
+        itemBuilder: (context, index) {
+          final block = blocks[index];
+          FocusNode? node = focusNodes[block.id];
+          if (node == null) {
+            node = FocusNode();
+            focusNodes[block.id] = node;
+          }
+
+          return Padding(
+            key: ValueKey(block.id),
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: BlockRenderer(
+              block: block,
+              index: index,
+              focusNode: node,
+            ),
+          );
+        },
+      );
+    }
 
     return ReorderableListView.builder(
       scrollController: scrollController,

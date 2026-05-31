@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 Widget previewLine(Color color, double widthFactor) {
   return LayoutBuilder(builder: (ctx, box) {
+    final baseWidth = box.maxWidth.isFinite ? box.maxWidth : 80.0;
     return Container(
       height: 5,
-      width: box.maxWidth * widthFactor,
+      width: baseWidth * widthFactor,
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
     );
   });
@@ -12,9 +13,10 @@ Widget previewLine(Color color, double widthFactor) {
 
 Widget previewBar(Color color, double widthFactor) {
   return LayoutBuilder(builder: (ctx, box) {
+    final baseWidth = box.maxWidth.isFinite ? box.maxWidth : 80.0;
     return Container(
       height: 5,
-      width: box.maxWidth * widthFactor,
+      width: baseWidth * widthFactor,
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
     );
   });

@@ -82,8 +82,17 @@ enum LayoutMode {
 }
 
 enum EditorMode {
-  plain,
-  markdown;
+  gentleNote,
+  blockEditor;
+
+  String get displayName {
+    switch (this) {
+      case EditorMode.gentleNote:
+        return 'GentleNote (Quill)';
+      case EditorMode.blockEditor:
+        return 'Block Editor';
+    }
+  }
 }
 
 /// Controls which visual layout variant is used in the note editor.

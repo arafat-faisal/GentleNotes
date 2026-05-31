@@ -11,7 +11,7 @@ class SettingsStorage {
     final theme = sharedPrefs.getString(AppConstants.prefThemeMode) ?? 'system';
     final accent = sharedPrefs.getString(AppConstants.prefAccentColor) ?? AppConstants.defaultAccentHex;
     final layout = sharedPrefs.getString(AppConstants.prefLayoutMode) ?? 'grid';
-    final editor = sharedPrefs.getString(AppConstants.prefEditorMode) ?? 'markdown';
+    final editor = sharedPrefs.getString(AppConstants.prefEditorMode) ?? 'gentleNote';
     final noteType = sharedPrefs.getString(AppConstants.prefDefaultNoteType) ?? 'mixed';
     final autoSave = sharedPrefs.getBool(AppConstants.prefAutoSave) ?? true;
     final codeTheme = sharedPrefs.getString(AppConstants.prefCodeTheme) ?? AppConstants.defaultCodeTheme;
@@ -22,7 +22,7 @@ class SettingsStorage {
       themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == theme, orElse: () => ThemeModeSetting.system),
       accentColorHex: accent,
       layoutMode: LayoutMode.values.firstWhere((e) => e.name == layout, orElse: () => LayoutMode.grid),
-      editorMode: EditorMode.values.firstWhere((e) => e.name == editor, orElse: () => EditorMode.markdown),
+      editorMode: EditorMode.values.firstWhere((e) => e.name == editor, orElse: () => EditorMode.gentleNote),
       defaultNoteType: NoteType.values.firstWhere((e) => e.name == noteType, orElse: () => NoteType.markdown),
       autoSaveEnabled: autoSave,
       activeCodeTheme: codeTheme,

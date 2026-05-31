@@ -62,7 +62,7 @@ class EditorLayoutPicker extends ConsumerWidget {
     ];
 
     return SizedBox(
-      height: 190,
+      height: 220,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: variants.length,
@@ -107,12 +107,18 @@ class EditorLayoutPicker extends ConsumerWidget {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-                      child: item.previewBuilder(isDark),
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: 130,
+                          height: 130,
+                          child: item.previewBuilder(isDark),
+                        ),
+                      ),
                     ),
                   ),
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     decoration: BoxDecoration(
                       border: Border(
                         top: BorderSide(
@@ -122,14 +128,13 @@ class EditorLayoutPicker extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
                             item.variant.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -137,6 +142,7 @@ class EditorLayoutPicker extends ConsumerWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 4),
                         if (isSelected)
                           Icon(Icons.check_circle_rounded, size: 16, color: accentColor)
                         else

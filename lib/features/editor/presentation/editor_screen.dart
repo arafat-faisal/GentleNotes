@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as speech_to_text;
 import 'package:uuid/uuid.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../models/models.dart';
 import '../../../../features/notes/presentation/controllers/notes_controller.dart';
@@ -14,6 +17,7 @@ import '../domain/entities/block_type.dart';
 import '../domain/usecases/convert_blocks_to_delta.dart';
 import '../domain/usecases/convert_delta_to_blocks.dart';
 import 'controllers/editor_block_controller.dart';
+import 'widgets/blocks/drawing_canvas_screen.dart';
 
 import 'widgets/layouts/classic_layout.dart';
 import 'widgets/layouts/minimal_layout.dart';
@@ -59,10 +63,22 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   Timer? _autoSaveTimer;
   bool _isDirty = false;
 
+  // Quill Editor Controller and FocusNode
+  late QuillController _quillController;
+  final FocusNode _editorFocusNode = FocusNode();
+  EditorMode? _lastEditorMode;
+  StreamSubscription? _quillSubscription;
+
   // Speech to Text
   final speech_to_text.SpeechToText _speechToText = speech_to_text.SpeechToText();
   bool _speechInitialized = false;
   bool _isSpeechListening = false;
+
+  void _updateUi() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   void initState() {
@@ -71,6 +87,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _isEditMode = widget.noteId != null;
     _selectedFolderId = widget.initialFolderId;
     _templateId = widget.initialTemplateId;
+
+    _quillController = QuillController.basic();
+    _quillController.addListener(_updateUi);
 
     _titleController.addListener(_markDirty);
     _tagController.addListener(_markDirty);
@@ -101,6 +120,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _titleController.dispose();
     _tagController.dispose();
     _scrollController.dispose();
+    _quillController.removeListener(_updateUi);
+    _quillController.dispose();
+    _editorFocusNode.dispose();
+    _quillSubscription?.cancel();
     for (var node in _focusNodes.values) {
       node.dispose();
     }
@@ -151,15 +174,46 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
     final blocks = ConvertDeltaToBlocks.execute(noteContent);
     ref.read(editorBlockControllerProvider.notifier).initializeWithBlocks(blocks);
+
+    _quillSubscription?.cancel();
+    _quillController.removeListener(_updateUi);
+    Document doc;
+    if (noteContent.isNotEmpty) {
+      try {
+        final deltaJson = jsonDecode(noteContent);
+        doc = Document.fromJson(deltaJson);
+      } catch (e) {
+        doc = Document()..insert(0, noteContent);
+      }
+    } else {
+      doc = Document();
+    }
+    _quillController = QuillController(
+      document: doc,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+    _quillController.addListener(_updateUi);
+    _quillSubscription = _quillController.document.changes.listen((_) {
+      _isDirty = true;
+    });
+
     setState(() {});
   }
 
   Future<void> _saveNote({bool isAutoSave = false}) async {
+    final settings = ref.read(settingsProvider);
     final blocksState = ref.read(editorBlockControllerProvider);
     if (!_isDirty && !blocksState.isDirty && isAutoSave) return;
 
     final title = _titleController.text.trim();
-    final content = ConvertBlocksToDelta.execute(blocksState.blocks);
+    
+    final String content;
+    if (settings.editorMode == EditorMode.gentleNote) {
+      content = jsonEncode(_quillController.document.toDelta().toJson());
+    } else {
+      content = ConvertBlocksToDelta.execute(blocksState.blocks);
+    }
+
     final tags = _tagController.text
         .split(',')
         .map((e) => e.trim())
@@ -234,15 +288,23 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             if (result.finalResult) {
               final text = result.recognizedWords;
               if (text.isNotEmpty) {
-                // Add speech dictation as a new text block
-                final state = ref.read(editorBlockControllerProvider);
-                final index = state.blocks.length - 1;
-                ref.read(editorBlockControllerProvider.notifier).insertBlock(
-                      index,
-                      BlockType.text,
-                      content: text,
-                    );
-                _markDirty();
+                // Add speech dictation at current cursor or block
+                final settings = ref.read(settingsProvider);
+                if (settings.editorMode == EditorMode.gentleNote) {
+                  final index = _quillController.selection.baseOffset;
+                  final length = _quillController.selection.extentOffset - index;
+                  _quillController.replaceText(index, length, text, null);
+                  _markDirty();
+                } else {
+                  final state = ref.read(editorBlockControllerProvider);
+                  final index = state.blocks.length - 1;
+                  ref.read(editorBlockControllerProvider.notifier).insertBlock(
+                        index,
+                        BlockType.text,
+                        content: text,
+                      );
+                  _markDirty();
+                }
               }
             }
           },
@@ -255,11 +317,75 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     }
   }
 
+  Future<void> _openQuillDrawing() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => DrawingCanvasScreen(
+          onSave: (strokes, pngBytes) async {
+            if (pngBytes != null) {
+              final dir = await getApplicationDocumentsDirectory();
+              final fileName = 'drawing_${const Uuid().v4()}.png';
+              final file = File('${dir.path}/$fileName');
+              await file.writeAsBytes(pngBytes);
+              
+              final index = _quillController.selection.baseOffset;
+              final length = _quillController.selection.extentOffset - index;
+              _quillController.replaceText(index, length, BlockEmbed('image', 'file://${file.path}'), null);
+              _markDirty();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   void _onInsertBlock(BlockType type, {String content = '', Map<String, dynamic> attributes = const {}}) {
-    final state = ref.read(editorBlockControllerProvider);
-    final index = state.selectedIndex >= 0 ? state.selectedIndex : state.blocks.length - 1;
-    ref.read(editorBlockControllerProvider.notifier).insertBlock(index, type, content: content);
-    _markDirty();
+    final settings = ref.read(settingsProvider);
+    
+    if (settings.editorMode == EditorMode.gentleNote) {
+      final index = _quillController.selection.baseOffset;
+      final length = _quillController.selection.extentOffset - index;
+      
+      switch (type) {
+        case BlockType.heading:
+          final currentHeader = _quillController.getSelectionStyle().attributes[Attribute.header.key]?.value;
+          final targetHeader = attributes['header'] ?? 1;
+          _quillController.formatSelection(currentHeader == targetHeader ? Attribute.clone(Attribute.header, null) : Attribute.h1);
+          break;
+        case BlockType.checklist:
+          final currentList = _quillController.getSelectionStyle().attributes[Attribute.list.key]?.value;
+          final isTodoList = currentList == 'checked' || currentList == 'unchecked';
+          _quillController.formatSelection(isTodoList ? Attribute.clone(Attribute.list, null) : Attribute.unchecked);
+          break;
+        case BlockType.code:
+          final isCode = _quillController.getSelectionStyle().attributes[Attribute.codeBlock.key]?.value == true;
+          _quillController.formatSelection(isCode ? Attribute.clone(Attribute.codeBlock, null) : Attribute.codeBlock);
+          break;
+        case BlockType.image:
+          _quillController.replaceText(index, length, BlockEmbed('image', content), null);
+          break;
+        case BlockType.audio:
+          _quillController.replaceText(index, length, BlockEmbed('audio', content), null);
+          break;
+        case BlockType.drawing:
+          _openQuillDrawing();
+          break;
+        case BlockType.horizontalRule:
+          _quillController.replaceText(index, length, BlockEmbed('horizontal-rule', ''), null);
+          break;
+        default:
+          if (content.isNotEmpty) {
+            _quillController.replaceText(index, length, content, null);
+          }
+      }
+      _markDirty();
+    } else {
+      final state = ref.read(editorBlockControllerProvider);
+      final index = state.selectedIndex >= 0 ? state.selectedIndex : state.blocks.length - 1;
+      ref.read(editorBlockControllerProvider.notifier).insertBlock(index, type, content: content);
+      _markDirty();
+    }
   }
 
   @override
@@ -267,7 +393,35 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final settings = ref.watch(settingsProvider);
     final blocksState = ref.watch(editorBlockControllerProvider);
 
+    final currentMode = settings.editorMode;
+    if (_lastEditorMode != currentMode) {
+      if (_lastEditorMode == EditorMode.gentleNote && currentMode == EditorMode.blockEditor) {
+        // Sync Quill to Blocks
+        final deltaJson = jsonEncode(_quillController.document.toDelta().toJson());
+        final blocks = ConvertDeltaToBlocks.execute(deltaJson);
+        ref.read(editorBlockControllerProvider.notifier).initializeWithBlocks(blocks);
+      } else if (_lastEditorMode == EditorMode.blockEditor && currentMode == EditorMode.gentleNote) {
+        // Sync Blocks to Quill
+        final deltaJson = ConvertBlocksToDelta.execute(blocksState.blocks);
+        try {
+          final doc = Document.fromJson(jsonDecode(deltaJson));
+          _quillController.removeListener(_updateUi);
+          _quillController = QuillController(
+            document: doc,
+            selection: const TextSelection.collapsed(offset: 0),
+          );
+          _quillController.addListener(_updateUi);
+          _quillSubscription?.cancel();
+          _quillSubscription = _quillController.document.changes.listen((_) {
+            _isDirty = true;
+          });
+        } catch (_) {}
+      }
+      _lastEditorMode = currentMode;
+    }
+
     final layoutVariant = settings.editorLayout;
+    debugPrint('EDITOR SCREEN BUILD - RESOLVED LAYOUT VARIANT: $layoutVariant');
 
     // Common callbacks and parameters
     final onFolderChanged = (String? val) => setState(() {
@@ -291,11 +445,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           _markDirty();
         });
     final onPrintPdf = () {
+      final content = settings.editorMode == EditorMode.gentleNote
+          ? jsonEncode(_quillController.document.toDelta().toJson())
+          : ConvertBlocksToDelta.execute(blocksState.blocks);
       final note = NoteModel(
         id: _noteId,
         folderId: _selectedFolderId,
         title: _titleController.text.trim().isEmpty ? 'Untitled Note' : _titleController.text.trim(),
-        content: ConvertBlocksToDelta.execute(blocksState.blocks),
+        content: content,
         noteType: _noteType,
         tags: _tagController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
         attachments: _attachments,
@@ -309,10 +466,36 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       PdfExportDialog.show(context, note);
     };
 
+    final canUndo = settings.editorMode == EditorMode.gentleNote
+        ? _quillController.hasUndo
+        : blocksState.undoStack.isNotEmpty;
+    final canRedo = settings.editorMode == EditorMode.gentleNote
+        ? _quillController.hasRedo
+        : blocksState.redoStack.isNotEmpty;
+
+    final onUndo = () {
+      if (settings.editorMode == EditorMode.gentleNote) {
+        _quillController.undo();
+      } else {
+        ref.read(editorBlockControllerProvider.notifier).undo();
+      }
+    };
+    final onRedo = () {
+      if (settings.editorMode == EditorMode.gentleNote) {
+        _quillController.redo();
+      } else {
+        ref.read(editorBlockControllerProvider.notifier).redo();
+      }
+    };
+
     if (layoutVariant.isAesthetic || layoutVariant == EditorLayoutVariant.cards) {
       return AestheticLayout(
         variant: layoutVariant,
         noteId: _noteId,
+        editorMode: settings.editorMode,
+        quillController: _quillController,
+        editorFocusNode: _editorFocusNode,
+        attachments: _attachments,
         titleController: _titleController,
         tagController: _tagController,
         selectedFolderId: _selectedFolderId,
@@ -333,10 +516,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         isSpeechListening: _isSpeechListening,
         onSpeechToggle: _toggleSpeechToText,
         onInsertBlock: _onInsertBlock,
-        onUndo: () => ref.read(editorBlockControllerProvider.notifier).undo(),
-        onRedo: () => ref.read(editorBlockControllerProvider.notifier).redo(),
-        canUndo: blocksState.undoStack.isNotEmpty,
-        canRedo: blocksState.redoStack.isNotEmpty,
+        onUndo: onUndo,
+        onRedo: onRedo,
+        canUndo: canUndo,
+        canRedo: canRedo,
       );
     }
 
@@ -344,6 +527,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       case EditorLayoutVariant.minimal:
         return MinimalLayout(
           noteId: _noteId,
+          editorMode: settings.editorMode,
+          quillController: _quillController,
+          editorFocusNode: _editorFocusNode,
           titleController: _titleController,
           tagController: _tagController,
           selectedFolderId: _selectedFolderId,
@@ -364,14 +550,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           isSpeechListening: _isSpeechListening,
           onSpeechToggle: _toggleSpeechToText,
           onInsertBlock: _onInsertBlock,
-          onUndo: () => ref.read(editorBlockControllerProvider.notifier).undo(),
-          onRedo: () => ref.read(editorBlockControllerProvider.notifier).redo(),
-          canUndo: blocksState.undoStack.isNotEmpty,
-          canRedo: blocksState.redoStack.isNotEmpty,
+          onUndo: onUndo,
+          onRedo: onRedo,
+          canUndo: canUndo,
+          canRedo: canRedo,
         );
       case EditorLayoutVariant.notebook:
         return NotebookLayout(
           noteId: _noteId,
+          editorMode: settings.editorMode,
+          quillController: _quillController,
+          editorFocusNode: _editorFocusNode,
           titleController: _titleController,
           tagController: _tagController,
           selectedFolderId: _selectedFolderId,
@@ -392,14 +581,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           isSpeechListening: _isSpeechListening,
           onSpeechToggle: _toggleSpeechToText,
           onInsertBlock: _onInsertBlock,
-          onUndo: () => ref.read(editorBlockControllerProvider.notifier).undo(),
-          onRedo: () => ref.read(editorBlockControllerProvider.notifier).redo(),
-          canUndo: blocksState.undoStack.isNotEmpty,
-          canRedo: blocksState.redoStack.isNotEmpty,
+          onUndo: onUndo,
+          onRedo: onRedo,
+          canUndo: canUndo,
+          canRedo: canRedo,
         );
       case EditorLayoutVariant.zen:
         return ZenLayout(
           noteId: _noteId,
+          editorMode: settings.editorMode,
+          quillController: _quillController,
+          editorFocusNode: _editorFocusNode,
           titleController: _titleController,
           tagController: _tagController,
           selectedFolderId: _selectedFolderId,
@@ -420,15 +612,19 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           isSpeechListening: _isSpeechListening,
           onSpeechToggle: _toggleSpeechToText,
           onInsertBlock: _onInsertBlock,
-          onUndo: () => ref.read(editorBlockControllerProvider.notifier).undo(),
-          onRedo: () => ref.read(editorBlockControllerProvider.notifier).redo(),
-          canUndo: blocksState.undoStack.isNotEmpty,
-          canRedo: blocksState.redoStack.isNotEmpty,
+          onUndo: onUndo,
+          onRedo: onRedo,
+          canUndo: canUndo,
+          canRedo: canRedo,
         );
       case EditorLayoutVariant.classic:
       default:
         return ClassicLayout(
           noteId: _noteId,
+          editorMode: settings.editorMode,
+          quillController: _quillController,
+          editorFocusNode: _editorFocusNode,
+          attachments: _attachments,
           titleController: _titleController,
           tagController: _tagController,
           selectedFolderId: _selectedFolderId,
@@ -449,10 +645,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           isSpeechListening: _isSpeechListening,
           onSpeechToggle: _toggleSpeechToText,
           onInsertBlock: _onInsertBlock,
-          onUndo: () => ref.read(editorBlockControllerProvider.notifier).undo(),
-          onRedo: () => ref.read(editorBlockControllerProvider.notifier).redo(),
-          canUndo: blocksState.undoStack.isNotEmpty,
-          canRedo: blocksState.redoStack.isNotEmpty,
+          onUndo: onUndo,
+          onRedo: onRedo,
+          canUndo: canUndo,
+          canRedo: canRedo,
         );
     }
   }

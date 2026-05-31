@@ -50,17 +50,16 @@ class LayoutPreviewClassic extends StatelessWidget {
           Container(height: 1, color: line),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   previewLine(textMain, 0.7),
-                  const SizedBox(height: 4),
-                  previewLine(textMuted, 0.5),
+                  const SizedBox(height: 3),
+                  previewLine(textMuted, 0.55),
                   const SizedBox(height: 3),
                   previewLine(textMuted, 0.65),
-                  const SizedBox(height: 3),
-                  previewLine(textMuted, 0.4),
                 ],
               ),
             ),

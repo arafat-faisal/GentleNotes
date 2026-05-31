@@ -56,15 +56,14 @@ class LayoutPreviewCards extends StatelessWidget {
           Expanded(
             child: Container(
               color: card,
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   previewLine(textMuted, 0.9),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   previewLine(textMuted, 0.65),
-                  const SizedBox(height: 4),
-                  previewLine(textMuted, 0.5),
                 ],
               ),
             ),

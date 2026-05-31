@@ -37,14 +37,16 @@ class LayoutPreviewJournal extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                Column(
-                  children: List.generate(6, (i) => Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(bottom: BorderSide(color: lineColor, width: 1)),
+                Positioned.fill(
+                  child: Column(
+                    children: List.generate(6, (i) => Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: lineColor, width: 1)),
+                        ),
                       ),
-                    ),
-                  )),
+                    )),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
