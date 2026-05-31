@@ -80,9 +80,9 @@ class NotebookLayout extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final accent = theme.colorScheme.primary;
 
-    final sidebarBg = isDark ? const Color(0xFF1C1829) : Colors.white;
-    final mainBg = isDark ? const Color(0xFF13111C) : const Color(0xFFF8F6FF);
-    final borderCol = isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5);
+    final sidebarBg = theme.cardColor;
+    final mainBg = theme.scaffoldBackgroundColor;
+    final borderCol = theme.dividerColor;
 
     final folders = ref.watch(foldersProvider);
 
@@ -162,7 +162,7 @@ class NotebookLayout extends ConsumerWidget {
                           fontFamily: 'Outfit',
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF111827),
+                          color: theme.colorScheme.onSurface,
                           height: 1.3,
                         ),
                         decoration: InputDecoration(
@@ -171,7 +171,7 @@ class NotebookLayout extends ConsumerWidget {
                             fontFamily: 'Outfit',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8),
+                            color: theme.colorScheme.onSurface.withOpacity(0.4),
                           ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,

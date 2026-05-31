@@ -48,7 +48,6 @@ class GentleScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isMobile = ResponsiveHelper.isMobile(context);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final currentRoute = GoRouterState.of(context).uri.path;
 
     if (isMobile) {
@@ -60,10 +59,10 @@ class GentleScaffold extends ConsumerWidget {
         bottomNavigationBar: showBottomNav
             ? Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF10121F) : Colors.white,
+                  color: theme.bottomNavigationBarTheme.backgroundColor ?? theme.cardColor,
                   border: Border(
                     top: BorderSide(
-                      color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+                      color: theme.dividerColor,
                       width: 1,
                     ),
                   ),
@@ -73,8 +72,8 @@ class GentleScaffold extends ConsumerWidget {
                   onTap: (index) => _onBottomNavTapped(context, index),
                   backgroundColor: Colors.transparent,
                   elevation: 0,
-                  selectedItemColor: const Color(0xFF8B5CF6),
-                  unselectedItemColor: isDark ? const Color(0xFF6B5F8A) : const Color(0xFFAA9ECC),
+                  selectedItemColor: theme.bottomNavigationBarTheme.selectedItemColor ?? theme.colorScheme.primary,
+                  unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor ?? theme.colorScheme.onSurface.withOpacity(0.4),
                   showUnselectedLabels: true,
                   type: BottomNavigationBarType.fixed,
                   items: const [
@@ -148,10 +147,10 @@ class GentleScaffold extends ConsumerWidget {
     return Container(
       width: 260,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0D0B1A) : const Color(0xFFF8F5FF),
+        color: theme.cardColor,
         border: Border(
           right: BorderSide(
-            color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+            color: theme.dividerColor,
             width: 1,
           ),
         ),
@@ -168,15 +167,15 @@ class GentleScaffold extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                    gradient: LinearGradient(
+                      colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF7C3AED).withOpacity(0.4),
+                        color: theme.colorScheme.primary.withOpacity(0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -210,10 +209,10 @@ class GentleScaffold extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF13111C) : const Color(0xFFEDE9FB),
+                color: theme.scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF252234) : const Color(0xFFD8D0F0),
+                  color: theme.dividerColor,
                   width: 1,
                 ),
               ),
@@ -223,8 +222,8 @@ class GentleScaffold extends ConsumerWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                      gradient: LinearGradient(
+                        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -250,12 +249,12 @@ class GentleScaffold extends ConsumerWidget {
                           margin: const EdgeInsets.only(top: 2),
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7C3AED).withOpacity(0.15),
+                            color: theme.colorScheme.primary.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             userRole.displayName,
-                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6), letterSpacing: 0.5),
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: theme.colorScheme.primary, letterSpacing: 0.5),
                           ),
                         ),
                       ],
@@ -270,7 +269,7 @@ class GentleScaffold extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Divider(
-              color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+              color: theme.dividerColor,
               height: 16,
             ),
           ),
@@ -314,7 +313,7 @@ class GentleScaffold extends ConsumerWidget {
                         curve: Curves.easeOut,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                         decoration: BoxDecoration(
-                          color: isActive ? const Color(0xFF7C3AED).withOpacity(0.12) : Colors.transparent,
+                          color: isActive ? theme.colorScheme.primary.withOpacity(0.12) : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -338,7 +337,7 @@ class GentleScaffold extends ConsumerWidget {
                                   fontFamily: 'Inter',
                                   fontSize: 13,
                                   fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                                  color: isActive ? const Color(0xFF8B5CF6) : theme.colorScheme.onSurface.withOpacity(0.7),
+                                  color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.7),
                                 ),
                               ),
                             ),
@@ -378,17 +377,17 @@ class GentleScaffold extends ConsumerWidget {
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF7C3AED).withOpacity(isDark ? 0.2 : 0.1) : Colors.transparent,
+            color: isActive ? theme.colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: isActive
-                ? Border.all(color: const Color(0xFF7C3AED).withOpacity(0.3), width: 1)
+                ? Border.all(color: theme.colorScheme.primary.withOpacity(0.3), width: 1)
                 : Border.all(color: Colors.transparent, width: 1),
           ),
           child: Row(
             children: [
               Icon(
                 isActive ? activeIcon : icon,
-                color: isActive ? const Color(0xFF8B5CF6) : theme.colorScheme.onSurface.withOpacity(0.5),
+                color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.5),
                 size: 18,
               ),
               const SizedBox(width: 12),
@@ -399,7 +398,7 @@ class GentleScaffold extends ConsumerWidget {
                     fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? const Color(0xFF8B5CF6) : theme.colorScheme.onSurface.withOpacity(0.65),
+                    color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.65),
                     letterSpacing: 0.1,
                   ),
                 ),
@@ -408,7 +407,7 @@ class GentleScaffold extends ConsumerWidget {
                 Container(
                   width: 6,
                   height: 6,
-                  decoration: const BoxDecoration(color: Color(0xFF8B5CF6), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: theme.colorScheme.primary, shape: BoxShape.circle),
                 ),
             ],
           ),

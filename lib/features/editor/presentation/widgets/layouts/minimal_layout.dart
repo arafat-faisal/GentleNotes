@@ -81,7 +81,7 @@ class MinimalLayout extends ConsumerWidget {
     final accent = theme.colorScheme.primary;
     final folders = ref.watch(foldersProvider);
     final folder = folders.cast<FolderModel?>().firstWhere((f) => f?.id == selectedFolderId, orElse: () => null);
-    final folderColor = folder?.color ?? (isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8));
+    final folderColor = folder?.color ?? theme.colorScheme.secondary;
 
     Widget metaChip({required IconData icon, required String label, required Color color}) {
       return Container(
@@ -103,7 +103,7 @@ class MinimalLayout extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0C091A) : Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -255,7 +255,7 @@ class MinimalLayout extends ConsumerWidget {
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
                       height: 1.2,
-                      color: isDark ? Colors.white : const Color(0xFF111827),
+                      color: theme.colorScheme.onSurface,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Untitled Note',
@@ -263,7 +263,7 @@ class MinimalLayout extends ConsumerWidget {
                         fontFamily: 'Outfit',
                         fontSize: 26,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8),
+                        color: theme.colorScheme.onSurface.withOpacity(0.4),
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -298,7 +298,7 @@ class MinimalLayout extends ConsumerWidget {
                   height: 16,
                   indent: 24,
                   endIndent: 24,
-                  color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+                  color: theme.dividerColor,
                 ),
 
                 // ── Editor body ────────────────────────────────────────────────

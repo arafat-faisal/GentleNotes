@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../models/models.dart';
 import '../../../../folders/data/folders_repository.dart';
-import '../../../../../shared/components/tag_chip.dart';
 
 class MetadataPanel extends ConsumerWidget {
   final String? selectedFolderId;
@@ -35,7 +34,6 @@ class MetadataPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final folders = ref.watch(foldersProvider);
 
     final colors = [
@@ -51,10 +49,10 @@ class MetadataPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF151324) : const Color(0xFFFAF9FD),
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+          color: theme.dividerColor,
         ),
       ),
       child: Column(
@@ -111,7 +109,7 @@ class MetadataPanel extends ConsumerWidget {
               color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isDark ? const Color(0xFF2E2A45) : const Color(0xFFE3DCF5),
+                color: theme.dividerColor,
               ),
             ),
             child: DropdownButtonHideUnderline(
@@ -170,7 +168,7 @@ class MetadataPanel extends ConsumerWidget {
               color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isDark ? const Color(0xFF2E2A45) : const Color(0xFFE3DCF5),
+                color: theme.dividerColor,
               ),
             ),
             child: DropdownButtonHideUnderline(
@@ -209,7 +207,7 @@ class MetadataPanel extends ConsumerWidget {
               children: colors.map((hex) {
                 final isSelected = colorHex.toUpperCase() == hex.toUpperCase();
                 final colorVal = hex == '#FFFFFF'
-                    ? (isDark ? const Color(0xFF1E1A30) : Colors.white)
+                    ? theme.scaffoldBackgroundColor
                     : Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
 
                 return Padding(
@@ -225,7 +223,7 @@ class MetadataPanel extends ConsumerWidget {
                         border: Border.all(
                           color: isSelected
                               ? theme.colorScheme.primary
-                              : (isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8)),
+                              : theme.dividerColor,
                           width: isSelected ? 2.5 : 1,
                         ),
                         boxShadow: isSelected
@@ -265,7 +263,20 @@ class MetadataPanel extends ConsumerWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
-                  color: isDark ? const Color(0xFF2E2A45) : const Color(0xFFE3DCF5),
+                  color: theme.dividerColor,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: theme.dividerColor,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary,
+                  width: 1.5,
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),

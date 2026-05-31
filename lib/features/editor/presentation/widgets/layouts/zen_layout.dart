@@ -88,7 +88,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF090B16) : const Color(0xFFFDFCFF),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
@@ -115,7 +115,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                           height: 1.2,
-                          color: isDark ? Colors.white.withOpacity(0.9) : const Color(0xFF111827),
+                          color: theme.colorScheme.onSurface.withOpacity(0.9),
                         ),
                         decoration: InputDecoration(
                           hintText: 'Begin…',
@@ -123,7 +123,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                             fontFamily: 'Outfit',
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE9E6F5),
+                            color: theme.colorScheme.onSurface.withOpacity(0.3),
                           ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
@@ -161,12 +161,15 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                   child: Container(
                     height: 60,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: isDark ? const Color(0xFF090B16).withOpacity(0.8) : const Color(0xFFFDFCFF).withOpacity(0.8),
+                    color: theme.scaffoldBackgroundColor.withOpacity(0.8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+                          style: IconButton.styleFrom(
+                            foregroundColor: theme.colorScheme.primary,
+                          ),
                           onPressed: () {
                             widget.onSave();
                             if (Navigator.of(context).canPop()) {
@@ -196,7 +199,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                                 widget.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                                 size: 18,
                               ),
-                              color: widget.isPinned ? theme.colorScheme.primary : null,
+                              color: widget.isPinned ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.6),
                               onPressed: () {
                                 widget.onPinChanged(!widget.isPinned);
                                 widget.onSave();
@@ -204,6 +207,9 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.tune_rounded, size: 18),
+                              style: IconButton.styleFrom(
+                                foregroundColor: theme.colorScheme.primary,
+                              ),
                               onPressed: () {
                                 showModalBottomSheet(
                                   context: context,
@@ -229,7 +235,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                               },
                             ),
                             PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert_rounded, size: 18),
+                              icon: Icon(Icons.more_vert_rounded, size: 18, color: theme.colorScheme.primary),
                               onSelected: (val) async {
                                 if (val == 'save') widget.onSave();
                                 if (val == 'share') {

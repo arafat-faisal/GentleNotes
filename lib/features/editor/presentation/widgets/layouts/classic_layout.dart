@@ -165,19 +165,20 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
 
   PopupMenuItem<PreviewStyle> _previewStyleMenuItem(
       PreviewStyle style, IconData icon, String label) {
+    final theme = Theme.of(context);
     return PopupMenuItem<PreviewStyle>(
       value: style,
       child: Row(
         children: [
           Icon(icon,
               size: 16,
-              color: _previewStyle == style ? const Color(0xFF8B5CF6) : null),
+              color: _previewStyle == style ? theme.colorScheme.primary : null),
           const SizedBox(width: 8),
           Text(label,
               style: TextStyle(
                   fontSize: 12,
                   fontWeight: _previewStyle == style ? FontWeight.bold : FontWeight.normal,
-                  color: _previewStyle == style ? const Color(0xFF8B5CF6) : null)),
+                  color: _previewStyle == style ? theme.colorScheme.primary : null)),
         ],
       ),
     );
@@ -190,10 +191,12 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
       preferredSize: Size.fromHeight(appBarContentHeight + statusBarHeight),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF10121F) : Colors.white,
+          color: theme.appBarTheme.backgroundColor != Colors.transparent
+              ? theme.appBarTheme.backgroundColor
+              : theme.scaffoldBackgroundColor,
           border: Border(
             bottom: BorderSide(
-              color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
+              color: theme.dividerColor,
               width: 1.0,
             ),
           ),
@@ -210,6 +213,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                     // Back arrow
                     IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      color: theme.appBarTheme.iconTheme?.color ?? theme.colorScheme.onSurface,
                       onPressed: () {
                         widget.onSave();
                         if (Navigator.of(context).canPop()) {
@@ -229,12 +233,12 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: isDark ? Colors.white : Colors.black87,
+                            color: theme.colorScheme.onSurface,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Note Title...',
                             hintStyle: TextStyle(
-                              color: isDark ? Colors.white38 : Colors.black38,
+                              color: theme.colorScheme.onSurface.withOpacity(0.38),
                               fontSize: 18,
                             ),
                             border: InputBorder.none,
@@ -250,7 +254,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                     // Primary minimalist action icons
                     IconButton(
                       icon: Icon(widget.isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-                      color: widget.isPinned ? theme.colorScheme.secondary : const Color(0xFF8B5CF6),
+                      color: widget.isPinned ? theme.colorScheme.primary : theme.colorScheme.primary,
                       tooltip: widget.isPinned ? 'Unpin Note' : 'Pin Note',
                       onPressed: () {
                         widget.onPinChanged(!widget.isPinned);
@@ -258,7 +262,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF8B5CF6)),
+                      icon: Icon(Icons.fullscreen_rounded, color: theme.colorScheme.primary),
                       tooltip: 'Fullscreen Mode',
                       onPressed: () {
                         setState(() {
@@ -269,7 +273,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                     IconButton(
                       icon: Icon(
                         _isToolsTabSelected ? Icons.handyman_rounded : Icons.handyman_outlined,
-                        color: const Color(0xFF8B5CF6),
+                        color: theme.colorScheme.primary,
                       ),
                       tooltip: 'Tools',
                       onPressed: () {
@@ -281,7 +285,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                     IconButton(
                       icon: Icon(
                         _isPreviewMode ? Icons.edit_note_rounded : Icons.preview_rounded,
-                        color: _isPreviewMode ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
+                        color: _isPreviewMode ? const Color(0xFF10B981) : theme.colorScheme.primary,
                       ),
                       tooltip: _isPreviewMode ? 'Back to Editor' : 'Preview (Reader View)',
                       onPressed: () {
@@ -291,7 +295,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                       },
                     ),
                     PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF8B5CF6)),
+                      icon: Icon(Icons.more_vert_rounded, color: theme.colorScheme.primary),
                       onSelected: (val) {
                         if (val == 'save') widget.onSave();
                         if (val == 'share') {
@@ -353,10 +357,10 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                   height: 46.0,
                   margin: const EdgeInsets.fromLTRB(12.0, 0.0, 12.0, 8.0),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withOpacity(0.04) : const Color(0xFF8B5CF6).withOpacity(0.06),
+                    color: isDark ? Colors.white.withOpacity(0.04) : theme.colorScheme.primary.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(14.0),
                     border: Border.all(
-                      color: isDark ? Colors.white.withOpacity(0.08) : const Color(0xFF8B5CF6).withOpacity(0.12),
+                      color: isDark ? Colors.white.withOpacity(0.08) : theme.colorScheme.primary.withOpacity(0.12),
                       width: 1.0,
                     ),
                     boxShadow: [
@@ -378,25 +382,25 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                             final List<Widget> toolButtons = [
                               _buildToolIcon(
                                 icon: Icons.mic_rounded,
-                                color: const Color(0xFF8B5CF6),
+                                color: theme.colorScheme.primary,
                                 tooltip: 'Record Voice Note',
                                 onTap: _toggleVoiceRecording,
                               ),
                               _buildToolIcon(
                                 icon: Icons.draw_rounded,
-                                color: const Color(0xFF8B5CF6),
+                                color: theme.colorScheme.primary,
                                 tooltip: 'Open Drawing Canvas',
                                 onTap: _openDrawingCanvas,
                               ),
                               _buildToolIcon(
                                 icon: Icons.calendar_month_rounded,
-                                color: const Color(0xFF8B5CF6),
+                                color: theme.colorScheme.primary,
                                 tooltip: 'Calendar & Reminders',
                                 onTap: () => context.push('/calendar'),
                               ),
                               _buildToolIcon(
                                 icon: Icons.center_focus_strong_rounded,
-                                color: const Color(0xFF8B5CF6),
+                                color: theme.colorScheme.primary,
                                 tooltip: 'Zen Writing Mode (Focus)',
                                 onTap: () {
                                   setState(() {
@@ -406,24 +410,24 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                               ),
                               _buildToolIcon(
                                 icon: Icons.article_outlined,
-                                color: const Color(0xFF8B5CF6),
+                                color: theme.colorScheme.primary,
                                 tooltip: 'Export as Markdown (MD)',
                                 onTap: () => _handleExportMarkdown(context),
                               ),
                               _buildToolIcon(
                                 icon: Icons.picture_as_pdf_rounded,
-                                color: const Color(0xFF8B5CF6),
+                                color: theme.colorScheme.primary,
                                 tooltip: 'Export as PDF',
                                 onTap: widget.onPrintPdf,
                               ),
                               PopupMenuButton<PreviewStyle>(
                                 tooltip: 'Preview Style',
-                                icon: const Icon(Icons.style_rounded, size: 20, color: Color(0xFF8B5CF6)),
+                                icon: Icon(Icons.style_rounded, size: 20, color: theme.colorScheme.primary),
                                 offset: const Offset(0, 36),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                   side: BorderSide(
-                                    color: isDark ? const Color(0xFF2E2845) : const Color(0xFFE8E4F5),
+                                    color: theme.dividerColor,
                                     width: 1,
                                   ),
                                 ),
@@ -443,7 +447,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                               ),
                               _buildToolIcon(
                                 icon: widget.isFavorite ? Icons.favorite : Icons.favorite_border,
-                                color: widget.isFavorite ? const Color(0xFFF43F5E) : const Color(0xFF8B5CF6),
+                                color: widget.isFavorite ? const Color(0xFFF43F5E) : theme.colorScheme.primary,
                                 tooltip: widget.isFavorite ? 'Remove from Favorites' : 'Add to Favorites',
                                 onTap: () {
                                   widget.onFavoriteChanged(!widget.isFavorite);

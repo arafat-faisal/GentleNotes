@@ -42,14 +42,13 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF13111C) : Colors.white,
+        color: theme.cardColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(
-          color: isDark ? const Color(0xFF252234) : const Color(0xFFE9E6F5),
+          color: theme.dividerColor,
         ),
       ),
       padding: EdgeInsets.fromLTRB(24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
@@ -62,7 +61,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF3D3557) : const Color(0xFFD1CBE8),
+                color: theme.dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -73,8 +72,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                  gradient: LinearGradient(
+                    colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -97,7 +96,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
-              color: const Color(0xFF8B5CF6),
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
@@ -113,13 +112,13 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected
-                          ? const Color(0xFF8B5CF6)
-                          : (isDark ? const Color(0xFF1C1829) : const Color(0xFFF3F0FF)),
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: selected
-                            ? const Color(0xFF8B5CF6)
-                            : (isDark ? const Color(0xFF2E2845) : const Color(0xFFD4C8F5)),
+                            ? theme.colorScheme.primary
+                            : theme.dividerColor,
                       ),
                     ),
                     child: Text(
@@ -129,8 +128,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                         color: selected
-                            ? Colors.white
-                            : (isDark ? const Color(0xFFAA9ECC) : const Color(0xFF7C3AED)),
+                            ? theme.colorScheme.onPrimary
+                            : theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -145,25 +144,25 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
-              color: const Color(0xFF8B5CF6),
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               _pdfOptionPill(
+                context,
                 'Portrait',
                 !_isLandscape,
                 Icons.crop_portrait_rounded,
-                isDark,
                 () => setState(() => _isLandscape = false),
               ),
               const SizedBox(width: 8),
               _pdfOptionPill(
+                context,
                 'Landscape',
                 _isLandscape,
                 Icons.crop_landscape_rounded,
-                isDark,
                 () => setState(() => _isLandscape = true),
               ),
             ],
@@ -175,23 +174,23 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 0.8,
-              color: const Color(0xFF8B5CF6),
+              color: theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               _pdfTogglePill(
+                context,
                 'Metadata',
                 _inclMetadata,
-                isDark,
                 () => setState(() => _inclMetadata = !_inclMetadata),
               ),
               const SizedBox(width: 8),
               _pdfTogglePill(
+                context,
                 'Tags',
                 _inclTags,
-                isDark,
                 () => setState(() => _inclTags = !_inclTags),
               ),
             ],
@@ -235,8 +234,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               icon: const Icon(Icons.download_rounded),
               label: const Text('Generate PDF'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 textStyle: const TextStyle(
@@ -253,12 +252,13 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
   }
 
   Widget _pdfOptionPill(
+    BuildContext context,
     String label,
     bool selected,
     IconData icon,
-    bool isDark,
     VoidCallback onTap,
   ) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -266,13 +266,13 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF8B5CF6)
-              : (isDark ? const Color(0xFF1C1829) : const Color(0xFFF3F0FF)),
+              ? theme.colorScheme.primary
+              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected
-                ? const Color(0xFF8B5CF6)
-                : (isDark ? const Color(0xFF2E2845) : const Color(0xFFD4C8F5)),
+                ? theme.colorScheme.primary
+                : theme.dividerColor,
           ),
         ),
         child: Row(
@@ -281,8 +281,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               icon,
               size: 16,
               color: selected
-                  ? Colors.white
-                  : (isDark ? const Color(0xFFAA9ECC) : const Color(0xFF7C3AED)),
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurface.withOpacity(0.7),
             ),
             const SizedBox(width: 6),
             Text(
@@ -292,8 +292,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
                 color: selected
-                    ? Colors.white
-                    : (isDark ? const Color(0xFFAA9ECC) : const Color(0xFF7C3AED)),
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
           ],
@@ -303,11 +303,12 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
   }
 
   Widget _pdfTogglePill(
+    BuildContext context,
     String label,
     bool active,
-    bool isDark,
     VoidCallback onTap,
   ) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -315,13 +316,13 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: active
-              ? const Color(0xFF8B5CF6).withOpacity(0.1)
-              : (isDark ? const Color(0xFF1C1829) : const Color(0xFFF3F0FF)),
+              ? theme.colorScheme.primary.withOpacity(0.1)
+              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active
-                ? const Color(0xFF8B5CF6)
-                : (isDark ? const Color(0xFF2E2845) : const Color(0xFFD4C8F5)),
+                ? theme.colorScheme.primary
+                : theme.dividerColor,
           ),
         ),
         child: Row(
@@ -330,8 +331,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               active ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
               size: 16,
               color: active
-                  ? const Color(0xFF8B5CF6)
-                  : (isDark ? const Color(0xFFAA9ECC) : const Color(0xFF7C3AED)),
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface.withOpacity(0.7),
             ),
             const SizedBox(width: 6),
             Text(
@@ -341,8 +342,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
                 color: active
-                    ? (isDark ? Colors.white : const Color(0xFF4C1D95))
-                    : (isDark ? const Color(0xFFAA9ECC) : const Color(0xFF7C3AED)),
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withOpacity(0.7),
               ),
             ),
           ],
