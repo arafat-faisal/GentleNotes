@@ -32,11 +32,11 @@ class SubscriptionPanel extends ConsumerWidget {
       elevation: 0,
       color: color.withOpacity(0.08),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: color.withOpacity(0.2), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: color.withOpacity(0.25)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -66,20 +66,32 @@ class SubscriptionPanel extends ConsumerWidget {
                     ],
                   ),
                 ),
-                DropdownButton<UserRole>(
-                  value: activeRole,
-                  underline: const SizedBox(),
-                  items: UserRole.values.map((role) {
-                    return DropdownMenuItem(
-                      value: role,
-                      child: Text(role.displayName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      ref.read(userRoleProvider.notifier).updateRole(val);
-                    }
-                  },
+                SizedBox(
+                  width: 105,
+                  child: DropdownButton<UserRole>(
+                    isExpanded: true,
+                    value: activeRole,
+                    underline: const SizedBox(),
+                    icon: const Icon(Icons.arrow_drop_down_rounded),
+                    items: UserRole.values.map((role) {
+                      return DropdownMenuItem(
+                        value: role,
+                        child: Text(
+                          role.displayName,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        ref.read(userRoleProvider.notifier).updateRole(val);
+                      }
+                    },
+                  ),
                 ),
               ],
             ),

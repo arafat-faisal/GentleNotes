@@ -72,6 +72,109 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
     state = state.copyWith(themePreset: preset);
     await _repository.saveSettings(state);
   }
+
+  Future<void> updateUserMode(AppUserMode mode) async {
+    await selectProfile(mode.name);
+  }
+
+  Future<void> selectProfile(String profileId) async {
+    AppUserMode userMode = AppUserMode.custom;
+    if (profileId == 'normal') userMode = AppUserMode.normal;
+    else if (profileId == 'coder') userMode = AppUserMode.coder;
+    else if (profileId == 'student') userMode = AppUserMode.student;
+    else if (profileId == 'researcher') userMode = AppUserMode.researcher;
+
+    state = state.copyWith(
+      activeProfileId: profileId,
+      userMode: userMode,
+    );
+
+    final allowedL = state.allowedLayouts;
+    if (!allowedL.contains(state.editorLayout) && allowedL.isNotEmpty) {
+      state = state.copyWith(
+        editorLayout: allowedL.contains(state.profileDefaultLayout)
+            ? state.profileDefaultLayout
+            : allowedL.first,
+      );
+    }
+    final allowedT = state.allowedThemes;
+    if (!allowedT.contains(state.themePreset) && allowedT.isNotEmpty) {
+      state = state.copyWith(
+        themePreset: allowedT.contains(state.profileDefaultTheme)
+            ? state.profileDefaultTheme
+            : allowedT.first,
+      );
+    }
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> saveCustomProfile(CustomWorkspaceProfile profile) async {
+    final list = List<CustomWorkspaceProfile>.from(state.customProfiles);
+    final index = list.indexWhere((p) => p.id == profile.id);
+    if (index >= 0) {
+      list[index] = profile;
+    } else {
+      list.add(profile);
+    }
+    state = state.copyWith(customProfiles: list);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> deleteCustomProfile(String profileId) async {
+    final list = List<CustomWorkspaceProfile>.from(state.customProfiles);
+    list.removeWhere((p) => p.id == profileId);
+    state = state.copyWith(customProfiles: list);
+    
+    if (state.activeProfileId == profileId) {
+      await selectProfile('normal');
+    } else {
+      await _repository.saveSettings(state);
+    }
+  }
+
+  Future<void> updateIsAdvancedMode(bool value) async {
+    state = state.copyWith(isAdvancedMode: value);
+    if (!value) {
+      final allowedL = state.allowedLayouts;
+      if (!allowedL.contains(state.editorLayout)) {
+        state = state.copyWith(
+          editorLayout: allowedL.contains(state.profileDefaultLayout)
+              ? state.profileDefaultLayout
+              : (allowedL.isNotEmpty ? allowedL.first : EditorLayoutVariant.classic),
+        );
+      }
+      final allowedT = state.allowedThemes;
+      if (!allowedT.contains(state.themePreset)) {
+        state = state.copyWith(
+          themePreset: allowedT.contains(state.profileDefaultTheme)
+              ? state.profileDefaultTheme
+              : (allowedT.isNotEmpty ? allowedT.first : AppThemePreset.none),
+        );
+      }
+    }
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateCustomEnabledLayouts(List<EditorLayoutVariant> layouts) async {
+    state = state.copyWith(customEnabledLayouts: layouts);
+    if (state.userMode == AppUserMode.custom && !layouts.contains(state.editorLayout)) {
+      state = state.copyWith(editorLayout: layouts.isNotEmpty ? layouts.first : EditorLayoutVariant.classic);
+    }
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateCustomEnabledThemes(List<AppThemePreset> themes) async {
+    state = state.copyWith(customEnabledThemes: themes);
+    if (state.userMode == AppUserMode.custom && !themes.contains(state.themePreset)) {
+      state = state.copyWith(themePreset: themes.isNotEmpty ? themes.first : AppThemePreset.none);
+    }
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateCustomEnabledTools(List<String> tools) async {
+    state = state.copyWith(customEnabledTools: tools);
+    await _repository.saveSettings(state);
+  }
 }
 
 /// Provides the current [AppSettingsModel].

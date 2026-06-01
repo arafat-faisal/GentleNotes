@@ -30,6 +30,11 @@ class AppConstants {
   static const String prefUserRole = 'userRole';
   static const String prefEditorLayout = 'editorLayout';
   static const String prefThemePreset = 'themePreset';
+  static const String prefUserMode = 'userMode';
+  static const String prefIsAdvancedMode = 'isAdvancedMode';
+  static const String prefCustomEnabledLayouts = 'customEnabledLayouts';
+  static const String prefCustomEnabledThemes = 'customEnabledThemes';
+  static const String prefCustomEnabledTools = 'customEnabledTools';
   static const String prefHasSeededV1 = 'has_seeded_v1';
   static const String prefHasSeededV2 = 'has_seeded_v2';
 

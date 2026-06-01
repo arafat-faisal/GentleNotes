@@ -25,6 +25,8 @@ import 'widgets/layouts/notebook_layout.dart';
 import 'widgets/layouts/zen_layout.dart';
 import 'widgets/layouts/aesthetic_layouts.dart';
 import 'widgets/panels/pdf_export_dialog.dart';
+import '../../../../core/utils/clipboard_helper.dart';
+import '../../../../core/utils/quill_paste_handler.dart';
 
 class EditorScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -97,6 +99,23 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadNoteOrTemplate();
       _setupAutosave();
+      setupClipboardPasteListener(
+        context,
+        _editorFocusNode,
+        (dataUrl, fileName) {
+          final index = _quillController.selection.baseOffset;
+          final insertIndex = index >= 0 ? index : _quillController.document.length - 1;
+          _quillController.replaceText(
+            insertIndex,
+            0,
+            BlockEmbed.image(dataUrl),
+            TextSelection.collapsed(offset: insertIndex + 1),
+          );
+        },
+        (plainText, htmlText) {
+          QuillPasteHandler.handlePasteText(_quillController, plainText, htmlText);
+        },
+      );
     });
   }
 
@@ -124,6 +143,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _quillController.dispose();
     _editorFocusNode.dispose();
     _quillSubscription?.cancel();
+    disposeClipboardPasteListener();
     for (var node in _focusNodes.values) {
       node.dispose();
     }

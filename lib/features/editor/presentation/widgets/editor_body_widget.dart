@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../models/models.dart';
 import '../../domain/entities/block_entity.dart';
+import '../../../../core/utils/quill_paste_handler.dart';
 import 'editor_blocks_list.dart';
 import 'embeds/image_embed_builder.dart';
 import 'embeds/audio_embed_builder.dart';
@@ -54,20 +56,46 @@ class EditorBodyWidget extends StatelessWidget {
           height: _currentFontHeight,
           color: isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
         ),
-        child: QuillEditor.basic(
-          controller: quillController!,
-          focusNode: editorFocusNode!,
-          config: QuillEditorConfig(
-            placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
-            autoFocus: false,
-            expands: true,
-            padding: EdgeInsets.zero,
-            embedBuilders: [
-              ImageEmbedBuilder(),
-              AudioEmbedBuilder(getAttachments: () => attachments),
-              HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
-              HorizontalRuleEmbedBuilder(key: 'divider'),
-            ],
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            PasteTextIntent: CallbackAction<PasteTextIntent>(
+              onInvoke: (intent) {
+                Clipboard.getData(Clipboard.kTextPlain).then((data) {
+                  if (data != null && data.text != null) {
+                    QuillPasteHandler.handlePasteText(quillController!, data.text!);
+                  }
+                });
+                return null;
+              },
+            ),
+          },
+          child: QuillEditor.basic(
+            controller: quillController!,
+            focusNode: editorFocusNode!,
+            config: QuillEditorConfig(
+              placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
+              autoFocus: false,
+              expands: true,
+              padding: EdgeInsets.zero,
+              embedBuilders: [
+                ImageEmbedBuilder(),
+                AudioEmbedBuilder(getAttachments: () => attachments),
+                HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
+                HorizontalRuleEmbedBuilder(key: 'divider'),
+              ],
+              customActions: <Type, Action<Intent>>{
+                PasteTextIntent: CallbackAction<PasteTextIntent>(
+                  onInvoke: (intent) {
+                    Clipboard.getData(Clipboard.kTextPlain).then((data) {
+                      if (data != null && data.text != null) {
+                        QuillPasteHandler.handlePasteText(quillController!, data.text!);
+                      }
+                    });
+                    return null;
+                  },
+                ),
+              },
+            ),
           ),
         ),
       );

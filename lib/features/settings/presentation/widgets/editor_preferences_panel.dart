@@ -22,19 +22,31 @@ class EditorPreferencesPanel extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.notes_outlined),
             title: const Text('Default Note Type'),
-            trailing: DropdownButton<NoteType>(
-              value: settings.defaultNoteType,
-              items: NoteType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type.displayName, style: const TextStyle(fontSize: 13)),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  ref.read(settingsProvider.notifier).updateDefaultNoteType(val);
-                }
-              },
+            trailing: SizedBox(
+              width: 140,
+              child: DropdownButton<NoteType>(
+                isExpanded: true,
+                value: settings.defaultNoteType,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.arrow_drop_down_rounded),
+                items: NoteType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(
+                      type.displayName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(settingsProvider.notifier).updateDefaultNoteType(val);
+                  }
+                },
+              ),
             ),
           ),
           const Divider(indent: 16, endIndent: 16),
@@ -42,19 +54,31 @@ class EditorPreferencesPanel extends ConsumerWidget {
             leading: const Icon(Icons.edit_note_rounded),
             title: const Text('Editor Mode'),
             subtitle: const Text('Continuous text or block-based editor'),
-            trailing: DropdownButton<EditorMode>(
-              value: settings.editorMode,
-              items: EditorMode.values.map((mode) {
-                return DropdownMenuItem(
-                  value: mode,
-                  child: Text(mode.displayName, style: const TextStyle(fontSize: 13)),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  ref.read(settingsProvider.notifier).updateEditorMode(val);
-                }
-              },
+            trailing: SizedBox(
+              width: 120,
+              child: DropdownButton<EditorMode>(
+                isExpanded: true,
+                value: settings.editorMode,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.arrow_drop_down_rounded),
+                items: EditorMode.values.map((mode) {
+                  return DropdownMenuItem(
+                    value: mode,
+                    child: Text(
+                      mode.displayName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(settingsProvider.notifier).updateEditorMode(val);
+                  }
+                },
+              ),
             ),
           ),
           const Divider(indent: 16, endIndent: 16),
@@ -62,19 +86,37 @@ class EditorPreferencesPanel extends ConsumerWidget {
             leading: const Icon(Icons.code_rounded),
             title: const Text('Code Preview Theme'),
             subtitle: const Text('Select visual syntax highlight theme'),
-            trailing: DropdownButton<String>(
-              value: settings.activeCodeTheme,
-              items: const [
-                DropdownMenuItem(value: 'vs-dark', child: Text('VS Code Dark', style: TextStyle(fontSize: 13))),
-                DropdownMenuItem(value: 'vs-light', child: Text('VS Code Light', style: TextStyle(fontSize: 13))),
-                DropdownMenuItem(value: 'monokai', child: Text('Monokai', style: TextStyle(fontSize: 13))),
-                DropdownMenuItem(value: 'github', child: Text('GitHub Light', style: TextStyle(fontSize: 13))),
-              ],
-              onChanged: (val) {
-                if (val != null) {
-                  ref.read(settingsProvider.notifier).updateActiveCodeTheme(val);
-                }
-              },
+            trailing: SizedBox(
+              width: 120,
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: settings.activeCodeTheme,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.arrow_drop_down_rounded),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'vs-dark',
+                    child: Text('VS Code Dark', style: TextStyle(fontSize: 13, fontFamily: 'Inter')),
+                  ),
+                  DropdownMenuItem(
+                    value: 'vs-light',
+                    child: Text('VS Code Light', style: TextStyle(fontSize: 13, fontFamily: 'Inter')),
+                  ),
+                  DropdownMenuItem(
+                    value: 'monokai',
+                    child: Text('Monokai', style: TextStyle(fontSize: 13, fontFamily: 'Inter')),
+                  ),
+                  DropdownMenuItem(
+                    value: 'github',
+                    child: Text('GitHub Light', style: TextStyle(fontSize: 13, fontFamily: 'Inter')),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(settingsProvider.notifier).updateActiveCodeTheme(val);
+                  }
+                },
+              ),
             ),
           ),
           const Divider(indent: 16, endIndent: 16),

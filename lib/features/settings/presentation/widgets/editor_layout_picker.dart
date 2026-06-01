@@ -13,7 +13,8 @@ class EditorLayoutPicker extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final variants = [
+    final allowedLayouts = settings.allowedLayouts;
+    final filteredVariants = [
       (
         variant: EditorLayoutVariant.classic,
         icon: Icons.view_agenda_outlined,
@@ -59,15 +60,15 @@ class EditorLayoutPicker extends ConsumerWidget {
         icon: Icons.auto_awesome_rounded,
         previewBuilder: (bool dark) => LayoutPreviewStardust(isDark: dark),
       ),
-    ];
+    ].where((item) => allowedLayouts.contains(item.variant)).toList();
 
     return SizedBox(
       height: 220,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: variants.length,
+        itemCount: filteredVariants.length,
         itemBuilder: (context, index) {
-          final item = variants[index];
+          final item = filteredVariants[index];
           final isSelected = settings.editorLayout == item.variant;
           final accentColor = theme.colorScheme.primary;
 
@@ -81,7 +82,7 @@ class EditorLayoutPicker extends ConsumerWidget {
               width: 130,
               margin: EdgeInsets.only(
                 left: index == 0 ? 8 : 6,
-                right: index == variants.length - 1 ? 8 : 6,
+                right: index == filteredVariants.length - 1 ? 8 : 6,
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),

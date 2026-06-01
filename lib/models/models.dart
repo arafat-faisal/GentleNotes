@@ -7,6 +7,7 @@ export '../features/notes/data/models/note_model.dart';
 export '../features/templates/data/models/note_template_model.dart';
 export '../features/settings/data/models/app_settings_model.dart';
 export '../features/settings/data/models/user_profile.dart';
+export '../features/settings/data/models/custom_workspace_profile.dart';
 
 // --- ENUMS ---
 
@@ -71,6 +72,44 @@ enum ThemeModeSetting {
       case ThemeModeSetting.light: return ThemeMode.light;
       case ThemeModeSetting.dark: return ThemeMode.dark;
       case ThemeModeSetting.system: return ThemeMode.system;
+    }
+  }
+}
+
+enum AppUserMode {
+  normal,
+  coder,
+  student,
+  researcher,
+  custom;
+
+  String get displayName {
+    switch (this) {
+      case AppUserMode.normal: return 'Standard / Full';
+      case AppUserMode.coder: return 'Developer / Coder';
+      case AppUserMode.student: return 'Academic / Student';
+      case AppUserMode.researcher: return 'Researcher';
+      case AppUserMode.custom: return 'Custom Profile';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case AppUserMode.normal: return 'Full experience with all layouts, themes, and tools.';
+      case AppUserMode.coder: return 'Focused on coding and technical docs. Classic/Notebook layouts, developer dark themes, and code tools.';
+      case AppUserMode.student: return 'Tailored for lecture notes, checklist tasks, and drawing. Pastel themes and student tools.';
+      case AppUserMode.researcher: return 'Optimized for distraction-free writing, tagging, and logging. Minimal/Zen layouts, clean themes, and research tools.';
+      case AppUserMode.custom: return 'Build your own profile: select specific layouts, themes, and formatting options.';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case AppUserMode.normal: return Icons.dashboard_outlined;
+      case AppUserMode.coder: return Icons.code_rounded;
+      case AppUserMode.student: return Icons.school_outlined;
+      case AppUserMode.researcher: return Icons.biotech_outlined;
+      case AppUserMode.custom: return Icons.settings_suggest_outlined;
     }
   }
 }

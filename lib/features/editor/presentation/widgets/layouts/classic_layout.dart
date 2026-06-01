@@ -95,6 +95,18 @@ class ClassicLayout extends ConsumerStatefulWidget {
 
 class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
   bool _isPreviewMode = false;
+
+  String _getMarkdownData() {
+    if (widget.editorMode == EditorMode.gentleNote && widget.quillController != null) {
+      return QuillMarkdownConverter.deltaToMarkdown(
+        jsonEncode(widget.quillController!.document.toDelta().toJson()),
+      );
+    } else {
+      return QuillMarkdownConverter.deltaToMarkdown(
+        ConvertBlocksToDelta.execute(widget.blocks),
+      );
+    }
+  }
   bool _isToolsTabSelected = false;
   PreviewStyle _previewStyle = PreviewStyle.plain;
   bool _isFullScreen = false;
@@ -559,7 +571,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
 
     if (_isPreviewMode) {
       final bgColor = _previewBgColor ?? (isDark ? const Color(0xFF0F0B1E) : Colors.white);
-      final markdown = QuillMarkdownConverter.deltaToMarkdown(ConvertBlocksToDelta.execute(widget.blocks));
+      final markdown = _getMarkdownData();
       return Stack(
         children: [
           if (_previewBgImagePath != null)
@@ -691,7 +703,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                             Padding(
                               padding: styleContentPadding(_previewStyle),
                               child: MarkdownWidget(
-                                data: QuillMarkdownConverter.deltaToMarkdown(ConvertBlocksToDelta.execute(widget.blocks)),
+                                data: _getMarkdownData(),
                                 attachments: widget.attachments,
                                 fontFamily: _currentFontFamily,
                               ),

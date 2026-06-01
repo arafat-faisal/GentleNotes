@@ -11,7 +11,7 @@ class ThemePresetPicker extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final presets = AppThemePreset.values;
+    final presets = settings.allowedThemes;
 
     return SizedBox(
       height: 120,

@@ -47,3 +47,27 @@ app.*.map.json
 # Local temporary files
 analyze*.txt
 build_output.txt
+
+# Project analysis / generated reports
+file_report.json
+flutter_*.png
+
+# Android local/generated files
+android/local.properties
+android/.kotlin/
+android/**/*.log
+
+# Keystore / signing files - never commit real release keys
+*.jks
+*.keystore
+key.properties
+android/key.properties
+
+# Flutter platform ephemeral files
+ios/Flutter/ephemeral/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# IDE / local machine files
+*.iml
+

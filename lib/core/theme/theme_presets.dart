@@ -733,6 +733,8 @@ class ThemePresets {
       onError: Colors.white,
       surface: surface,
       onSurface: onSurface,
+      background: bg,
+      onBackground: onSurface,
       surfaceContainerHighest: bg,
       outline: outline,
       outlineVariant: outline.withOpacity(0.5),

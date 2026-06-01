@@ -24,11 +24,15 @@ GentleNotes is designed to be a calm, powerful, and organized workspace for stud
 - (Planned: Firebase / Supabase)
 
 ## 📌 Status
-🚧 In Development (Early Stage)
+🚧 In active development — modular architecture completed, editor engine and Play Store MVP preparation in progress.
 
 ## 🗺️ Roadmap
-- [ ] Core note CRUD
-- [ ] Folder system
-- [ ] Rich editor
-- [ ] Sync system
+- [x] Modular architecture
+- [x] Feature-based folder structure
+- [x] Block editor foundation
+- [ ] Stable local persistence
+- [ ] Basic / Advanced editor mode
+- [ ] PDF export polish
+- [ ] Play Store beta release
+- [ ] Cloud sync
 - [ ] AI-powered notes

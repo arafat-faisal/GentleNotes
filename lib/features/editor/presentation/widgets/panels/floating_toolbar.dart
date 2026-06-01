@@ -1,11 +1,14 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../../models/models.dart';
+import '../../../../settings/presentation/controllers/settings_controller.dart';
 import '../../../domain/entities/block_type.dart';
 import 'voice_recorder_bottom_sheet.dart';
 
-class FloatingToolbar extends StatefulWidget {
+class FloatingToolbar extends ConsumerStatefulWidget {
   final String noteId;
   final Function(BlockType type, {String content, Map<String, dynamic> attributes}) onInsertBlock;
   final VoidCallback onUndo;
@@ -30,10 +33,10 @@ class FloatingToolbar extends StatefulWidget {
   });
 
   @override
-  State<FloatingToolbar> createState() => _FloatingToolbarState();
+  ConsumerState<FloatingToolbar> createState() => _FloatingToolbarState();
 }
 
-class _FloatingToolbarState extends State<FloatingToolbar> {
+class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
   String? _activeToolbarGroup;
   String? _activeColorMode;
   bool _showCustomColorPicker = false;
@@ -346,6 +349,8 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final settings = ref.watch(settingsProvider);
+    final allowedTools = settings.allowedTools;
 
     final barBg = isDark
         ? const Color(0xFF13111C).withOpacity(0.85)
@@ -359,6 +364,15 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
         final toolbarWidth = constraints.maxWidth.clamp(0.0, 500.0);
 
     if (widget.quillController == null) {
+      final showHeading = allowedTools.contains('heading');
+      final showChecklist = allowedTools.contains('lists');
+      final showCode = allowedTools.contains('format');
+      final showImage = allowedTools.contains('insert');
+      final showDrawing = settings.userMode == AppUserMode.student || settings.userMode == AppUserMode.normal || (settings.userMode == AppUserMode.custom && allowedTools.contains('color'));
+      final showVoice = settings.userMode == AppUserMode.student || settings.userMode == AppUserMode.normal || (settings.userMode == AppUserMode.custom && allowedTools.contains('color'));
+      final showDivider = allowedTools.contains('insert');
+      final showDictation = settings.userMode != AppUserMode.coder;
+
       // Fallback for Block Editor mode
       return Material(
         color: Colors.transparent,
@@ -393,51 +407,60 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
                       tooltip: 'Redo',
                     ),
                     const VerticalDivider(width: 16, indent: 12, endIndent: 12),
-                    IconButton(
-                      icon: const Icon(Icons.title_rounded, size: 20),
-                      onPressed: () => widget.onInsertBlock(BlockType.heading, attributes: {'header': 1}),
-                      tooltip: 'Heading 1',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.format_list_bulleted_rounded, size: 20),
-                      onPressed: () => widget.onInsertBlock(BlockType.checklist),
-                      tooltip: 'To-do List',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.code_rounded, size: 20),
-                      onPressed: () => widget.onInsertBlock(BlockType.code),
-                      tooltip: 'Code Snippet',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.image_outlined, size: 20),
-                      onPressed: () => _pickImage(context),
-                      tooltip: 'Insert Image',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.draw_outlined, size: 20),
-                      onPressed: () => widget.onInsertBlock(BlockType.drawing),
-                      tooltip: 'Sketch Canvas',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.mic_none_rounded, size: 20),
-                      onPressed: () => _recordAudio(context),
-                      tooltip: 'Voice Recording',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.horizontal_rule_rounded, size: 20),
-                      onPressed: () => widget.onInsertBlock(BlockType.horizontalRule),
-                      tooltip: 'Divider',
-                    ),
-                    const VerticalDivider(width: 16, indent: 12, endIndent: 12),
-                    IconButton(
-                      icon: Icon(
-                        widget.isSpeechListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                        size: 20,
-                        color: widget.isSpeechListening ? Colors.red : null,
+                    if (showHeading)
+                      IconButton(
+                        icon: const Icon(Icons.title_rounded, size: 20),
+                        onPressed: () => widget.onInsertBlock(BlockType.heading, attributes: {'header': 1}),
+                        tooltip: 'Heading 1',
                       ),
-                      onPressed: widget.onSpeechToggle,
-                      tooltip: 'Dictation (Voice typing)',
-                    ),
+                    if (showChecklist)
+                      IconButton(
+                        icon: const Icon(Icons.format_list_bulleted_rounded, size: 20),
+                        onPressed: () => widget.onInsertBlock(BlockType.checklist),
+                        tooltip: 'To-do List',
+                      ),
+                    if (showCode)
+                      IconButton(
+                        icon: const Icon(Icons.code_rounded, size: 20),
+                        onPressed: () => widget.onInsertBlock(BlockType.code),
+                        tooltip: 'Code Snippet',
+                      ),
+                    if (showImage)
+                      IconButton(
+                        icon: const Icon(Icons.image_outlined, size: 20),
+                        onPressed: () => _pickImage(context),
+                        tooltip: 'Insert Image',
+                      ),
+                    if (showDrawing)
+                      IconButton(
+                        icon: const Icon(Icons.draw_outlined, size: 20),
+                        onPressed: () => widget.onInsertBlock(BlockType.drawing),
+                        tooltip: 'Sketch Canvas',
+                      ),
+                    if (showVoice)
+                      IconButton(
+                        icon: const Icon(Icons.mic_none_rounded, size: 20),
+                        onPressed: () => _recordAudio(context),
+                        tooltip: 'Voice Recording',
+                      ),
+                    if (showDivider)
+                      IconButton(
+                        icon: const Icon(Icons.horizontal_rule_rounded, size: 20),
+                        onPressed: () => widget.onInsertBlock(BlockType.horizontalRule),
+                        tooltip: 'Divider',
+                      ),
+                    if (showDictation) ...[
+                      const VerticalDivider(width: 16, indent: 12, endIndent: 12),
+                      IconButton(
+                        icon: Icon(
+                          widget.isSpeechListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                          size: 20,
+                          color: widget.isSpeechListening ? Colors.red : null,
+                        ),
+                        onPressed: widget.onSpeechToggle,
+                        tooltip: 'Dictation (Voice typing)',
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -448,7 +471,7 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
     }
 
     // Quill formatting toolbar style
-    const groups = [
+    final filteredGroups = const [
       ('format', Icons.format_bold, 'Format'),
       ('color',   Icons.palette_outlined, 'Color'),
       ('heading', Icons.title_rounded, 'Heading'),
@@ -456,7 +479,7 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
       ('lists',   Icons.format_list_bulleted, 'Lists'),
       ('insert',  Icons.add_box_outlined, 'Insert'),
       ('indent',  Icons.format_indent_increase_rounded, 'Indent'),
-    ];
+    ].where((g) => allowedTools.contains(g.$1)).toList();
 
     final accentColor = theme.colorScheme.primary;
 
@@ -795,6 +818,11 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
             ],
           );
         case 'insert':
+          final showDrawing = settings.userMode == AppUserMode.student || settings.userMode == AppUserMode.normal || (settings.userMode == AppUserMode.custom && allowedTools.contains('color'));
+          final showVoice = settings.userMode == AppUserMode.student || settings.userMode == AppUserMode.normal || (settings.userMode == AppUserMode.custom && allowedTools.contains('color'));
+          final showDictation = settings.userMode != AppUserMode.coder;
+          final showCode = allowedTools.contains('format');
+
           return SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -804,10 +832,14 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
                 sub(Icons.horizontal_rule_rounded, 'Divider', () {
                   widget.onInsertBlock(BlockType.horizontalRule);
                 }),
-                sub(Icons.data_object_rounded, 'Code Block', () => widget.quillController!.formatSelection(isCodeBlock ? Attribute.clone(Attribute.codeBlock, null) : Attribute.codeBlock), active: isCodeBlock),
-                sub(Icons.mic_outlined, 'Voice Note', () => _recordAudio(context)),
-                sub(Icons.mic_none_outlined, 'Dictation (STT)', widget.onSpeechToggle, active: widget.isSpeechListening),
-                sub(Icons.draw_outlined, 'Drawing', () => widget.onInsertBlock(BlockType.drawing)),
+                if (showCode)
+                  sub(Icons.data_object_rounded, 'Code Block', () => widget.quillController!.formatSelection(isCodeBlock ? Attribute.clone(Attribute.codeBlock, null) : Attribute.codeBlock), active: isCodeBlock),
+                if (showVoice)
+                  sub(Icons.mic_outlined, 'Voice Note', () => _recordAudio(context)),
+                if (showDictation)
+                  sub(Icons.mic_none_outlined, 'Dictation (STT)', widget.onSpeechToggle, active: widget.isSpeechListening),
+                if (showDrawing)
+                  sub(Icons.draw_outlined, 'Drawing', () => widget.onInsertBlock(BlockType.drawing)),
               ],
             ),
           );
@@ -969,7 +1001,7 @@ class _FloatingToolbarState extends State<FloatingToolbar> {
                       const VerticalDivider(width: 16, indent: 12, endIndent: 12),
 
                       // Group buttons
-                      ...groups.map((g) => groupBtn(g.$1, g.$2, g.$3)),
+                      ...filteredGroups.map((g) => groupBtn(g.$1, g.$2, g.$3)),
 
                       const VerticalDivider(width: 16, indent: 12, endIndent: 12),
 

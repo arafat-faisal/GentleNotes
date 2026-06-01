@@ -1,5 +1,5 @@
 name: gentle_notes
-description: "A new Flutter project."
+description: "A calm, powerful, offline-first note-taking app with rich notes, folders, themes, templates, and beautiful exports."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -101,6 +101,13 @@ flutter:
 
   assets:
     - assets/images/logo.png
+
+  fonts:
+    - family: RobotoMono
+      fonts:
+        - asset: assets/fonts/RobotoMono-Regular.ttf
+        - asset: assets/fonts/RobotoMono-Medium.ttf
+          weight: 500
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -17,6 +17,14 @@ class SettingsStorage {
     final codeTheme = sharedPrefs.getString(AppConstants.prefCodeTheme) ?? AppConstants.defaultCodeTheme;
     final layoutVariant = sharedPrefs.getString(AppConstants.prefEditorLayout) ?? 'classic';
     final themePreset = sharedPrefs.getString(AppConstants.prefThemePreset) ?? 'none';
+    final userMode = sharedPrefs.getString(AppConstants.prefUserMode) ?? 'normal';
+    final isAdvanced = sharedPrefs.getBool(AppConstants.prefIsAdvancedMode) ?? false;
+    final customLayouts = sharedPrefs.getStringList(AppConstants.prefCustomEnabledLayouts) ??
+        EditorLayoutVariant.values.map((e) => e.name).toList();
+    final customThemes = sharedPrefs.getStringList(AppConstants.prefCustomEnabledThemes) ??
+        AppThemePreset.values.map((e) => e.name).toList();
+    final customTools = sharedPrefs.getStringList(AppConstants.prefCustomEnabledTools) ??
+        ['format', 'color', 'heading', 'align', 'lists', 'insert', 'indent'];
 
     return AppSettingsModel(
       themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == theme, orElse: () => ThemeModeSetting.system),
@@ -28,6 +36,11 @@ class SettingsStorage {
       activeCodeTheme: codeTheme,
       editorLayout: EditorLayoutVariant.values.firstWhere((e) => e.name == layoutVariant, orElse: () => EditorLayoutVariant.classic),
       themePreset: AppThemePreset.values.firstWhere((e) => e.name == themePreset, orElse: () => AppThemePreset.none),
+      userMode: AppUserMode.values.firstWhere((e) => e.name == userMode, orElse: () => AppUserMode.normal),
+      isAdvancedMode: isAdvanced,
+      customEnabledLayouts: customLayouts.map((name) => EditorLayoutVariant.values.firstWhere((e) => e.name == name, orElse: () => EditorLayoutVariant.classic)).toList(),
+      customEnabledThemes: customThemes.map((name) => AppThemePreset.values.firstWhere((e) => e.name == name, orElse: () => AppThemePreset.none)).toList(),
+      customEnabledTools: customTools,
     );
   }
 
@@ -41,6 +54,11 @@ class SettingsStorage {
     await sharedPrefs.setString(AppConstants.prefCodeTheme, settings.activeCodeTheme);
     await sharedPrefs.setString(AppConstants.prefEditorLayout, settings.editorLayout.name);
     await sharedPrefs.setString(AppConstants.prefThemePreset, settings.themePreset.name);
+    await sharedPrefs.setString(AppConstants.prefUserMode, settings.userMode.name);
+    await sharedPrefs.setBool(AppConstants.prefIsAdvancedMode, settings.isAdvancedMode);
+    await sharedPrefs.setStringList(AppConstants.prefCustomEnabledLayouts, settings.customEnabledLayouts.map((e) => e.name).toList());
+    await sharedPrefs.setStringList(AppConstants.prefCustomEnabledThemes, settings.customEnabledThemes.map((e) => e.name).toList());
+    await sharedPrefs.setStringList(AppConstants.prefCustomEnabledTools, settings.customEnabledTools);
   }
 
   UserRole getUserRole() {
