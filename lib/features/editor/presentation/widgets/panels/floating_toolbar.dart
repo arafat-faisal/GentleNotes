@@ -146,13 +146,14 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
         // Quill formatting toolbar style
         final filteredGroups = const [
           ('format', Icons.format_bold, 'Format'),
+          ('font',   Icons.font_download_outlined, 'Font'),
           ('color',   Icons.palette_outlined, 'Color'),
           ('heading', Icons.title_rounded, 'Heading'),
           ('align',   Icons.format_align_left_rounded, 'Align'),
           ('lists',   Icons.format_list_bulleted, 'Lists'),
           ('insert',  Icons.add_box_outlined, 'Insert'),
           ('indent',  Icons.format_indent_increase_rounded, 'Indent'),
-        ].where((g) => allowedTools.contains(g.$1)).toList();
+        ].where((g) => g.$1 == 'font' || allowedTools.contains(g.$1)).toList();
 
         final accentColor = theme.colorScheme.primary;
 
@@ -174,6 +175,81 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
 
         Widget subRow() {
           switch (_activeToolbarGroup) {
+            case 'font':
+              final selectedFont = settings.editorFontFamily;
+              final selectedSize = settings.editorFontSize;
+              final selectedHeight = settings.editorLineHeight;
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ...[
+                      ('System', 'Sys'),
+                      ('Inter', 'Inter'),
+                      ('Outfit', 'Outfit'),
+                      ('Roboto Mono', 'Mono'),
+                      ('Lora', 'Lora'),
+                      ('Lexend', 'Lexend'),
+                    ].map((f) {
+                      final isSelected = selectedFont == f.$1;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                        child: ChoiceChip(
+                          label: Text(f.$2, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSelected ? accentColor : null)),
+                          selected: isSelected,
+                          selectedColor: accentColor.withOpacity(0.15),
+                          onSelected: (selected) {
+                            if (selected) {
+                              ref.read(settingsProvider.notifier).updateEditorFontFamily(f.$1);
+                            }
+                          },
+                          showCheckmark: false,
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      );
+                    }),
+                    const VerticalDivider(width: 16, indent: 8, endIndent: 8),
+                    IconButton(
+                      icon: const Icon(Icons.remove_rounded, size: 14),
+                      onPressed: selectedSize > 12.0
+                          ? () => ref.read(settingsProvider.notifier).updateEditorFontSize(selectedSize - 1.0)
+                          : null,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    ),
+                    Text(
+                      '${selectedSize.toInt()}',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_rounded, size: 14),
+                      onPressed: selectedSize < 24.0
+                          ? () => ref.read(settingsProvider.notifier).updateEditorFontSize(selectedSize + 1.0)
+                          : null,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    ),
+                    const VerticalDivider(width: 16, indent: 8, endIndent: 8),
+                    IconButton(
+                      icon: const Icon(Icons.format_line_spacing_rounded, size: 15),
+                      onPressed: () {
+                        double nextHeight = 1.4;
+                        if (selectedHeight == 1.2) nextHeight = 1.4;
+                        else if (selectedHeight == 1.4) nextHeight = 1.6;
+                        else if (selectedHeight == 1.6) nextHeight = 1.8;
+                        else if (selectedHeight == 1.8) nextHeight = 1.2;
+                        ref.read(settingsProvider.notifier).updateEditorLineHeight(nextHeight);
+                      },
+                      tooltip: 'Line Spacing $selectedHeight',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                    ),
+                  ],
+                ),
+              );
             case 'format':
               return TextFormatGroup(quillController: widget.quillController!, accentColor: accentColor);
             case 'color':
