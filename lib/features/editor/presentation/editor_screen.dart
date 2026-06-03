@@ -20,13 +20,8 @@ import '../domain/usecases/convert_blocks_to_delta.dart';
 import '../domain/usecases/convert_delta_to_blocks.dart';
 import 'controllers/editor_block_controller.dart';
 import 'widgets/blocks/drawing_canvas_screen.dart';
-
-import 'widgets/layouts/classic_layout.dart';
-import 'widgets/layouts/minimal_layout.dart';
-import 'widgets/layouts/notebook_layout.dart';
-import 'widgets/layouts/zen_layout.dart';
-import 'widgets/layouts/aesthetic_layouts.dart';
-import 'widgets/panels/pdf_export_dialog.dart';
+import 'widgets/editor_shell/editor_body.dart';
+import 'widgets/editor_shell/editor_route_actions.dart';
 import '../../../../core/utils/clipboard_helper.dart';
 import '../../../../core/utils/quill_paste_handler.dart';
 
@@ -318,7 +313,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
             if (result.finalResult) {
               final text = result.recognizedWords;
               if (text.isNotEmpty) {
-                // Add speech dictation at current cursor or block
                 final settings = ref.read(settingsProvider);
                 if (settings.editorMode == EditorMode.gentleNote) {
                   final index = _quillController.selection.baseOffset;
@@ -447,12 +441,10 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final currentMode = settings.editorMode;
     if (_lastEditorMode != currentMode) {
       if (_lastEditorMode == EditorMode.gentleNote && currentMode == EditorMode.blockEditor) {
-        // Sync Quill to Blocks
         final deltaJson = jsonEncode(_quillController.document.toDelta().toJson());
         final blocks = ConvertDeltaToBlocks.execute(deltaJson);
         ref.read(editorBlockControllerProvider.notifier).initializeWithBlocks(blocks);
       } else if (_lastEditorMode == EditorMode.blockEditor && currentMode == EditorMode.gentleNote) {
-        // Sync Blocks to Quill
         final deltaJson = ConvertBlocksToDelta.execute(blocksState.blocks);
         try {
           final doc = Document.fromJson(jsonDecode(deltaJson));
@@ -474,7 +466,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final layoutVariant = settings.editorLayout;
     debugPrint('EDITOR SCREEN BUILD - RESOLVED LAYOUT VARIANT: $layoutVariant');
 
-    // Common callbacks and parameters
     final onFolderChanged = (String? val) => setState(() {
           _selectedFolderId = val;
           _markDirty();
@@ -516,7 +507,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         updatedAt: DateTime.now(),
         stickers: stickers,
       );
-      PdfExportDialog.show(context, note);
+      EditorRouteActions.exportToPdf(context, note);
     };
 
     final canUndo = settings.editorMode == EditorMode.gentleNote
@@ -541,168 +532,37 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       }
     };
 
-    if (layoutVariant.isAesthetic || layoutVariant == EditorLayoutVariant.cards) {
-      return AestheticLayout(
-        variant: layoutVariant,
-        noteId: _noteId,
-        editorMode: settings.editorMode,
-        quillController: _quillController,
-        editorFocusNode: _editorFocusNode,
-        attachments: _attachments,
-        titleController: _titleController,
-        tagController: _tagController,
-        selectedFolderId: _selectedFolderId,
-        onFolderChanged: onFolderChanged,
-        noteType: _noteType,
-        onNoteTypeChanged: onNoteTypeChanged,
-        isPinned: _isPinned,
-        onPinChanged: onPinChanged,
-        isFavorite: _isFavorite,
-        onFavoriteChanged: onFavoriteChanged,
-        colorHex: _colorHex,
-        onColorChanged: onColorChanged,
-        blocks: blocksState.blocks,
-        focusNodes: _focusNodes,
-        scrollController: _scrollController,
-        onSave: _saveNote,
-        onPrintPdf: onPrintPdf,
-        isSpeechListening: _isSpeechListening,
-        onSpeechToggle: _toggleSpeechToText,
-        onInsertBlock: _onInsertBlock,
-        onUndo: onUndo,
-        onRedo: onRedo,
-        canUndo: canUndo,
-        canRedo: canRedo,
-      );
-    }
-
-    switch (layoutVariant) {
-      case EditorLayoutVariant.minimal:
-        return MinimalLayout(
-          noteId: _noteId,
-          editorMode: settings.editorMode,
-          quillController: _quillController,
-          editorFocusNode: _editorFocusNode,
-          titleController: _titleController,
-          tagController: _tagController,
-          selectedFolderId: _selectedFolderId,
-          onFolderChanged: onFolderChanged,
-          noteType: _noteType,
-          onNoteTypeChanged: onNoteTypeChanged,
-          isPinned: _isPinned,
-          onPinChanged: onPinChanged,
-          isFavorite: _isFavorite,
-          onFavoriteChanged: onFavoriteChanged,
-          colorHex: _colorHex,
-          onColorChanged: onColorChanged,
-          blocks: blocksState.blocks,
-          focusNodes: _focusNodes,
-          scrollController: _scrollController,
-          onSave: _saveNote,
-          onPrintPdf: onPrintPdf,
-          isSpeechListening: _isSpeechListening,
-          onSpeechToggle: _toggleSpeechToText,
-          onInsertBlock: _onInsertBlock,
-          onUndo: onUndo,
-          onRedo: onRedo,
-          canUndo: canUndo,
-          canRedo: canRedo,
-        );
-      case EditorLayoutVariant.notebook:
-        return NotebookLayout(
-          noteId: _noteId,
-          editorMode: settings.editorMode,
-          quillController: _quillController,
-          editorFocusNode: _editorFocusNode,
-          titleController: _titleController,
-          tagController: _tagController,
-          selectedFolderId: _selectedFolderId,
-          onFolderChanged: onFolderChanged,
-          noteType: _noteType,
-          onNoteTypeChanged: onNoteTypeChanged,
-          isPinned: _isPinned,
-          onPinChanged: onPinChanged,
-          isFavorite: _isFavorite,
-          onFavoriteChanged: onFavoriteChanged,
-          colorHex: _colorHex,
-          onColorChanged: onColorChanged,
-          blocks: blocksState.blocks,
-          focusNodes: _focusNodes,
-          scrollController: _scrollController,
-          onSave: _saveNote,
-          onPrintPdf: onPrintPdf,
-          isSpeechListening: _isSpeechListening,
-          onSpeechToggle: _toggleSpeechToText,
-          onInsertBlock: _onInsertBlock,
-          onUndo: onUndo,
-          onRedo: onRedo,
-          canUndo: canUndo,
-          canRedo: canRedo,
-        );
-      case EditorLayoutVariant.zen:
-        return ZenLayout(
-          noteId: _noteId,
-          editorMode: settings.editorMode,
-          quillController: _quillController,
-          editorFocusNode: _editorFocusNode,
-          titleController: _titleController,
-          tagController: _tagController,
-          selectedFolderId: _selectedFolderId,
-          onFolderChanged: onFolderChanged,
-          noteType: _noteType,
-          onNoteTypeChanged: onNoteTypeChanged,
-          isPinned: _isPinned,
-          onPinChanged: onPinChanged,
-          isFavorite: _isFavorite,
-          onFavoriteChanged: onFavoriteChanged,
-          colorHex: _colorHex,
-          onColorChanged: onColorChanged,
-          blocks: blocksState.blocks,
-          focusNodes: _focusNodes,
-          scrollController: _scrollController,
-          onSave: _saveNote,
-          onPrintPdf: onPrintPdf,
-          isSpeechListening: _isSpeechListening,
-          onSpeechToggle: _toggleSpeechToText,
-          onInsertBlock: _onInsertBlock,
-          onUndo: onUndo,
-          onRedo: onRedo,
-          canUndo: canUndo,
-          canRedo: canRedo,
-        );
-      case EditorLayoutVariant.classic:
-      default:
-        return ClassicLayout(
-          noteId: _noteId,
-          editorMode: settings.editorMode,
-          quillController: _quillController,
-          editorFocusNode: _editorFocusNode,
-          attachments: _attachments,
-          titleController: _titleController,
-          tagController: _tagController,
-          selectedFolderId: _selectedFolderId,
-          onFolderChanged: onFolderChanged,
-          noteType: _noteType,
-          onNoteTypeChanged: onNoteTypeChanged,
-          isPinned: _isPinned,
-          onPinChanged: onPinChanged,
-          isFavorite: _isFavorite,
-          onFavoriteChanged: onFavoriteChanged,
-          colorHex: _colorHex,
-          onColorChanged: onColorChanged,
-          blocks: blocksState.blocks,
-          focusNodes: _focusNodes,
-          scrollController: _scrollController,
-          onSave: _saveNote,
-          onPrintPdf: onPrintPdf,
-          isSpeechListening: _isSpeechListening,
-          onSpeechToggle: _toggleSpeechToText,
-          onInsertBlock: _onInsertBlock,
-          onUndo: onUndo,
-          onRedo: onRedo,
-          canUndo: canUndo,
-          canRedo: canRedo,
-        );
-    }
+    return EditorBody(
+      layoutVariant: layoutVariant,
+      editorMode: settings.editorMode,
+      noteId: _noteId,
+      quillController: _quillController,
+      editorFocusNode: _editorFocusNode,
+      attachments: _attachments,
+      titleController: _titleController,
+      tagController: _tagController,
+      selectedFolderId: _selectedFolderId,
+      onFolderChanged: onFolderChanged,
+      noteType: _noteType,
+      onNoteTypeChanged: onNoteTypeChanged,
+      isPinned: _isPinned,
+      onPinChanged: onPinChanged,
+      isFavorite: _isFavorite,
+      onFavoriteChanged: onFavoriteChanged,
+      colorHex: _colorHex,
+      onColorChanged: onColorChanged,
+      blocks: blocksState.blocks,
+      focusNodes: _focusNodes,
+      scrollController: _scrollController,
+      onSave: _saveNote,
+      onPrintPdf: onPrintPdf,
+      isSpeechListening: _isSpeechListening,
+      onSpeechToggle: _toggleSpeechToText,
+      onInsertBlock: _onInsertBlock,
+      onUndo: onUndo,
+      onRedo: onRedo,
+      canUndo: canUndo,
+      canRedo: canRedo,
+    );
   }
 }
