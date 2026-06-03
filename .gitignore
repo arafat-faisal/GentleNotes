@@ -71,3 +71,4 @@ windows/flutter/ephemeral/
 # IDE / local machine files
 *.iml
 
+.rules

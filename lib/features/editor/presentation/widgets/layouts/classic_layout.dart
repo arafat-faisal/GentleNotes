@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
-import '../../../../models/models.dart';
-import '../../domain/entities/block_entity.dart';
-import '../../domain/entities/block_type.dart';
+import '../../../../../core/models/models.dart';
+import '../../../domain/entities/block_entity.dart';
+import '../../../domain/entities/block_type.dart';
 import '../panels/floating_toolbar.dart';
 import 'classic/classic_bottom_bar.dart';
 import 'classic/classic_editor_body.dart';
