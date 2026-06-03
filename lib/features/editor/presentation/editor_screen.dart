@@ -9,6 +9,8 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../models/models.dart';
+import '../../../../features/notes/data/models/floating_sticker_model.dart';
+import 'controllers/floating_stickers_controller.dart';
 import '../../../../features/notes/presentation/controllers/notes_controller.dart';
 import '../../../../features/templates/presentation/controllers/templates_controller.dart';
 import '../../../../features/settings/presentation/controllers/settings_controller.dart';
@@ -172,22 +174,28 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         _createdAt = note.createdAt;
         _attachments = note.attachments;
         noteContent = note.content;
+        ref.read(floatingStickersProvider.notifier).initialize(note.stickers);
+      } else {
+        ref.read(floatingStickersProvider.notifier).clear();
       }
-    } else if (_templateId != null) {
-      final templates = ref.read(templatesProvider);
-      final template = templates.cast<NoteTemplateModel?>().firstWhere(
-            (t) => t?.id == _templateId,
-            orElse: () => null,
-          );
+    } else {
+      ref.read(floatingStickersProvider.notifier).clear();
+      if (_templateId != null) {
+        final templates = ref.read(templatesProvider);
+        final template = templates.cast<NoteTemplateModel?>().firstWhere(
+              (t) => t?.id == _templateId,
+              orElse: () => null,
+            );
 
-      if (template != null) {
-        _titleController.text = template.defaultTitle;
-        _tagController.text = template.defaultTags.join(', ');
-        noteContent = template.defaultContent;
-        if (template.id == 't-code') {
-          _noteType = NoteType.code;
-        } else if (template.id == 't-journal') {
-          _noteType = NoteType.markdown;
+        if (template != null) {
+          _titleController.text = template.defaultTitle;
+          _tagController.text = template.defaultTags.join(', ');
+          noteContent = template.defaultContent;
+          if (template.id == 't-code') {
+            _noteType = NoteType.code;
+          } else if (template.id == 't-journal') {
+            _noteType = NoteType.markdown;
+          }
         }
       }
     }
@@ -241,6 +249,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         .toList();
 
     final now = DateTime.now();
+    final stickers = ref.read(floatingStickersProvider);
     final note = NoteModel(
       id: _noteId,
       folderId: _selectedFolderId,
@@ -255,6 +264,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       colorHex: _colorHex,
       createdAt: _createdAt ?? now,
       updatedAt: now,
+      stickers: stickers,
     );
 
     try {
@@ -363,9 +373,27 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   void _onInsertBlock(BlockType type, {String content = '', Map<String, dynamic> attributes = const {}}) {
     final settings = ref.read(settingsProvider);
     
+    if (type == BlockType.sticker) {
+      final id = const Uuid().v4();
+      final scrollOffset = _scrollController.hasClients ? _scrollController.offset : 0.0;
+      ref.read(floatingStickersProvider.notifier).addSticker(FloatingStickerModel(
+        id: id,
+        name: content,
+        x: 80.0,
+        y: scrollOffset + 100.0,
+      ));
+      _markDirty();
+      return;
+    }
+    
     if (settings.editorMode == EditorMode.gentleNote) {
-      final index = _quillController.selection.baseOffset;
-      final length = _quillController.selection.extentOffset - index;
+      int index = _quillController.selection.baseOffset;
+      int length = _quillController.selection.extentOffset - index;
+      if (index < 0) {
+        index = _quillController.document.length - 1;
+        if (index < 0) index = 0;
+        length = 0;
+      }
       
       switch (type) {
         case BlockType.heading:
@@ -390,6 +418,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           break;
         case BlockType.drawing:
           _openQuillDrawing();
+          break;
+        case BlockType.sticker:
+          _quillController.replaceText(index, length, BlockEmbed('sticker', content), null);
           break;
         case BlockType.horizontalRule:
           _quillController.replaceText(index, length, BlockEmbed('horizontal-rule', ''), null);
@@ -468,6 +499,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       final content = settings.editorMode == EditorMode.gentleNote
           ? jsonEncode(_quillController.document.toDelta().toJson())
           : ConvertBlocksToDelta.execute(blocksState.blocks);
+      final stickers = ref.read(floatingStickersProvider);
       final note = NoteModel(
         id: _noteId,
         folderId: _selectedFolderId,
@@ -482,6 +514,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         colorHex: _colorHex,
         createdAt: _createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        stickers: stickers,
       );
       PdfExportDialog.show(context, note);
     };

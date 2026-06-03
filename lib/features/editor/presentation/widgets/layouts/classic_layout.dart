@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io' as io;
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
@@ -976,9 +976,6 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
         ? (isDark ? const Color(0xFF0F0B1E) : Colors.white)
         : Color(int.parse('FF${widget.colorHex.replaceAll('#', '')}', radix: 16)).withOpacity(isDark ? 0.15 : 0.8);
 
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-    final showFolderOptions = !isKeyboardOpen;
-
     return Scaffold(
       backgroundColor: bgColor,
       appBar: _buildCustomAppBar(theme, isDark),
@@ -987,8 +984,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
           children: [
             Column(
               children: [
-                if (showFolderOptions)
-                  Padding(
+                Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -1107,41 +1103,15 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                       ),
                     ),
                   ),
-                if (showFolderOptions)
-                  const Divider(height: 1),
+                const Divider(height: 1),
 
                 // Blocks Editor / Preview view
                 Expanded(
                   child: _buildEditorBody(context),
                 ),
 
-                // Tags bar at the bottom
-                if (!isKeyboardOpen) ...[
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80), // extra padding for bottom bar
-                    child: Row(
-                      children: [
-                        Icon(Icons.local_offer_outlined, size: 20, color: theme.colorScheme.primary),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: widget.tagController,
-                            style: const TextStyle(fontSize: 13),
-                            decoration: InputDecoration(
-                              hintText: 'Enter tags (comma separated)...',
-                              hintStyle: TextStyle(color: theme.hintColor.withOpacity(0.3)),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else
-                  const SizedBox(height: 80),
+                // Bottom spacer — always fixed height; tags are in the toolbar.
+                const SizedBox(height: 80),
               ],
             ),
 

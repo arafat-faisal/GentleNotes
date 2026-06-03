@@ -101,6 +101,15 @@ flutter:
 
   assets:
     - assets/images/logo.png
+    - assets/images/stickers/cat.png
+    - assets/images/stickers/coffee.png
+    - assets/images/stickers/idea.png
+    - assets/images/stickers/star.png
+    - assets/images/stickers/cloud.png
+    - assets/images/stickers/heart.png
+    - assets/images/stickers/fire.png
+    - assets/images/stickers/sun.png
+    - assets/images/stickers/target.png
 
   fonts:
     - family: RobotoMono

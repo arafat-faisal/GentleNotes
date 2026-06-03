@@ -7,4 +7,6 @@ enum BlockType {
   code,
   drawing,
   horizontalRule,
+  sticker,
 }
+

@@ -193,8 +193,9 @@ class MediaPdfRenderer {
             : align == 'right'
                 ? pw.Alignment.centerRight
                 : pw.Alignment.center;
-        final double maxW = size == 'small' ? 200 : size == 'large' ? 460 : 340;
-        final double maxH = size == 'small' ? 150 : size == 'large' ? 320 : 240;
+        final isSticker = block.text.startsWith('sticker://');
+        final double maxW = isSticker ? 100 : (size == 'small' ? 200 : size == 'large' ? 460 : 340);
+        final double maxH = isSticker ? 100 : (size == 'small' ? 150 : size == 'large' ? 320 : 240);
 
         return pw.Align(
           alignment: alignment,
@@ -215,7 +216,7 @@ class MediaPdfRenderer {
                     child: pw.Image(imageProvider, fit: pw.BoxFit.contain),
                   ),
                 ),
-                if (cleanAlt.isNotEmpty && cleanAlt.toLowerCase() != 'image') ...[
+                if (cleanAlt.isNotEmpty && cleanAlt.toLowerCase() != 'image' && !cleanAlt.startsWith('sticker:')) ...[
                   pw.SizedBox(height: 4),
                   pw.Text(
                     cleanAlt,

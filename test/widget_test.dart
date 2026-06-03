@@ -1,6 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gentle_notes/models/models.dart';
 import 'package:gentle_notes/core/utils/quill_paste_handler.dart';
+import 'package:gentle_notes/core/utils/quill_markdown_converter.dart';
+import 'package:gentle_notes/features/editor/domain/entities/block_type.dart';
+import 'package:gentle_notes/features/editor/domain/usecases/convert_delta_to_blocks.dart';
+import 'package:gentle_notes/features/editor/domain/usecases/convert_blocks_to_delta.dart';
 
 void main() {
   test('FolderModel serialization test', () {
@@ -149,6 +153,87 @@ void main() {
       expect(markdown, contains('This is **bold** and *italic*.'));
       expect(markdown, isNot(contains('<script>')));
       expect(markdown, isNot(contains('alert')));
+    });
+  });
+
+  group('Sticker Feature Tests', () {
+    test('QuillMarkdownConverter should convert markdown sticker to delta and back', () {
+      const markdown = '![sticker:cat](sticker://cat)\n';
+      final deltaJson = QuillMarkdownConverter.markdownToDeltaJson(markdown);
+      expect(deltaJson, contains('"sticker":"cat"'));
+
+      final convertedMarkdown = QuillMarkdownConverter.deltaToMarkdown(deltaJson);
+      expect(convertedMarkdown.trim(), '![sticker:cat](sticker://cat)');
+    });
+
+    test('ConvertDeltaToBlocks and ConvertBlocksToDelta should handle stickers', () {
+      const deltaJson = '[{"insert":{"sticker":"coffee"}},{"insert":"\\n"}]';
+      final blocks = ConvertDeltaToBlocks.execute(deltaJson);
+      expect(blocks.length, 1);
+      expect(blocks.first.type, BlockType.sticker);
+      expect(blocks.first.content, 'coffee');
+
+      final reconvertedDelta = ConvertBlocksToDelta.execute(blocks);
+      expect(reconvertedDelta, contains('"sticker":"coffee"'));
+    });
+
+    test('FloatingStickerModel serialization and NoteModel integration test', () {
+      final sticker = FloatingStickerModel(
+        id: 'stick-1',
+        name: 'cat',
+        x: 100.5,
+        y: 200.5,
+        width: 150.0,
+        height: 150.0,
+        opacity: 0.8,
+        hasBackground: true,
+        textOver: 'Meow',
+        textBehavior: 'over',
+      );
+
+      final stickerMap = sticker.toMap();
+      expect(stickerMap['id'], 'stick-1');
+      expect(stickerMap['name'], 'cat');
+      expect(stickerMap['x'], 100.5);
+      expect(stickerMap['y'], 200.5);
+      expect(stickerMap['opacity'], 0.8);
+      expect(stickerMap['hasBackground'], 1);
+      expect(stickerMap['textOver'], 'Meow');
+      expect(stickerMap['textBehavior'], 'over');
+
+      final deserializedSticker = FloatingStickerModel.fromMap(stickerMap);
+      expect(deserializedSticker.id, sticker.id);
+      expect(deserializedSticker.name, sticker.name);
+      expect(deserializedSticker.x, sticker.x);
+      expect(deserializedSticker.y, sticker.y);
+      expect(deserializedSticker.opacity, sticker.opacity);
+      expect(deserializedSticker.hasBackground, sticker.hasBackground);
+      expect(deserializedSticker.textOver, sticker.textOver);
+      expect(deserializedSticker.textBehavior, sticker.textBehavior);
+
+      final note = NoteModel(
+        id: 'note-1',
+        title: 'Note with stickers',
+        content: 'Hello World',
+        noteType: NoteType.text,
+        tags: const [],
+        attachments: const [],
+        isPinned: false,
+        isFavorite: false,
+        colorHex: '#FFFFFF',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        stickers: [sticker],
+      );
+
+      final noteMap = note.toMap();
+      expect(noteMap['stickers'], isList);
+      expect((noteMap['stickers'] as List).length, 1);
+
+      final deserializedNote = NoteModel.fromMap(noteMap);
+      expect(deserializedNote.stickers.length, 1);
+      expect(deserializedNote.stickers.first.name, 'cat');
+      expect(deserializedNote.stickers.first.textOver, 'Meow');
     });
   });
 }

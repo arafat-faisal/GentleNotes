@@ -7,6 +7,7 @@ import '../../../../../models/models.dart';
 import '../../../../settings/presentation/controllers/settings_controller.dart';
 import '../../../domain/entities/block_type.dart';
 import 'voice_recorder_bottom_sheet.dart';
+import 'stickers_sheet.dart';
 
 class FloatingToolbar extends ConsumerStatefulWidget {
   final String noteId;
@@ -345,6 +346,18 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
     );
   }
 
+  void _showStickersPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StickersSheet(
+        onSelect: (stickerName) {
+          widget.onInsertBlock(BlockType.sticker, content: stickerName);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -425,29 +438,78 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                         onPressed: () => widget.onInsertBlock(BlockType.code),
                         tooltip: 'Code Snippet',
                       ),
-                    if (showImage)
-                      IconButton(
-                        icon: const Icon(Icons.image_outlined, size: 20),
-                        onPressed: () => _pickImage(context),
-                        tooltip: 'Insert Image',
-                      ),
-                    if (showDrawing)
-                      IconButton(
-                        icon: const Icon(Icons.draw_outlined, size: 20),
-                        onPressed: () => widget.onInsertBlock(BlockType.drawing),
-                        tooltip: 'Sketch Canvas',
-                      ),
-                    if (showVoice)
-                      IconButton(
-                        icon: const Icon(Icons.mic_none_rounded, size: 20),
-                        onPressed: () => _recordAudio(context),
-                        tooltip: 'Voice Recording',
-                      ),
-                    if (showDivider)
-                      IconButton(
-                        icon: const Icon(Icons.horizontal_rule_rounded, size: 20),
-                        onPressed: () => widget.onInsertBlock(BlockType.horizontalRule),
-                        tooltip: 'Divider',
+                    if (showImage || showDrawing || showVoice || showDivider)
+                      PopupMenuButton<String>(
+                        icon: Icon(Icons.add_box_outlined, size: 20, color: theme.colorScheme.primary),
+                        tooltip: 'Insert Options',
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: borderCol, width: 1),
+                        ),
+                        onSelected: (value) {
+                          if (value == 'image') _pickImage(context);
+                          if (value == 'sticker') _showStickersPicker(context);
+                          if (value == 'drawing') widget.onInsertBlock(BlockType.drawing);
+                          if (value == 'voice') _recordAudio(context);
+                          if (value == 'divider') widget.onInsertBlock(BlockType.horizontalRule);
+                        },
+                        itemBuilder: (context) => [
+                          if (showImage) ...[
+                            const PopupMenuItem(
+                              value: 'image',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.image_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Insert Image'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'sticker',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.sticky_note_2_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Insert Sticker'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          if (showDrawing)
+                            const PopupMenuItem(
+                              value: 'drawing',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.draw_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Sketch Canvas'),
+                                ],
+                              ),
+                            ),
+                          if (showVoice)
+                            const PopupMenuItem(
+                              value: 'voice',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.mic_none_rounded, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Voice Recording'),
+                                ],
+                              ),
+                            ),
+                          if (showDivider)
+                            const PopupMenuItem(
+                              value: 'divider',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.horizontal_rule_rounded, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Divider'),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                     if (showDictation) ...[
                       const VerticalDivider(width: 16, indent: 12, endIndent: 12),
@@ -829,6 +891,7 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 sub(Icons.image_outlined, 'Insert Image', () => _pickImage(context)),
+                sub(Icons.sticky_note_2_outlined, 'Insert Sticker', () => _showStickersPicker(context)),
                 sub(Icons.horizontal_rule_rounded, 'Divider', () {
                   widget.onInsertBlock(BlockType.horizontalRule);
                 }),

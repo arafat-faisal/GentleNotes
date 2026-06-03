@@ -22,6 +22,11 @@ class ConvertBlocksToDelta {
           'insert': {'audio': block.content},
         });
         ops.add({'insert': '\n'});
+      } else if (block.type == BlockType.sticker) {
+        ops.add({
+          'insert': {'sticker': block.content},
+        });
+        ops.add({'insert': '\n'});
       } else {
         final text = block.content;
         final Map<String, dynamic> attrs = Map<String, dynamic>.from(block.attributes);

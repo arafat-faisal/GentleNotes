@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 export '../features/folders/data/models/folder_model.dart';
 export '../features/notes/data/models/attachment_model.dart';
 export '../features/notes/data/models/note_model.dart';
+export '../features/notes/data/models/floating_sticker_model.dart';
 export '../features/templates/data/models/note_template_model.dart';
 export '../features/settings/data/models/app_settings_model.dart';
 export '../features/settings/data/models/user_profile.dart';

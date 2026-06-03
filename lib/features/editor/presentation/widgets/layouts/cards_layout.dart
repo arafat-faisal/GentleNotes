@@ -40,7 +40,6 @@ class CardsLayout extends ConsumerWidget {
       headerColor = coverColor;
     }
 
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Container(
       color: bg,
@@ -306,8 +305,8 @@ class CardsLayout extends ConsumerWidget {
             ),
           ),
 
-          // ── Tags bar ──
-          if (!isKeyboardOpen) ...[
+          // Tags bar — always visible; hiding it based on keyboard causes layout shifts that drop focus.
+          ...[
             Container(height: 1, color: border),
             Container(
               color: cardBg,

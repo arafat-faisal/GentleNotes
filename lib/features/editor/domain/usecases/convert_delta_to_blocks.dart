@@ -25,6 +25,8 @@ class ConvertDeltaToBlocks {
                 blocks.add(BlockEntity.create(BlockType.drawing, content: insert['drawing'].toString()));
               } else if (insert.containsKey('audio')) {
                 blocks.add(BlockEntity.create(BlockType.audio, content: insert['audio'].toString()));
+              } else if (insert.containsKey('sticker')) {
+                blocks.add(BlockEntity.create(BlockType.sticker, content: insert['sticker'].toString()));
               }
             } else if (insert is String) {
               final text = insert;

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../../models/models.dart';
 import 'attachment_model.dart';
+import 'floating_sticker_model.dart';
 
 class NoteModel {
   final String id;
@@ -17,6 +18,7 @@ class NoteModel {
   final String colorHex;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final List<FloatingStickerModel> stickers;
 
   NoteModel({
     required this.id,
@@ -32,6 +34,7 @@ class NoteModel {
     required this.colorHex,
     required this.createdAt,
     required this.updatedAt,
+    this.stickers = const [],
   });
 
   String get plainText {
@@ -65,6 +68,7 @@ class NoteModel {
     bool? isFavorite,
     String? colorHex,
     DateTime? updatedAt,
+    List<FloatingStickerModel>? stickers,
   }) {
     return NoteModel(
       id: this.id,
@@ -80,6 +84,7 @@ class NoteModel {
       colorHex: colorHex ?? this.colorHex,
       createdAt: this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      stickers: stickers ?? this.stickers,
     );
   }
 
@@ -98,6 +103,7 @@ class NoteModel {
       'colorHex': colorHex,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'stickers': stickers.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -111,6 +117,13 @@ class NoteModel {
     List<String> parsedTags = [];
     if (map['tags'] is List) {
       parsedTags = List<String>.from(map['tags']);
+    }
+
+    List<FloatingStickerModel> parsedStickers = [];
+    if (map['stickers'] is List) {
+      parsedStickers = (map['stickers'] as List)
+          .map((x) => FloatingStickerModel.fromMap(Map<String, dynamic>.from(x)))
+          .toList();
     }
 
     return NoteModel(
@@ -127,6 +140,7 @@ class NoteModel {
       colorHex: map['colorHex'] ?? '#FFFFFF',
       createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(map['updatedAt'] ?? DateTime.now().toIso8601String()),
+      stickers: parsedStickers,
     );
   }
 

@@ -267,9 +267,16 @@ class QuillMarkdownConverter {
         ops.addAll(innerOps);
       } else if (token.startsWith('!') && token.contains('](')) {
         final url = match.group(7) ?? '';
-        ops.add({
-          'insert': {'image': url},
-        });
+        if (url.startsWith('sticker://')) {
+          final stickerName = url.replaceFirst('sticker://', '');
+          ops.add({
+            'insert': {'sticker': stickerName},
+          });
+        } else {
+          ops.add({
+            'insert': {'image': url},
+          });
+        }
       } else if (token.startsWith('[') && token.contains('](')) {
         final label = match.group(8) ?? '';
         final url = match.group(9) ?? '';
@@ -449,6 +456,9 @@ class QuillMarkdownConverter {
         if (insert.containsKey('image')) {
           final imageUrl = insert['image'];
           lineBuffer.write('![$imageUrl]($imageUrl)');
+        } else if (insert.containsKey('sticker')) {
+          final stickerName = insert['sticker'];
+          lineBuffer.write('![sticker:$stickerName](sticker://$stickerName)');
         } else if (insert.containsKey('audio')) {
           final audioData = insert['audio'];
           String attachmentId = '';

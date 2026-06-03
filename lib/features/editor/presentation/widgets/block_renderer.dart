@@ -11,6 +11,7 @@ import 'blocks/audio_block.dart';
 import 'blocks/code_block.dart';
 import 'blocks/drawing_block.dart';
 import 'blocks/hr_block.dart';
+import 'blocks/sticker_block.dart';
 
 class BlockRenderer extends ConsumerWidget {
   final BlockEntity block;
@@ -80,6 +81,11 @@ class BlockRenderer extends ConsumerWidget {
         );
       case BlockType.horizontalRule:
         return HrBlock(
+          block: block,
+          onRemoved: () => controller.removeBlock(block.id),
+        );
+      case BlockType.sticker:
+        return StickerBlock(
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
         );

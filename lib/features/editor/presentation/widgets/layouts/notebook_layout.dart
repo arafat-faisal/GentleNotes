@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:go_router/go_router.dart';
@@ -77,7 +77,6 @@ class NotebookLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final accent = theme.colorScheme.primary;
 
     final sidebarBg = theme.cardColor;
@@ -86,11 +85,11 @@ class NotebookLayout extends ConsumerWidget {
 
     final folders = ref.watch(foldersProvider);
 
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    // Note: do NOT hide sections based on keyboard visibility — that causes
+    // layout shifts which drop the editor FocusNode and immediately dismiss the keyboard.
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // Show sidebar if keyboard is not open, or if the screen is wide enough (>= 500)
-    final showSidebar = !isKeyboardOpen || screenWidth >= 500;
+    // Always show sidebar, but make it narrower on small screens.
+    const showSidebar = true;
     final sidebarWidth = screenWidth < 400 ? 160.0 : (screenWidth < 600 ? 200.0 : 300.0);
 
     Widget sidebar = SizedBox(
@@ -458,26 +457,7 @@ class NotebookLayout extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // If sidebar is hidden (e.g. mobile keyboard open), show a slim title input
-                        if (!showSidebar) ...[
-                          TextField(
-                            controller: titleController,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontFamily: 'Outfit',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Enter title...',
-                              hintStyle: TextStyle(color: theme.hintColor.withOpacity(0.3)),
-                              border: InputBorder.none,
-                              isDense: true,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Divider(thickness: 1),
-                          const SizedBox(height: 8),
-                        ],
+                        // Title is always in the sidebar; no inline title needed.
 
                         Expanded(
                           child: EditorBodyWidget(

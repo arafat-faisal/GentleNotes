@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../models/models.dart';
 import '../../domain/entities/block_entity.dart';
@@ -8,8 +9,11 @@ import 'editor_blocks_list.dart';
 import 'embeds/image_embed_builder.dart';
 import 'embeds/audio_embed_builder.dart';
 import 'embeds/horizontal_rule_embed_builder.dart';
+import 'embeds/sticker_embed_builder.dart';
+import '../controllers/floating_stickers_controller.dart';
+import 'blocks/floating_stickers_overlay.dart';
 
-class EditorBodyWidget extends StatelessWidget {
+class EditorBodyWidget extends ConsumerWidget {
   final EditorMode editorMode;
   final QuillController? quillController;
   final FocusNode? editorFocusNode;
@@ -44,12 +48,14 @@ class EditorBodyWidget extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final floatingStickers = ref.watch(floatingStickersProvider);
 
+    Widget editorContent;
     if (editorMode == EditorMode.gentleNote && quillController != null && editorFocusNode != null) {
-      return DefaultTextStyle(
+      editorContent = DefaultTextStyle(
         style: TextStyle(
           fontFamily: _currentFontFamily,
           fontSize: 16,
@@ -72,6 +78,7 @@ class EditorBodyWidget extends StatelessWidget {
           child: QuillEditor.basic(
             controller: quillController!,
             focusNode: editorFocusNode!,
+            scrollController: scrollController,
             config: QuillEditorConfig(
               placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
               autoFocus: false,
@@ -82,6 +89,7 @@ class EditorBodyWidget extends StatelessWidget {
                 AudioEmbedBuilder(getAttachments: () => attachments),
                 HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
                 HorizontalRuleEmbedBuilder(key: 'divider'),
+                StickerEmbedBuilder(),
               ],
               customActions: <Type, Action<Intent>>{
                 PasteTextIntent: CallbackAction<PasteTextIntent>(
@@ -99,13 +107,28 @@ class EditorBodyWidget extends StatelessWidget {
           ),
         ),
       );
+    } else {
+      editorContent = EditorBlocksList(
+        blocks: blocks,
+        focusNodes: focusNodes,
+        scrollController: scrollController,
+        isReorderable: isReorderable,
+      );
     }
 
-    return EditorBlocksList(
-      blocks: blocks,
-      focusNodes: focusNodes,
-      scrollController: scrollController,
-      isReorderable: isReorderable,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(child: editorContent),
+        if (floatingStickers.isNotEmpty)
+          Positioned.fill(
+            child: FloatingStickersOverlay(
+              scrollController: scrollController,
+              quillController: quillController,
+              editorMode: editorMode,
+            ),
+          ),
+      ],
     );
   }
 }

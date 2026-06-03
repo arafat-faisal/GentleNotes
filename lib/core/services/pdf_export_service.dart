@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -107,7 +108,12 @@ class PdfExportService {
         }
         if (resolvedImages.containsKey(block.text)) continue;
         try {
-          if (path.startsWith('data:image')) {
+          if (path.startsWith('sticker://')) {
+            final stickerName = path.replaceFirst('sticker://', '');
+            final byteData = await rootBundle.load('assets/images/stickers/$stickerName.png');
+            final bytes = byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
+            resolvedImages[block.text] = pw.MemoryImage(bytes);
+          } else if (path.startsWith('data:image')) {
             final bytes = base64Decode(path.split(',').last);
             resolvedImages[block.text] = pw.MemoryImage(bytes);
           } else if (path.startsWith('http')) {
@@ -126,21 +132,111 @@ class PdfExportService {
       }
     }
 
+    for (var sticker in note.stickers) {
+      final key = 'floating_sticker_${sticker.id}';
+      if (resolvedImages.containsKey(key)) continue;
+      try {
+        if (sticker.name.startsWith('/') ||
+            sticker.name.contains(':\\') ||
+            sticker.name.contains(':/') ||
+            sticker.name.startsWith('content:')) {
+          final file = io.File(sticker.name);
+          if (await file.exists()) {
+            final bytes = await file.readAsBytes();
+            resolvedImages[key] = pw.MemoryImage(bytes);
+          }
+        } else {
+          final byteData = await rootBundle.load('assets/images/stickers/${sticker.name}.png');
+          final bytes = byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
+          resolvedImages[key] = pw.MemoryImage(bytes);
+        }
+      } catch (e) {
+        debugPrint('PDF: floating sticker load failed: $e');
+      }
+    }
+
     doc.addPage(
       pw.MultiPage(
-        pageFormat: pageFormat,
+        pageTheme: pw.PageTheme(
+          pageFormat: pageFormat,
+          margin: pw.EdgeInsets.fromLTRB(
+            pageFormat == PdfPageFormat.a4 ? 56 : 60,
+            48,
+            pageFormat == PdfPageFormat.a4 ? 56 : 60,
+            48,
+          ),
+          buildForeground: (pw.Context context) {
+            final pageNum = context.pageNumber;
+            final pageIndex = pageNum - 1;
+            final pageStickers = note.stickers.where((s) {
+              final targetPage = (s.y / 700).floor();
+              return targetPage == pageIndex;
+            }).toList();
+
+            if (pageStickers.isEmpty) {
+              return pw.SizedBox.shrink();
+            }
+
+            return pw.Stack(
+              children: pageStickers.map((sticker) {
+                final img = resolvedImages['floating_sticker_${sticker.id}'];
+                if (img == null) return pw.SizedBox.shrink();
+
+                final scale = pageFormat == PdfPageFormat.a4 ? 0.70 : 0.75;
+                final left = sticker.x * scale;
+                final top = (sticker.y % 700) * scale;
+                final width = sticker.width * scale;
+                final height = sticker.height * scale;
+
+                return pw.Positioned(
+                  left: left,
+                  top: top,
+                  child: pw.Opacity(
+                    opacity: sticker.opacity,
+                    child: pw.Container(
+                      width: width,
+                      height: height,
+                      decoration: sticker.hasBackground
+                          ? pw.BoxDecoration(
+                              color: PdfColors.white,
+                              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                              border: pw.Border.all(color: PdfColors.grey300, width: 0.8),
+                            )
+                          : null,
+                      padding: sticker.hasBackground ? const pw.EdgeInsets.all(6) : pw.EdgeInsets.zero,
+                      child: pw.Stack(
+                        children: [
+                          pw.Image(img, fit: pw.BoxFit.contain),
+                          if (sticker.textBehavior == 'over' && sticker.textOver.isNotEmpty)
+                            pw.Center(
+                              child: pw.Padding(
+                                padding: const pw.EdgeInsets.all(2),
+                                child: pw.Text(
+                                  sticker.textOver,
+                                  style: pw.TextStyle(
+                                    font: fontBold,
+                                    fontSize: 8,
+                                    color: PdfColors.grey900,
+                                  ),
+                                  textAlign: pw.TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
         theme: pw.ThemeData.withFont(
           base: fontRegular,
           bold: fontBold,
           italic: fontRegular,
           boldItalic: fontBold,
           fontFallback: fallbacks,
-        ),
-        margin: pw.EdgeInsets.fromLTRB(
-          pageFormat == PdfPageFormat.a4 ? 56 : 60,
-          48,
-          pageFormat == PdfPageFormat.a4 ? 56 : 60,
-          48,
         ),
         header: (ctx) => PdfDocumentBuilder.buildHeader(fontSemiBold, fontRegular, cleanTitle),
         footer: (ctx) => PdfDocumentBuilder.buildFooter(ctx, fontSemiBold, fontRegular),

@@ -308,6 +308,17 @@ class MarkdownWidget extends ConsumerWidget {
         continue;
       }
 
+      // Stickers
+      final stickerMatch = RegExp(r'^!\[sticker:(.*?)\]\(sticker://(.*?)\)$').firstMatch(trimmed);
+      if (stickerMatch != null) {
+        final stickerName = stickerMatch.group(2) ?? '';
+        blocks.add(_CustomBlock(
+          type: _BlockType.sticker,
+          text: stickerName,
+        ));
+        continue;
+      }
+
       // Images
       final imageMatch = imageRegex.firstMatch(line);
       if (imageMatch != null) {
@@ -762,6 +773,8 @@ class MarkdownWidget extends ConsumerWidget {
         );
       case _BlockType.image:
         return _buildImageBlock(block);
+      case _BlockType.sticker:
+        return _buildStickerBlock(block.text);
       case _BlockType.paragraph:
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
@@ -1049,6 +1062,25 @@ class MarkdownWidget extends ConsumerWidget {
     }
   }
 
+  Widget _buildStickerBlock(String stickerName) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Container(
+          width: 120,
+          height: 120,
+          child: Image.asset(
+            'assets/images/stickers/$stickerName.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.sticky_note_2_outlined, size: 48, color: Colors.grey);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildImageBlock(_CustomBlock block) {
     var uriStr = block.text;
 
@@ -1223,7 +1255,8 @@ enum _BlockType {
   blockquote,
   table,
   details,
-  math;
+  math,
+  sticker;
 }
 
 class _CustomBlock {
