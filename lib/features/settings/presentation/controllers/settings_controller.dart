@@ -63,6 +63,21 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
     await _repository.saveSettings(state);
   }
 
+  Future<void> updateEditorFontFamily(String family) async {
+    state = state.copyWith(editorFontFamily: family);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateEditorFontSize(double size) async {
+    state = state.copyWith(editorFontSize: size);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateEditorLineHeight(double height) async {
+    state = state.copyWith(editorLineHeight: height);
+    await _repository.saveSettings(state);
+  }
+
   Future<void> updateEditorLayout(EditorLayoutVariant variant) async {
     state = state.copyWith(editorLayout: variant);
     await _repository.saveSettings(state);

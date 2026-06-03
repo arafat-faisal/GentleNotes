@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../../models/models.dart';
 import 'markdown_link_handler.dart';
 
 class MarkdownStyleBuilder {
+  static String? _resolveFontFamily(String? fontFamily) {
+    if (fontFamily == null || fontFamily == 'System' || fontFamily == 'Georgia' || fontFamily == 'Courier') {
+      return fontFamily;
+    }
+    try {
+      return GoogleFonts.getFont(fontFamily).fontFamily;
+    } catch (_) {
+      return fontFamily;
+    }
+  }
+
   static Widget renderInlineText(
     BuildContext context, 
     String text, 
@@ -26,8 +38,9 @@ class MarkdownStyleBuilder {
         default: align = TextAlign.left;
       }
     }
-    final TextStyle finalStyle = (baseStyle ?? const TextStyle()).copyWith(fontFamily: fontFamily);
-    final spans = parseInlineSpans(context, processedText, finalStyle, fontFamily: fontFamily, attachments: attachments);
+    final resolvedFamily = _resolveFontFamily(fontFamily);
+    final TextStyle finalStyle = (baseStyle ?? const TextStyle()).copyWith(fontFamily: resolvedFamily);
+    final spans = parseInlineSpans(context, processedText, finalStyle, fontFamily: resolvedFamily, attachments: attachments);
     return RichText(
       text: TextSpan(children: spans, style: finalStyle),
       textAlign: align,

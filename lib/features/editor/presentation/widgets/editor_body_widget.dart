@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../settings/presentation/controllers/settings_controller.dart';
 import '../../../../models/models.dart';
 import '../../domain/entities/block_entity.dart';
 import '../../../../core/utils/quill_paste_handler.dart';
@@ -43,8 +45,33 @@ class EditorBodyWidget extends ConsumerWidget {
         : (noteType == NoteType.code ? 'Courier' : 'Inter');
   }
 
-  double get _currentFontHeight {
-    return noteType == NoteType.mixed ? 1.75 : 1.5;
+  TextStyle _getEditorStyle(AppSettingsModel settings, Color color) {
+    final family = settings.editorFontFamily;
+    final size = settings.editorFontSize;
+    final height = settings.editorLineHeight;
+
+    final resolvedFamily = family == 'System' ? _currentFontFamily : family;
+    final base = TextStyle(fontSize: size, height: height, color: color);
+
+    switch (resolvedFamily) {
+      case 'Inter':
+        return GoogleFonts.inter(textStyle: base);
+      case 'Outfit':
+        return GoogleFonts.outfit(textStyle: base);
+      case 'Roboto Mono':
+        return GoogleFonts.robotoMono(textStyle: base);
+      case 'Lora':
+        return GoogleFonts.lora(textStyle: base);
+      case 'Lexend':
+        return GoogleFonts.lexend(textStyle: base);
+      case 'Georgia':
+        return base.copyWith(fontFamily: 'Georgia');
+      case 'Courier':
+      case 'Courier New':
+        return base.copyWith(fontFamily: 'Courier');
+      default:
+        return base.copyWith(fontFamily: resolvedFamily);
+    }
   }
 
   @override
@@ -52,15 +79,14 @@ class EditorBodyWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final floatingStickers = ref.watch(floatingStickersProvider);
+    final settings = ref.watch(settingsProvider);
 
     Widget editorContent;
     if (editorMode == EditorMode.gentleNote && quillController != null && editorFocusNode != null) {
       editorContent = DefaultTextStyle(
-        style: TextStyle(
-          fontFamily: _currentFontFamily,
-          fontSize: 16,
-          height: _currentFontHeight,
-          color: isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
+        style: _getEditorStyle(
+          settings,
+          isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
         ),
         child: Actions(
           actions: <Type, Action<Intent>>{

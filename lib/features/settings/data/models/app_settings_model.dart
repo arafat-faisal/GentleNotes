@@ -18,6 +18,9 @@ class AppSettingsModel {
   final List<EditorLayoutVariant> customEnabledLayouts;
   final List<AppThemePreset> customEnabledThemes;
   final List<String> customEnabledTools;
+  final String editorFontFamily;
+  final double editorFontSize;
+  final double editorLineHeight;
 
   AppSettingsModel({
     required this.themeMode,
@@ -66,6 +69,9 @@ class AppSettingsModel {
       'insert',
       'indent',
     ],
+    this.editorFontFamily = 'Inter',
+    this.editorFontSize = 16.0,
+    this.editorLineHeight = 1.5,
   });
 
   CustomWorkspaceProfile? get activeCustomProfile {
@@ -93,6 +99,9 @@ class AppSettingsModel {
     List<EditorLayoutVariant>? customEnabledLayouts,
     List<AppThemePreset>? customEnabledThemes,
     List<String>? customEnabledTools,
+    String? editorFontFamily,
+    double? editorFontSize,
+    double? editorLineHeight,
   }) {
     return AppSettingsModel(
       themeMode: themeMode ?? this.themeMode,
@@ -111,6 +120,9 @@ class AppSettingsModel {
       customEnabledLayouts: customEnabledLayouts ?? this.customEnabledLayouts,
       customEnabledThemes: customEnabledThemes ?? this.customEnabledThemes,
       customEnabledTools: customEnabledTools ?? this.customEnabledTools,
+      editorFontFamily: editorFontFamily ?? this.editorFontFamily,
+      editorFontSize: editorFontSize ?? this.editorFontSize,
+      editorLineHeight: editorLineHeight ?? this.editorLineHeight,
     );
   }
 
@@ -295,6 +307,9 @@ class AppSettingsModel {
       'customEnabledLayouts': customEnabledLayouts.map((e) => e.name).toList(),
       'customEnabledThemes': customEnabledThemes.map((e) => e.name).toList(),
       'customEnabledTools': customEnabledTools,
+      'editorFontFamily': editorFontFamily,
+      'editorFontSize': editorFontSize,
+      'editorLineHeight': editorLineHeight,
     };
   }
 
@@ -337,6 +352,9 @@ class AppSettingsModel {
               ?.map((e) => e.toString())
               .toList() ??
           const ['format', 'color', 'heading', 'align', 'lists', 'insert', 'indent'],
+      editorFontFamily: map['editorFontFamily'] ?? 'Inter',
+      editorFontSize: (map['editorFontSize'] as num?)?.toDouble() ?? 16.0,
+      editorLineHeight: (map['editorLineHeight'] as num?)?.toDouble() ?? 1.5,
     );
   }
 

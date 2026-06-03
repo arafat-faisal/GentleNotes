@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io' as io;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../../settings/presentation/controllers/settings_controller.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../../models/models.dart';
@@ -114,8 +116,54 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
         : (widget.noteType == NoteType.code ? 'Courier' : 'Inter');
   }
 
-  double get _currentFontHeight {
-    return widget.noteType == NoteType.mixed ? 1.75 : 1.5;
+  String _getResolvedFontFamily(AppSettingsModel settings) {
+    return settings.editorFontFamily == 'System' ? _currentFontFamily : settings.editorFontFamily;
+  }
+
+  ThemeData _getCustomTheme(ThemeData theme, AppSettingsModel settings) {
+    final family = settings.editorFontFamily;
+    final size = settings.editorFontSize;
+    final height = settings.editorLineHeight;
+
+    final resolvedFamily = family == 'System' ? _currentFontFamily : family;
+    TextStyle baseBodyStyle = (theme.textTheme.bodyLarge ?? const TextStyle()).copyWith(
+      fontSize: size,
+      height: height,
+    );
+
+    TextStyle resolvedBodyStyle;
+    switch (resolvedFamily) {
+      case 'Inter':
+        resolvedBodyStyle = GoogleFonts.inter(textStyle: baseBodyStyle);
+        break;
+      case 'Outfit':
+        resolvedBodyStyle = GoogleFonts.outfit(textStyle: baseBodyStyle);
+        break;
+      case 'Roboto Mono':
+        resolvedBodyStyle = GoogleFonts.robotoMono(textStyle: baseBodyStyle);
+        break;
+      case 'Lora':
+        resolvedBodyStyle = GoogleFonts.lora(textStyle: baseBodyStyle);
+        break;
+      case 'Lexend':
+        resolvedBodyStyle = GoogleFonts.lexend(textStyle: baseBodyStyle);
+        break;
+      case 'Georgia':
+        resolvedBodyStyle = baseBodyStyle.copyWith(fontFamily: 'Georgia');
+        break;
+      case 'Courier':
+      case 'Courier New':
+        resolvedBodyStyle = baseBodyStyle.copyWith(fontFamily: 'Courier');
+        break;
+      default:
+        resolvedBodyStyle = baseBodyStyle.copyWith(fontFamily: resolvedFamily);
+    }
+
+    return theme.copyWith(
+      textTheme: theme.textTheme.copyWith(
+        bodyLarge: resolvedBodyStyle,
+      ),
+    );
   }
 
   EdgeInsets styleContentPadding(PreviewStyle style) {
@@ -181,6 +229,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final settings = ref.watch(settingsProvider);
 
     if (widget.isFullScreen) {
       return _buildFullScreenBody(theme, isDark);
@@ -190,14 +239,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
       return _buildFocusModeBody(theme, isDark);
     }
 
-    final customTheme = theme.copyWith(
-      textTheme: theme.textTheme.copyWith(
-        bodyLarge: theme.textTheme.bodyLarge?.copyWith(
-          fontFamily: _currentFontFamily,
-          height: _currentFontHeight,
-        ),
-      ),
-    );
+    final customTheme = _getCustomTheme(theme, settings);
 
     if (widget.isPreviewMode) {
       final bgColor = widget.previewBgColor ?? (isDark ? const Color(0xFF0F0B1E) : Colors.white);
@@ -232,7 +274,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                   child: MarkdownWidget(
                     data: markdown,
                     attachments: widget.attachments,
-                    fontFamily: _currentFontFamily,
+                    fontFamily: _getResolvedFontFamily(settings),
                   ),
                 ),
               ),
@@ -272,15 +314,9 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
   Widget _buildFullScreenBody(ThemeData theme, bool isDark) {
     final bgColor = widget.previewBgColor ?? (isDark ? const Color(0xFF0D0B18) : Colors.white);
     final isMarkdownPreview = widget.isPreviewMode;
+    final settings = ref.watch(settingsProvider);
 
-    final customTheme = theme.copyWith(
-      textTheme: theme.textTheme.copyWith(
-        bodyLarge: theme.textTheme.bodyLarge?.copyWith(
-          fontFamily: _currentFontFamily,
-          height: _currentFontHeight,
-        ),
-      ),
-    );
+    final customTheme = _getCustomTheme(theme, settings);
 
     return Scaffold(
       backgroundColor: widget.previewBgImagePath != null ? Colors.transparent : bgColor,
@@ -330,14 +366,14 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                               Positioned.fill(
                                 child: CustomPaint(painter: PreviewStylePainter(widget.previewStyle)),
                               ),
-                            Padding(
-                              padding: styleContentPadding(widget.previewStyle),
-                              child: MarkdownWidget(
-                                data: _getMarkdownData(),
-                                attachments: widget.attachments,
-                                fontFamily: _currentFontFamily,
-                              ),
-                            ),
+                             Padding(
+                               padding: styleContentPadding(widget.previewStyle),
+                               child: MarkdownWidget(
+                                 data: _getMarkdownData(),
+                                 attachments: widget.attachments,
+                                 fontFamily: _getResolvedFontFamily(settings),
+                               ),
+                             ),
                           ],
                         )
                       : Theme(
@@ -428,14 +464,8 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
   }
 
   Widget _buildFocusModeBody(ThemeData theme, bool isDark) {
-    final customTheme = theme.copyWith(
-      textTheme: theme.textTheme.copyWith(
-        bodyLarge: theme.textTheme.bodyLarge?.copyWith(
-          fontFamily: _currentFontFamily,
-          height: _currentFontHeight,
-        ),
-      ),
-    );
+    final settings = ref.watch(settingsProvider);
+    final customTheme = _getCustomTheme(theme, settings);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF090B16) : const Color(0xFFF8F6FF),

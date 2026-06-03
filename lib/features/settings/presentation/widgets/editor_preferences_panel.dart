@@ -129,6 +129,117 @@ class EditorPreferencesPanel extends ConsumerWidget {
               ref.read(settingsProvider.notifier).toggleAutoSave(val);
             },
           ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.font_download_outlined),
+            title: const Text('Editor Font Family'),
+            subtitle: const Text('Choose typeface for note text'),
+            trailing: SizedBox(
+              width: 140,
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: settings.editorFontFamily,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.arrow_drop_down_rounded),
+                items: [
+                  ('System', 'System Default'),
+                  ('Inter', 'Inter (Sans)'),
+                  ('Outfit', 'Outfit (Modern)'),
+                  ('Roboto Mono', 'Roboto Mono (Code)'),
+                  ('Lora', 'Lora (Serif)'),
+                  ('Georgia', 'Georgia (Classic)'),
+                  ('Lexend', 'Lexend (Readable)'),
+                ].map((item) {
+                  return DropdownMenuItem(
+                    value: item.$1,
+                    child: Text(
+                      item.$2,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(settingsProvider.notifier).updateEditorFontFamily(val);
+                  }
+                },
+              ),
+            ),
+          ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.format_size_rounded),
+            title: const Text('Editor Font Size'),
+            subtitle: const Text('Scale note text size'),
+            trailing: SizedBox(
+              width: 150,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${settings.editorFontSize.toInt()} px',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Slider(
+                      value: settings.editorFontSize,
+                      min: 12.0,
+                      max: 24.0,
+                      divisions: 12,
+                      onChanged: (val) {
+                        ref.read(settingsProvider.notifier).updateEditorFontSize(val);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.format_line_spacing_rounded),
+            title: const Text('Editor Line Height'),
+            subtitle: const Text('Adjust line spacing for comfort'),
+            trailing: SizedBox(
+              width: 140,
+              child: DropdownButton<double>(
+                isExpanded: true,
+                value: settings.editorLineHeight,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.arrow_drop_down_rounded),
+                items: [
+                  (1.2, 'Compact (1.2)'),
+                  (1.4, 'Normal (1.4)'),
+                  (1.6, 'Reading (1.6)'),
+                  (1.8, 'Relaxed (1.8)'),
+                ].map((item) {
+                  return DropdownMenuItem(
+                    value: item.$1,
+                    child: Text(
+                      item.$2,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(settingsProvider.notifier).updateEditorLineHeight(val);
+                  }
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );

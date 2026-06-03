@@ -25,6 +25,9 @@ class SettingsStorage {
         AppThemePreset.values.map((e) => e.name).toList();
     final customTools = sharedPrefs.getStringList(AppConstants.prefCustomEnabledTools) ??
         ['format', 'color', 'heading', 'align', 'lists', 'insert', 'indent'];
+    final fontFamily = sharedPrefs.getString(AppConstants.prefEditorFontFamily) ?? 'Inter';
+    final fontSize = sharedPrefs.getDouble(AppConstants.prefEditorFontSize) ?? 16.0;
+    final lineHeight = sharedPrefs.getDouble(AppConstants.prefEditorLineHeight) ?? 1.5;
 
     return AppSettingsModel(
       themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == theme, orElse: () => ThemeModeSetting.system),
@@ -41,6 +44,9 @@ class SettingsStorage {
       customEnabledLayouts: customLayouts.map((name) => EditorLayoutVariant.values.firstWhere((e) => e.name == name, orElse: () => EditorLayoutVariant.classic)).toList(),
       customEnabledThemes: customThemes.map((name) => AppThemePreset.values.firstWhere((e) => e.name == name, orElse: () => AppThemePreset.none)).toList(),
       customEnabledTools: customTools,
+      editorFontFamily: fontFamily,
+      editorFontSize: fontSize,
+      editorLineHeight: lineHeight,
     );
   }
 
@@ -59,6 +65,9 @@ class SettingsStorage {
     await sharedPrefs.setStringList(AppConstants.prefCustomEnabledLayouts, settings.customEnabledLayouts.map((e) => e.name).toList());
     await sharedPrefs.setStringList(AppConstants.prefCustomEnabledThemes, settings.customEnabledThemes.map((e) => e.name).toList());
     await sharedPrefs.setStringList(AppConstants.prefCustomEnabledTools, settings.customEnabledTools);
+    await sharedPrefs.setString(AppConstants.prefEditorFontFamily, settings.editorFontFamily);
+    await sharedPrefs.setDouble(AppConstants.prefEditorFontSize, settings.editorFontSize);
+    await sharedPrefs.setDouble(AppConstants.prefEditorLineHeight, settings.editorLineHeight);
   }
 
   UserRole getUserRole() {
