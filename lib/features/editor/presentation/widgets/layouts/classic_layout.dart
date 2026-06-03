@@ -11,6 +11,7 @@ import 'classic/classic_editor_body.dart';
 import 'classic/classic_header.dart';
 import 'classic/classic_metadata_bar.dart';
 import 'classic/classic_side_panel.dart';
+import '../preview_style_painter.dart';
 
 class ClassicLayout extends ConsumerStatefulWidget {
   final String noteId;
