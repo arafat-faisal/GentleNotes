@@ -7,7 +7,7 @@ import 'account/account_privacy_note.dart';
 import 'account/account_profile_card.dart';
 import 'account/storage_status_card.dart';
 import 'account/subscription_status_card.dart';
-import 'account/user_mode_selector.dart';
+import 'account/user_mode/user_mode_selector.dart';
 
 class AccountSettingsSection extends ConsumerWidget {
   const AccountSettingsSection({super.key});
