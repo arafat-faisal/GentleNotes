@@ -1,10 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../settings/presentation/controllers/settings_controller.dart';
 import '../../../../models/models.dart';
+import '../../../../../core/theme/font_helper.dart';
 import '../../domain/entities/block_entity.dart';
 import '../../../../core/utils/quill_paste_handler.dart';
 import 'editor_blocks_list.dart';
@@ -14,6 +14,7 @@ import 'embeds/horizontal_rule_embed_builder.dart';
 import 'embeds/sticker_embed_builder.dart';
 import '../controllers/floating_stickers_controller.dart';
 import 'blocks/floating_stickers_overlay.dart';
+import 'markdown/markdown_code_block.dart';
 
 class EditorBodyWidget extends ConsumerWidget {
   final EditorMode editorMode;
@@ -53,25 +54,7 @@ class EditorBodyWidget extends ConsumerWidget {
     final resolvedFamily = family == 'System' ? _currentFontFamily : family;
     final base = TextStyle(fontSize: size, height: height, color: color);
 
-    switch (resolvedFamily) {
-      case 'Inter':
-        return GoogleFonts.inter(textStyle: base);
-      case 'Outfit':
-        return GoogleFonts.outfit(textStyle: base);
-      case 'Roboto Mono':
-        return GoogleFonts.robotoMono(textStyle: base);
-      case 'Lora':
-        return GoogleFonts.lora(textStyle: base);
-      case 'Lexend':
-        return GoogleFonts.lexend(textStyle: base);
-      case 'Georgia':
-        return base.copyWith(fontFamily: 'Georgia');
-      case 'Courier':
-      case 'Courier New':
-        return base.copyWith(fontFamily: 'Courier');
-      default:
-        return base.copyWith(fontFamily: resolvedFamily);
-    }
+    return FontHelper.getTextStyle(resolvedFamily, baseStyle: base);
   }
 
   @override
@@ -83,55 +66,158 @@ class EditorBodyWidget extends ConsumerWidget {
 
     Widget editorContent;
     if (editorMode == EditorMode.gentleNote && quillController != null && editorFocusNode != null) {
+      final activeCodeTheme = settings.activeCodeTheme;
+      final isDarkCodeTheme = activeCodeTheme.contains('dark') || activeCodeTheme == 'monokai';
+
+      final codeBlockBg = isDarkCodeTheme ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
+      final codeBlockBorder = theme.colorScheme.outlineVariant.withOpacity(0.5);
+      final codeBlockTextColor = isDarkCodeTheme ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
+
+      final customStyles = DefaultStyles(
+        inlineCode: InlineCodeStyle(
+          backgroundColor: codeBlockBg,
+          radius: const Radius.circular(4),
+          style: TextStyle(
+            fontFamily: 'Courier',
+            fontSize: 13,
+            color: codeBlockTextColor,
+          ),
+        ),
+        code: DefaultTextBlockStyle(
+          TextStyle(
+            fontFamily: 'Courier',
+            fontSize: 13,
+            height: 1.4,
+            color: codeBlockTextColor,
+          ),
+          const HorizontalSpacing(0, 0),
+          const VerticalSpacing(8, 8),
+          const VerticalSpacing(0, 0),
+          BoxDecoration(
+            color: codeBlockBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: codeBlockBorder,
+              width: 1,
+            ),
+          ),
+        ),
+      );
+
+      final quillConfig = QuillEditorConfig(
+        placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
+        autoFocus: false,
+        expands: true,
+        padding: EdgeInsets.zero,
+        customStyles: customStyles,
+        embedBuilders: [
+          ImageEmbedBuilder(),
+          AudioEmbedBuilder(getAttachments: () => attachments),
+          HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
+          HorizontalRuleEmbedBuilder(key: 'divider'),
+          StickerEmbedBuilder(),
+        ],
+        textSpanBuilder: (context, node, nodeOffset, text, style, recognizer) {
+          final isCodeBlock = node.style.containsKey(Attribute.codeBlock.key) ||
+              (node.parent?.style.containsKey(Attribute.codeBlock.key) ?? false);
+
+          if (isCodeBlock) {
+            String? language;
+            Node? current = node;
+            while (current != null) {
+              if (current.style.containsKey('x-md-codeblock-lang')) {
+                language = current.style.attributes['x-md-codeblock-lang']?.value as String?;
+                break;
+              }
+              current = current.parent;
+            }
+
+            if (language == null && node.parent != null) {
+              final parentNode = node.parent!;
+              if (parentNode is Block) {
+                for (final child in parentNode.children) {
+                  if (child.style.containsKey('x-md-codeblock-lang')) {
+                    language = child.style.attributes['x-md-codeblock-lang']?.value as String?;
+                    break;
+                  }
+                }
+              }
+            }
+
+            final highlighter = GentleSyntaxHighlighter(context, activeCodeTheme);
+            final formatted = highlighter.format(text, language ?? 'code');
+
+            return TextSpan(
+              children: formatted.children,
+              style: (style ?? const TextStyle()).copyWith(
+                fontFamily: 'Courier',
+                fontSize: 13,
+                height: 1.4,
+              ),
+            );
+          }
+
+          return TextSpan(
+            text: text,
+            style: style,
+            recognizer: recognizer,
+            mouseCursor: (recognizer != null) ? SystemMouseCursors.click : null,
+          );
+        },
+        customStyleBuilder: (attribute) {
+          if (attribute.key == Attribute.font.key) {
+            final fontVal = attribute.value;
+            if (fontVal is String && fontVal.isNotEmpty) {
+              return FontHelper.getTextStyle(fontVal);
+            }
+          }
+          if (attribute.key == Attribute.size.key) {
+            final sizeVal = attribute.value;
+            double? fontSize;
+            if (sizeVal is String) {
+              fontSize = double.tryParse(sizeVal);
+              if (fontSize == null) {
+                if (sizeVal == 'small') fontSize = 12.0;
+                else if (sizeVal == 'large') fontSize = 20.0;
+                else if (sizeVal == 'huge') fontSize = 28.0;
+              }
+            } else if (sizeVal is int) {
+              fontSize = sizeVal.toDouble();
+            } else if (sizeVal is double) {
+              fontSize = sizeVal;
+            }
+            if (fontSize != null) return TextStyle(fontSize: fontSize);
+          }
+          return const TextStyle();
+        },
+      );
+
+      final quillEditor = QuillEditor.basic(
+        controller: quillController!,
+        focusNode: editorFocusNode!,
+        scrollController: scrollController,
+        config: quillConfig,
+      );
+
+
       editorContent = DefaultTextStyle(
         style: _getEditorStyle(
           settings,
           isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
         ),
-        child: Actions(
-          actions: <Type, Action<Intent>>{
-            PasteTextIntent: CallbackAction<PasteTextIntent>(
-              onInvoke: (intent) {
-                Clipboard.getData(Clipboard.kTextPlain).then((data) {
-                  if (data != null && data.text != null) {
-                    QuillPasteHandler.handlePasteText(quillController!, data.text!);
-                  }
-                });
-                return null;
-              },
-            ),
-          },
-          child: QuillEditor.basic(
-            controller: quillController!,
-            focusNode: editorFocusNode!,
-            scrollController: scrollController,
-            config: QuillEditorConfig(
-              placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
-              autoFocus: false,
-              expands: true,
-              padding: EdgeInsets.zero,
-              embedBuilders: [
-                ImageEmbedBuilder(),
-                AudioEmbedBuilder(getAttachments: () => attachments),
-                HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
-                HorizontalRuleEmbedBuilder(key: 'divider'),
-                StickerEmbedBuilder(),
-              ],
-              customActions: <Type, Action<Intent>>{
-                PasteTextIntent: CallbackAction<PasteTextIntent>(
-                  onInvoke: (intent) {
-                    Clipboard.getData(Clipboard.kTextPlain).then((data) {
-                      if (data != null && data.text != null) {
-                        QuillPasteHandler.handlePasteText(quillController!, data.text!);
-                      }
-                    });
-                    return null;
-                  },
-                ),
-              },
-            ),
-          ),
-        ),
+        child: kIsWeb
+            ? quillEditor
+            : Actions(
+                actions: <Type, Action<Intent>>{
+                  PasteTextIntent: CallbackAction<PasteTextIntent>(
+                    onInvoke: (intent) {
+                      QuillPasteHandler.pasteFromClipboard(quillController!);
+                      return null;
+                    },
+                  ),
+                },
+                child: quillEditor,
+              ),
       );
     } else {
       editorContent = EditorBlocksList(
@@ -141,6 +227,7 @@ class EditorBodyWidget extends ConsumerWidget {
         isReorderable: isReorderable,
       );
     }
+
 
     return Stack(
       clipBehavior: Clip.none,

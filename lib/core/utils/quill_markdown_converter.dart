@@ -14,14 +14,15 @@ class QuillMarkdownConverter {
 
   /// Converts a standard Markdown string to a list of Quill Delta operations.
   static List<Map<String, dynamic>> markdownToDeltaOps(String markdown) {
-    if (markdown.isEmpty) {
+    final preProcessed = preProcessMarkdownCodeBlocks(markdown);
+    if (preProcessed.isEmpty) {
       return [
         {'insert': '\n'}
       ];
     }
     
     final ops = <Map<String, dynamic>>[];
-    final lines = markdown.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
+    final lines = preProcessed.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
     
     bool inCodeBlock = false;
     String codeBlockLang = '';
@@ -79,7 +80,7 @@ class QuillMarkdownConverter {
       // Check block-level formatting
       final headerMatch = RegExp(r'^(#{1,6})\s+(.*)$').firstMatch(processedLine);
       final checklistCheckedMatch = RegExp(r'^([-\*+]\s*\[[xX]\]\s*)(.*)$').firstMatch(processedLine);
-      final checklistUncheckedMatch = RegExp(r'^([-\*+]\s*\[\s\]\s*)(.*)$').firstMatch(processedLine);
+      final checklistUncheckedMatch = RegExp(r'^([-\*+]\s*\[\s*\]\s*)(.*)$').firstMatch(processedLine);
       final bulletMatch = RegExp(r'^([-\*+]\s+)(.*)$').firstMatch(processedLine);
       final orderedMatch = RegExp(r'^(\d+\.\s+)(.*)$').firstMatch(processedLine);
       final blockquoteMatch = RegExp(r'^(\>\s*)(.*)$').firstMatch(processedLine);
@@ -163,7 +164,7 @@ class QuillMarkdownConverter {
       r'|`.*?`'
       r'|<u>.*?</u>'
       r'|<mark style="background:([^"]*)">(.*?)</mark>'
-      r'|<span style="color:([^"]*)">(.*?)</span>'
+      r'|<span style="([^"]*)">(.*?)</span>'
       r'|!\[(.*?)\]\((.*?)\)'
       r'|\[(.*?)\]\((.*?)\)'
       r'|https?://[^\s<>]+'
@@ -256,12 +257,27 @@ class QuillMarkdownConverter {
         }
         ops.addAll(innerOps);
       } else if (token.startsWith('<span') && token.endsWith('</span>')) {
-        final color = match.group(4) ?? '';
+        final styleStr = match.group(4) ?? '';
         final inner = match.group(5) ?? '';
+        
+        final colorMatch = RegExp(r'color[:\s]*([^;"]+)').firstMatch(styleStr);
+        final fontMatch = RegExp(r'font-family[:\s]*([^;"]+)').firstMatch(styleStr);
+        final sizeMatch = RegExp(r'font-size[:\s]*([^;"]+)').firstMatch(styleStr);
+        
         final innerOps = _parseInlineMarkdown(inner);
         for (final op in innerOps) {
           final attrs = Map<String, dynamic>.from(op['attributes'] ?? {});
-          attrs['color'] = color;
+          if (colorMatch != null) {
+            attrs['color'] = colorMatch.group(1)!.trim();
+          }
+          if (fontMatch != null) {
+            attrs['font'] = fontMatch.group(1)!.trim();
+          }
+          if (sizeMatch != null) {
+            final sizeVal = sizeMatch.group(1)!.trim().replaceAll('px', '');
+            final d = double.tryParse(sizeVal);
+            attrs['size'] = d ?? sizeVal;
+          }
           op['attributes'] = attrs;
         }
         ops.addAll(innerOps);
@@ -444,8 +460,20 @@ class QuillMarkdownConverter {
           if (attrs['link'] is String) {
             text = '[$text](${attrs['link']})';
           }
-          if (attrs['color'] is String) {
-            text = '<span style="color:${attrs['color']}">$text</span>';
+          if (attrs['color'] is String || attrs['font'] is String || attrs['size'] != null) {
+            final spanStyles = <String>[];
+            if (attrs['color'] is String) {
+              spanStyles.add('color:${attrs['color']}');
+            }
+            if (attrs['font'] is String) {
+              spanStyles.add('font-family:${attrs['font']}');
+            }
+            if (attrs['size'] != null) {
+              final sizeVal = attrs['size'];
+              final sizeStr = sizeVal is double ? '${sizeVal.toInt()}px' : (sizeVal is int ? '${sizeVal}px' : '$sizeVal');
+              spanStyles.add('font-size:$sizeStr');
+            }
+            text = '<span style="${spanStyles.join(';')}">$text</span>';
           }
           if (attrs['background'] is String) {
             text = '<mark style="background:${attrs['background']}">$text</mark>';
@@ -519,5 +547,126 @@ class QuillMarkdownConverter {
     }
     
     return '$lineText\n';
+  }
+
+  /// Pre-processes a text to wrap code block language headings (e.g. "🐍 Python") and their code lines in Markdown code block backticks.
+  static String preProcessMarkdownCodeBlocks(String text) {
+    final lines = text.split('\n');
+    final newLines = <String>[];
+    bool inDetectedCodeBlock = false;
+    bool inStandardCodeBlock = false;
+
+    bool isLanguageHeader(String line, List<String> outLang) {
+      if (inStandardCodeBlock) return false;
+      final trimmed = line.trim().toLowerCase();
+      if (trimmed.isEmpty) return false;
+      
+      // Strip typical prefix emojis/symbols and trailing symbols
+      final cleanWord = trimmed
+          .replaceAll(RegExp(r'^[^a-z0-9+#-]+'), '')
+          .replaceAll(RegExp(r'[^a-z0-9+#-]+$'), '')
+          .trim();
+      
+      const languages = {
+        'python': 'python',
+        'javascript': 'javascript',
+        'typescript': 'typescript',
+        'c++': 'cpp',
+        'cpp': 'cpp',
+        'sql': 'sql',
+        'json': 'json',
+        'yaml': 'yaml',
+        'html': 'html',
+        'css': 'css',
+        'dart': 'dart',
+        'java': 'java',
+        'go': 'go',
+        'rust': 'rust',
+        'shell': 'shell',
+        'bash': 'shell',
+      };
+      
+      if (languages.containsKey(cleanWord)) {
+        outLang.add(languages[cleanWord]!);
+        return true;
+      }
+      return false;
+    }
+
+    bool isBlockDelimiter(String line) {
+      if (inStandardCodeBlock) return false;
+      final trimmed = line.trim();
+      
+      // If we encounter a standard code block opening while in a detected one, close the detected one
+      if (trimmed.startsWith('```')) {
+        return true;
+      }
+      
+      if (trimmed.startsWith('#') ||
+          trimmed.startsWith('***') ||
+          trimmed.startsWith('---') ||
+          trimmed.startsWith('___') ||
+          trimmed.startsWith('- [ ') ||
+          trimmed.startsWith('- [x') ||
+          trimmed.startsWith('* ') ||
+          trimmed.startsWith('- ') ||
+          RegExp(r'^\d+\.\s').hasMatch(trimmed)) {
+        return true;
+      }
+      return false;
+    }
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final trimmed = line.trim();
+      
+      if (trimmed.startsWith('```')) {
+        if (inDetectedCodeBlock) {
+          while (newLines.isNotEmpty && newLines.last.trim().isEmpty) {
+            newLines.removeLast();
+          }
+          newLines.add('```');
+          inDetectedCodeBlock = false;
+        }
+        inStandardCodeBlock = !inStandardCodeBlock;
+        newLines.add(line);
+        continue;
+      }
+
+      final outLang = <String>[];
+      if (isLanguageHeader(line, outLang)) {
+        if (inDetectedCodeBlock) {
+          while (newLines.isNotEmpty && newLines.last.trim().isEmpty) {
+            newLines.removeLast();
+          }
+          newLines.add('```');
+          inDetectedCodeBlock = false;
+        }
+        newLines.add('```${outLang.first}');
+        inDetectedCodeBlock = true;
+        // Skip subsequent empty lines
+        while (i + 1 < lines.length && lines[i + 1].trim().isEmpty) {
+          i++;
+        }
+      } else {
+        if (inDetectedCodeBlock && isBlockDelimiter(line)) {
+          while (newLines.isNotEmpty && newLines.last.trim().isEmpty) {
+            newLines.removeLast();
+          }
+          newLines.add('```');
+          inDetectedCodeBlock = false;
+        }
+        newLines.add(line);
+      }
+    }
+
+    if (inDetectedCodeBlock) {
+      while (newLines.isNotEmpty && newLines.last.trim().isEmpty) {
+        newLines.removeLast();
+      }
+      newLines.add('```');
+    }
+
+    return newLines.join('\n');
   }
 }

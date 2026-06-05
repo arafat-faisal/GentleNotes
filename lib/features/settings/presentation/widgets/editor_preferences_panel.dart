@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../models/models.dart';
+import '../../../../core/utils/logger.dart';
 import '../controllers/settings_controller.dart';
 
 class EditorPreferencesPanel extends ConsumerWidget {
@@ -240,8 +242,89 @@ class EditorPreferencesPanel extends ConsumerWidget {
               ),
             ),
           ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Diagnostic Logs'),
+            subtitle: const Text('View and export application logs'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => _showLogsDialog(context),
+          ),
         ],
       ),
+    );
+  }
+
+  void _showLogsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final logsStr = AppLogger.exportLogs();
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.bug_report_outlined, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  const Text('Diagnostic Logs'),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: logsStr.isEmpty
+                      ? const Center(child: Text('No logs available'))
+                      : SingleChildScrollView(
+                          child: SelectableText(
+                            logsStr,
+                            style: const TextStyle(
+                              fontFamily: 'Courier',
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+              actions: [
+                TextButton.icon(
+                  onPressed: () {
+                    AppLogger.clear();
+                    setDialogState(() {});
+                  },
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 18),
+                  label: const Text('Clear', style: TextStyle(color: Colors.red)),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: logsStr));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Logs copied to clipboard'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.copy_all_rounded, size: 18),
+                  label: const Text('Copy All'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

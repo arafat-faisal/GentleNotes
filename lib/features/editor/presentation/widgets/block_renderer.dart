@@ -60,6 +60,7 @@ class BlockRenderer extends ConsumerWidget {
           block: block,
           focusNode: focusNode,
           onChanged: (val) => controller.updateBlockContent(block.id, val),
+          onAttributesChanged: (attrs) => controller.updateBlockAttributes(block.id, attrs),
           onSubmitted: () => controller.insertBlock(index, BlockType.text),
           onDelete: () => controller.removeBlock(block.id),
         );

@@ -1,9 +1,11 @@
 import 'dart:convert';
+import '../../../../core/utils/logger.dart';
 import '../entities/block_entity.dart';
 import '../entities/block_type.dart';
 
 class ConvertBlocksToDelta {
   static String execute(List<BlockEntity> blocks) {
+    AppLogger.info('ConvertBlocksToDelta: execute invoked. Blocks count: ${blocks.length}');
     final List<Map<String, dynamic>> ops = [];
 
     for (final block in blocks) {
@@ -27,14 +29,28 @@ class ConvertBlocksToDelta {
           'insert': {'sticker': block.content},
         });
         ops.add({'insert': '\n'});
+      } else if (block.type == BlockType.horizontalRule) {
+        ops.add({
+          'insert': {'horizontal-rule': ''},
+        });
+        ops.add({'insert': '\n'});
+      } else if (block.type == BlockType.code) {
+        final text = block.content;
+        final lang = block.attributes['language'] ?? block.attributes['code-block'];
+        final codeBlockVal = lang is String && lang.isNotEmpty ? lang : true;
+        final lines = text.split('\n');
+        for (final line in lines) {
+          ops.add({
+            'insert': '$line\n',
+            'attributes': {'code-block': codeBlockVal},
+          });
+        }
       } else {
         final text = block.content;
         final Map<String, dynamic> attrs = Map<String, dynamic>.from(block.attributes);
 
         if (block.type == BlockType.heading) {
           attrs['header'] = attrs['header'] ?? 1;
-        } else if (block.type == BlockType.code) {
-          attrs['code-block'] = true;
         } else if (block.type == BlockType.checklist) {
           attrs['list'] = attrs['list'] ?? 'unchecked';
         }
@@ -46,6 +62,8 @@ class ConvertBlocksToDelta {
       }
     }
 
-    return jsonEncode(ops);
+    final result = jsonEncode(ops);
+    AppLogger.info('ConvertBlocksToDelta: Converted into Delta JSON. Length: ${result.length}');
+    return result;
   }
 }

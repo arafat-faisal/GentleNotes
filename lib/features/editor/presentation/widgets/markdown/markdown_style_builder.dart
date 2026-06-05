@@ -4,17 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../../models/models.dart';
 import 'markdown_link_handler.dart';
+import '../../../../../../core/theme/font_helper.dart';
 
 class MarkdownStyleBuilder {
   static String? _resolveFontFamily(String? fontFamily) {
-    if (fontFamily == null || fontFamily == 'System' || fontFamily == 'Georgia' || fontFamily == 'Courier') {
-      return fontFamily;
-    }
-    try {
-      return GoogleFonts.getFont(fontFamily).fontFamily;
-    } catch (_) {
-      return fontFamily;
-    }
+    return FontHelper.resolveFontFamily(fontFamily);
   }
 
   static Widget renderInlineText(
@@ -203,17 +197,41 @@ class MarkdownStyleBuilder {
         ));
       } else if (token.startsWith('<span')) {
         final colorMatch = RegExp(r'color[:\s]*([#\w]+)').firstMatch(token);
+        final fontMatch = RegExp(r'font-family[:\s]*([^;"]+)').firstMatch(token);
+        final sizeMatch = RegExp(r'font-size[:\s]*([^;"]+)').firstMatch(token);
         final innerMatch = RegExp(r'<span[^>]*>(.*?)</span>', dotAll: true).firstMatch(token);
         final innerText = innerMatch?.group(1) ?? token;
         Color textColor = baseStyle.color ?? (isDarkTheme ? Colors.white : Colors.black);
         if (colorMatch != null) {
           textColor = _parseCssColor(colorMatch.group(1)!, textColor);
         }
+        String? spanFontFamily = fontFamily;
+        if (fontMatch != null) {
+          spanFontFamily = fontMatch.group(1)!.trim();
+        }
+        double? spanFontSize = baseStyle.fontSize;
+        if (sizeMatch != null) {
+          final sizeStr = sizeMatch.group(1)!.trim().replaceAll('px', '');
+          final d = double.tryParse(sizeStr);
+          if (d != null) {
+            spanFontSize = d;
+          } else {
+            if (sizeStr == 'small') spanFontSize = 12.0;
+            else if (sizeStr == 'large') spanFontSize = 20.0;
+            else if (sizeStr == 'huge') spanFontSize = 28.0;
+          }
+        }
+        final resolvedFamily = _resolveFontFamily(spanFontFamily);
+        final childStyle = baseStyle.copyWith(
+          color: textColor,
+          fontFamily: resolvedFamily,
+          fontSize: spanFontSize,
+        );
         spans.addAll(parseInlineSpans(
           context, 
           innerText, 
-          baseStyle.copyWith(color: textColor),
-          fontFamily: fontFamily,
+          childStyle,
+          fontFamily: resolvedFamily,
           attachments: attachments,
         ));
       } else if (token.startsWith('[') && token.contains('](')) {

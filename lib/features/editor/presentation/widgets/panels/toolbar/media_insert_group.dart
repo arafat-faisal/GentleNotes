@@ -13,6 +13,7 @@ class MediaInsertGroup extends StatelessWidget {
   final bool showDrawing;
   final bool showVoice;
   final bool showDivider;
+  final bool showCode;
   final Color borderCol;
   final bool isInline;
   final Color accentColor;
@@ -27,6 +28,7 @@ class MediaInsertGroup extends StatelessWidget {
     required this.showDrawing,
     required this.showVoice,
     required this.showDivider,
+    this.showCode = true,
     required this.borderCol,
     this.isInline = false,
     this.accentColor = Colors.blue,
@@ -141,6 +143,13 @@ class MediaInsertGroup extends StatelessWidget {
               onTap: () => onInsertBlock(BlockType.horizontalRule),
               accentColor: accentColor,
             ),
+          if (showCode)
+            ToolbarActionButton(
+              icon: Icons.code_rounded,
+              tooltip: 'Code Block',
+              onTap: () => onInsertBlock(BlockType.code),
+              accentColor: accentColor,
+            ),
           if (showVoice)
             ToolbarActionButton(
               icon: Icons.mic_outlined,
@@ -180,6 +189,7 @@ class MediaInsertGroup extends StatelessWidget {
         if (value == 'drawing') onInsertBlock(BlockType.drawing);
         if (value == 'voice') _recordAudio(context);
         if (value == 'divider') onInsertBlock(BlockType.horizontalRule);
+        if (value == 'code') onInsertBlock(BlockType.code);
       },
       itemBuilder: (context) => [
         if (showImage) ...[
@@ -234,6 +244,17 @@ class MediaInsertGroup extends StatelessWidget {
                 Icon(Icons.horizontal_rule_rounded, size: 18),
                 SizedBox(width: 8),
                 Text('Divider'),
+              ],
+            ),
+          ),
+        if (showCode)
+          const PopupMenuItem(
+            value: 'code',
+            child: Row(
+              children: [
+                Icon(Icons.code_rounded, size: 18),
+                SizedBox(width: 8),
+                Text('Code Snippet'),
               ],
             ),
           ),

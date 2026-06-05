@@ -24,6 +24,8 @@ import 'widgets/editor_shell/editor_body.dart';
 import 'widgets/editor_shell/editor_route_actions.dart';
 import '../../../../core/utils/clipboard_helper.dart';
 import '../../../../core/utils/quill_paste_handler.dart';
+import '../../../../core/utils/logger.dart';
+import '../../../../core/utils/quill_markdown_converter.dart';
 
 class EditorScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -194,6 +196,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         }
       }
     }
+    AppLogger.info('EditorScreen: Loading note/template $_noteId. IsEditMode: $_isEditMode. TemplateId: $_templateId.');
 
     final blocks = ConvertDeltaToBlocks.execute(noteContent);
     ref.read(editorBlockControllerProvider.notifier).initializeWithBlocks(blocks);
@@ -206,7 +209,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         final deltaJson = jsonDecode(noteContent);
         doc = Document.fromJson(deltaJson);
       } catch (e) {
-        doc = Document()..insert(0, noteContent);
+        AppLogger.warning('EditorScreen: Failed to jsonDecode note content. Attempting markdownToDelta parsing. Error: $e');
+        try {
+          final ops = QuillMarkdownConverter.markdownToDeltaOps(noteContent);
+          doc = Document.fromJson(ops);
+        } catch (err) {
+          AppLogger.error('EditorScreen: Markdown parsing failed too. Falling back to raw insert. Error: $err');
+          doc = Document()..insert(0, noteContent);
+        }
       }
     } else {
       doc = Document();
@@ -229,6 +239,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     if (!_isDirty && !blocksState.isDirty && isAutoSave) return;
 
     final title = _titleController.text.trim();
+    AppLogger.info('EditorScreen: Saving note $_noteId (isAutoSave: $isAutoSave). Title: "$title".');
     
     final String content;
     if (settings.editorMode == EditorMode.gentleNote) {
@@ -270,8 +281,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       }
       ref.read(editorBlockControllerProvider.notifier).markClean();
       _isDirty = false;
-    } catch (e) {
-      debugPrint('Error saving note: $e');
+      AppLogger.info('EditorScreen: Note $_noteId saved successfully (isAutoSave: $isAutoSave).');
+    } catch (e, stack) {
+      AppLogger.error('EditorScreen: Error saving note $_noteId', e, stack);
     }
 
     if (!isAutoSave && mounted) {
@@ -401,7 +413,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           _quillController.formatSelection(isTodoList ? Attribute.clone(Attribute.list, null) : Attribute.unchecked);
           break;
         case BlockType.code:
-          final isCode = _quillController.getSelectionStyle().attributes[Attribute.codeBlock.key]?.value == true;
+          final isCode = _quillController.getSelectionStyle().attributes[Attribute.codeBlock.key]?.value != null;
           _quillController.formatSelection(isCode ? Attribute.clone(Attribute.codeBlock, null) : Attribute.codeBlock);
           break;
         case BlockType.image:

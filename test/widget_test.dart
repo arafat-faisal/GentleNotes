@@ -154,6 +154,51 @@ void main() {
       expect(markdown, isNot(contains('<script>')));
       expect(markdown, isNot(contains('alert')));
     });
+
+    test('convertHtmlToMarkdown should handle code blocks, lists, checklists, quotes, and tables robustly', () {
+      const html = '''
+<div>
+  <h1>🧪 Stress Test</h1>
+  <hr/>
+  <blockquote>Outer
+    <blockquote>Inner</blockquote>
+  </blockquote>
+  <ul>
+    <li>Item 1
+      <ul>
+        <li>Sub 1.1</li>
+        <li>Sub 1.2</li>
+      </ul>
+    </li>
+  </ul>
+  <ul>
+    <li><input checked type="checkbox"> Checked</li>
+    <li><input type="checkbox"> Unchecked</li>
+  </ul>
+  <pre><div class="wrapper"><code class="language-python">def test():
+    pass</code></div></pre>
+  <table>
+    <tr><th>Col 1</th><th>Col 2</th></tr>
+    <tr><td>Val 1</td><td>Val 2</td></tr>
+  </table>
+</div>
+''';
+      final markdown = QuillPasteHandler.convertHtmlToMarkdown(html);
+      
+      expect(markdown, contains('# 🧪 Stress Test'));
+      expect(markdown, contains('***'));
+      expect(markdown, contains('> Outer'));
+      expect(markdown, contains('>> Inner'));
+      expect(markdown, contains('- Item 1'));
+      expect(markdown, contains('  - Sub 1.1'));
+      expect(markdown, contains('  - Sub 1.2'));
+      expect(markdown, contains('- [x] Checked'));
+      expect(markdown, contains('- [ ] Unchecked'));
+      expect(markdown, contains('```python\ndef test():\n    pass\n```'));
+      expect(markdown, contains('| Col 1 | Col 2 |'));
+      expect(markdown, contains('| --- | --- |'));
+      expect(markdown, contains('| Val 1 | Val 2 |'));
+    });
   });
 
   group('Sticker Feature Tests', () {
@@ -175,6 +220,36 @@ void main() {
 
       final reconvertedDelta = ConvertBlocksToDelta.execute(blocks);
       expect(reconvertedDelta, contains('"sticker":"coffee"'));
+    });
+
+    test('ConvertDeltaToBlocks and ConvertBlocksToDelta should handle code blocks, headings, checklists, and dividers robustly', () {
+      const deltaJson = '['
+          '{"insert":"🧪 Title"},'
+          '{"insert":"\\n","attributes":{"header":1}},'
+          '{"insert":"def hello():"},'
+          '{"insert":"\\n","attributes":{"code-block":"python"}},'
+          '{"insert":"    print(\'hi\')"},'
+          '{"insert":"\\n","attributes":{"code-block":"python"}},'
+          '{"insert":{"divider":""}},'
+          '{"insert":"\\n"}'
+          ']';
+      
+      final blocks = ConvertDeltaToBlocks.execute(deltaJson);
+      expect(blocks.length, 3);
+      expect(blocks[0].type, BlockType.heading);
+      expect(blocks[0].content, '🧪 Title');
+      expect(blocks[0].attributes['header'], 1);
+
+      expect(blocks[1].type, BlockType.code);
+      expect(blocks[1].content, 'def hello():\n    print(\'hi\')');
+      expect(blocks[1].attributes['code-block'], 'python');
+
+      expect(blocks[2].type, BlockType.horizontalRule);
+
+      final reconvertedDelta = ConvertBlocksToDelta.execute(blocks);
+      expect(reconvertedDelta, contains('"header":1'));
+      expect(reconvertedDelta, contains('"code-block":"python"'));
+      expect(reconvertedDelta, contains('"horizontal-rule"'));
     });
 
     test('FloatingStickerModel serialization and NoteModel integration test', () {
@@ -234,6 +309,40 @@ void main() {
       expect(deserializedNote.stickers.length, 1);
       expect(deserializedNote.stickers.first.name, 'cat');
       expect(deserializedNote.stickers.first.textOver, 'Meow');
+    });
+  });
+
+  group('Inline Font Formatting Tests', () {
+    test('QuillMarkdownConverter should convert delta with font and size to markdown span and back', () {
+      const deltaJson = '[{"insert":"Hello ","attributes":{"font":"Lora","size":20.0}},{"insert":"World\\n"}]';
+      final markdown = QuillMarkdownConverter.deltaToMarkdown(deltaJson);
+      expect(markdown.trim(), '<span style="font-family:Lora;font-size:20px">Hello </span>World');
+
+      final reconvertedDelta = QuillMarkdownConverter.markdownToDeltaJson(markdown);
+      expect(reconvertedDelta, contains('"font":"Lora"'));
+      expect(reconvertedDelta, contains('"size":20.0'));
+    });
+  });
+
+  group('Code Block Pre-processing Tests', () {
+    test('QuillMarkdownConverter should detect and pre-process language block headers in plain text', () {
+      const plainText = '''
+💻 6. Code Blocks (Multi-Language)
+
+🐍 Python
+
+def fibonacci(n):
+    return n
+
+🌐 JavaScript
+
+console.log("hello");
+''';
+      final processed = QuillMarkdownConverter.preProcessMarkdownCodeBlocks(plainText);
+      expect(processed, contains('```python'));
+      expect(processed, contains('```javascript'));
+      expect(processed, contains('def fibonacci(n):'));
+      expect(processed, contains('console.log("hello");'));
     });
   });
 }

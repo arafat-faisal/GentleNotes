@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../models/models.dart';
 import '../../../../settings/presentation/controllers/settings_controller.dart';
 import '../../../domain/entities/block_type.dart';
+import '../../../../../core/theme/font_helper.dart';
 import 'toolbar/alignment_group.dart';
 import 'toolbar/block_insert_group.dart';
 import 'toolbar/color_picker_group.dart';
@@ -47,6 +48,33 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
   String? _activeToolbarGroup;
 
   @override
+  void initState() {
+    super.initState();
+    widget.quillController?.addListener(_onQuillUpdate);
+  }
+
+  @override
+  void didUpdateWidget(FloatingToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.quillController != widget.quillController) {
+      oldWidget.quillController?.removeListener(_onQuillUpdate);
+      widget.quillController?.addListener(_onQuillUpdate);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.quillController?.removeListener(_onQuillUpdate);
+    super.dispose();
+  }
+
+  void _onQuillUpdate() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -64,7 +92,7 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
       builder: (context, constraints) {
         final toolbarWidth = constraints.maxWidth.clamp(0.0, 500.0);
 
-        if (widget.quillController == null) {
+        if (settings.editorMode == EditorMode.blockEditor || widget.quillController == null) {
           final showHeading = allowedTools.contains('heading');
           final showChecklist = allowedTools.contains('lists');
           final showCode = allowedTools.contains('format');
@@ -110,7 +138,7 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                           showChecklist: showChecklist,
                           showCode: showCode,
                         ),
-                        if (showImage || showDrawing || showVoice || showDivider)
+                        if (showImage || showDrawing || showVoice || showDivider || showCode)
                           MediaInsertGroup(
                             noteId: widget.noteId,
                             onInsertBlock: widget.onInsertBlock,
@@ -118,6 +146,7 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                             showDrawing: showDrawing,
                             showVoice: showVoice,
                             showDivider: showDivider,
+                            showCode: showCode,
                             borderCol: borderCol,
                             isSpeechListening: widget.isSpeechListening,
                             onSpeechToggle: widget.onSpeechToggle,
@@ -176,63 +205,146 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
         Widget subRow() {
           switch (_activeToolbarGroup) {
             case 'font':
-              final selectedFont = settings.editorFontFamily;
-              final selectedSize = settings.editorFontSize;
+              final selStyle = widget.quillController!.getSelectionStyle();
+              final activeFont = selStyle.attributes[Attribute.font.key]?.value as String? ?? 'System';
               final selectedHeight = settings.editorLineHeight;
+
+              // Read active font size from selection (stored as a String in Quill)
+              final activeSizeAttr = selStyle.attributes[Attribute.size.key]?.value;
+              double activeSize = settings.editorFontSize;
+              if (activeSizeAttr is String) {
+                final d = double.tryParse(activeSizeAttr);
+                if (d != null) {
+                  activeSize = d;
+                } else {
+                  if (activeSizeAttr == 'small') activeSize = 12.0;
+                  else if (activeSizeAttr == 'large') activeSize = 20.0;
+                  else if (activeSizeAttr == 'huge') activeSize = 28.0;
+                }
+              } else if (activeSizeAttr is int) {
+                activeSize = activeSizeAttr.toDouble();
+              } else if (activeSizeAttr is double) {
+                activeSize = activeSizeAttr;
+              }
+
+              // Helper: apply font without losing the text selection.
+              // Tapping a chip can steal focus from the QuillEditor, which
+              // collapses the selection before formatSelection() runs.
+              // We snapshot the selection right here (during build, before any
+              // tap) and reapply it immediately after formatting.
+              final savedSelection = widget.quillController!.selection;
+
+              void applyFont(String fontName) {
+                final targetFont = fontName == 'System' ? null : fontName;
+                final isCurrentlySelected = activeFont == fontName;
+                widget.quillController!.updateSelection(savedSelection, ChangeSource.local);
+                widget.quillController!.formatSelection(
+                  Attribute.clone(Attribute.font, isCurrentlySelected ? null : targetFont),
+                );
+              }
+
+              void applySize(double newSize) {
+                widget.quillController!.updateSelection(savedSelection, ChangeSource.local);
+                // SizeAttribute stores String values; convert to integer string
+                widget.quillController!.formatSelection(
+                  Attribute.clone(Attribute.size, newSize.toInt().toString()),
+                );
+              }
 
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ...[
-                      ('System', 'Sys'),
-                      ('Inter', 'Inter'),
-                      ('Outfit', 'Outfit'),
-                      ('Roboto Mono', 'Mono'),
-                      ('Lora', 'Lora'),
-                      ('Lexend', 'Lexend'),
-                    ].map((f) {
-                      final isSelected = selectedFont == f.$1;
+                    // Font size controls (leftmost for quick access)
+                    IconButton(
+                      icon: const Icon(Icons.remove_rounded, size: 14),
+                      onPressed: activeSize > 8.0
+                          ? () => applySize(activeSize - 1.0)
+                          : null,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      tooltip: 'Decrease font size',
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        // Tap on the size label shows a quick preset menu
+                        showDialog<double>(
+                          context: context,
+                          builder: (ctx) => SimpleDialog(
+                            title: const Text('Font Size'),
+                            children: [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 24.0, 28.0, 32.0, 36.0, 48.0, 72.0]
+                                .map((s) => SimpleDialogOption(
+                                      onPressed: () { Navigator.pop(ctx, s); },
+                                      child: Text('${s.toInt()}pt',
+                                          style: TextStyle(
+                                              fontWeight: s == activeSize ? FontWeight.bold : FontWeight.normal,
+                                              color: s == activeSize ? accentColor : null)),
+                                    ))
+                                .toList(),
+                          ),
+                        ).then((s) {
+                          if (s != null) applySize(s);
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest.withAlpha(100),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${activeSize.toInt()}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_rounded, size: 14),
+                      onPressed: activeSize < 72.0
+                          ? () => applySize(activeSize + 1.0)
+                          : null,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      tooltip: 'Increase font size',
+                    ),
+                    const VerticalDivider(width: 16, indent: 8, endIndent: 8),
+                    // Font family chips — each chip renders its own name in that font
+                    ...kAppEditorFonts.map((f) {
+                      final isSelected = activeFont == f.name;
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2.0),
                         child: ChoiceChip(
-                          label: Text(f.$2, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isSelected ? accentColor : null)),
+                          label: Text(
+                            f.displayName,
+                            style: (f.name == 'System'
+                                    ? const TextStyle()
+                                    : FontHelper.getTextStyle(f.name))
+                                .copyWith(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? accentColor
+                                  : theme.colorScheme.onSurface.withAlpha(220),
+                            ),
+                          ),
                           selected: isSelected,
-                          selectedColor: accentColor.withOpacity(0.15),
-                          onSelected: (selected) {
-                            if (selected) {
-                              ref.read(settingsProvider.notifier).updateEditorFontFamily(f.$1);
-                            }
-                          },
+                          selectedColor: accentColor.withAlpha(40),
+                          onSelected: (_) => applyFont(f.name),
                           showCheckmark: false,
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          side: isSelected
+                              ? BorderSide(color: accentColor, width: 1.5)
+                              : BorderSide.none,
                         ),
                       );
                     }),
                     const VerticalDivider(width: 16, indent: 8, endIndent: 8),
-                    IconButton(
-                      icon: const Icon(Icons.remove_rounded, size: 14),
-                      onPressed: selectedSize > 12.0
-                          ? () => ref.read(settingsProvider.notifier).updateEditorFontSize(selectedSize - 1.0)
-                          : null,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                    ),
-                    Text(
-                      '${selectedSize.toInt()}',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_rounded, size: 14),
-                      onPressed: selectedSize < 24.0
-                          ? () => ref.read(settingsProvider.notifier).updateEditorFontSize(selectedSize + 1.0)
-                          : null,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                    ),
-                    const VerticalDivider(width: 16, indent: 8, endIndent: 8),
+                    // Line spacing toggle
                     IconButton(
                       icon: const Icon(Icons.format_line_spacing_rounded, size: 15),
                       onPressed: () {
@@ -243,9 +355,9 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                         else if (selectedHeight == 1.8) nextHeight = 1.2;
                         ref.read(settingsProvider.notifier).updateEditorLineHeight(nextHeight);
                       },
-                      tooltip: 'Line Spacing $selectedHeight',
+                      tooltip: 'Line Spacing ${selectedHeight}x',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                     ),
                   ],
                 ),
@@ -295,6 +407,7 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                 showDrawing: showDrawing,
                 showVoice: showVoice,
                 showDivider: showDivider,
+                showCode: allowedTools.contains('format'),
                 borderCol: borderCol,
                 isInline: true,
                 accentColor: accentColor,
