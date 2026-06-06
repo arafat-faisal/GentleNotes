@@ -29,6 +29,16 @@ class ConvertBlocksToDelta {
           'insert': {'sticker': block.content},
         });
         ops.add({'insert': '\n'});
+      } else if (block.type == BlockType.photoFrame) {
+        ops.add({
+          'insert': {
+            'photo-frame': {
+              'images': block.data['images'] ?? <String>[],
+              'layout': block.attributes['layout'] ?? 'grid',
+            }
+          },
+        });
+        ops.add({'insert': '\n'});
       } else if (block.type == BlockType.horizontalRule) {
         ops.add({
           'insert': {'horizontal-rule': ''},

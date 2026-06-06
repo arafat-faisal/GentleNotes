@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import 'block_type.dart';
 
@@ -14,7 +15,20 @@ class BlockEntity {
     Map<String, dynamic>? data,
     String? content,
     this.attributes = const {},
-  }) : data = data ?? (content != null ? {'text': content} : const {});
+  }) : data = data ??
+            (content != null
+                ? (type == BlockType.photoFrame ? _parsePhotoFrame(content) : {'text': content})
+                : const {});
+
+  static Map<String, dynamic> _parsePhotoFrame(String content) {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is List) {
+        return {'images': List<String>.from(decoded)};
+      }
+    } catch (_) {}
+    return {'images': <String>[]};
+  }
 
   factory BlockEntity.create(
     BlockType type, {

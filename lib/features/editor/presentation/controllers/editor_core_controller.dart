@@ -36,6 +36,16 @@ class EditorCoreController extends StateNotifier<EditorBlockState> {
     _updateBlocksState(updatedBlocks);
   }
 
+  void updateBlockData(String id, Map<String, dynamic> data) {
+    final updatedBlocks = state.blocks.map((block) {
+      if (block.id == id) {
+        return block.copyWith(data: data);
+      }
+      return block;
+    }).toList();
+    _updateBlocksState(updatedBlocks);
+  }
+
   void insertBlockDirectly(int index, BlockEntity block) {
     final currentBlocks = List<BlockEntity>.from(state.blocks);
     currentBlocks.insert(index, block);
@@ -45,6 +55,18 @@ class EditorCoreController extends StateNotifier<EditorBlockState> {
       isDirty: true,
       redoStack: [],
     );
+  }
+
+  void replaceBlockDirectly(String id, BlockEntity newBlock) {
+    final index = state.blocks.indexWhere((block) => block.id == id);
+    if (index != -1) {
+      final currentBlocks = List<BlockEntity>.from(state.blocks);
+      currentBlocks[index] = newBlock;
+      state = state.copyWith(
+        blocks: currentBlocks,
+        isDirty: true,
+      );
+    }
   }
 
   void removeBlockDirectly(String id) {

@@ -53,6 +53,17 @@ class ConvertDeltaToBlocks {
 
             if (insert.containsKey('image')) {
               blocks.add(BlockEntity.create(BlockType.image, content: insert['image'].toString()));
+            } else if (insert.containsKey('photo-frame')) {
+              final pf = insert['photo-frame'];
+              if (pf is Map) {
+                final images = List<String>.from(pf['images'] ?? <String>[]);
+                final layout = pf['layout'] ?? 'grid';
+                blocks.add(BlockEntity.create(
+                  BlockType.photoFrame,
+                  data: {'images': images},
+                  attrs: {'layout': layout},
+                ));
+              }
             } else if (insert.containsKey('drawing')) {
               blocks.add(BlockEntity.create(BlockType.drawing, content: insert['drawing'].toString()));
             } else if (insert.containsKey('audio')) {

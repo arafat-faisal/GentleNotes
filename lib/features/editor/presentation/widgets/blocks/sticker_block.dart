@@ -4,11 +4,13 @@ import '../../../domain/entities/block_entity.dart';
 class StickerBlock extends StatelessWidget {
   final BlockEntity block;
   final VoidCallback onRemoved;
+  final bool readOnly;
 
   const StickerBlock({
     super.key,
     required this.block,
     required this.onRemoved,
+    this.readOnly = false,
   });
 
   @override
@@ -56,26 +58,27 @@ class StickerBlock extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Material(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(20),
-                child: InkWell(
+            if (!readOnly)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Material(
+                  color: Colors.black54,
                   borderRadius: BorderRadius.circular(20),
-                  onTap: onRemoved,
-                  child: const Padding(
-                    padding: EdgeInsets.all(6.0),
-                    child: Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.white,
-                      size: 16,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: onRemoved,
+                    child: const Padding(
+                      padding: EdgeInsets.all(6.0),
+                      child: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

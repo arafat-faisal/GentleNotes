@@ -202,6 +202,7 @@ class _ClassicHeaderState extends ConsumerState<ClassicHeader> {
                       padding: const EdgeInsets.only(right: 8.0),
                       child: TextField(
                         controller: widget.titleController,
+                        readOnly: widget.isPreviewMode,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,

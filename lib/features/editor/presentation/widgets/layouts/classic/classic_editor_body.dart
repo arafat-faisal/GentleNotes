@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,14 +9,9 @@ import '../../../../../settings/presentation/controllers/settings_controller.dar
 import 'package:go_router/go_router.dart';
 
 import '../../../../../../models/models.dart';
-import '../../../../../folders/presentation/controllers/folders_controller.dart';
-import '../../../../../notes/presentation/controllers/notes_controller.dart';
-import '../../../../../../core/utils/quill_markdown_converter.dart';
 import '../../../../domain/entities/block_entity.dart';
 import '../../../../domain/entities/block_type.dart';
-import '../../../../domain/usecases/convert_blocks_to_delta.dart';
 import '../../editor_body_widget.dart';
-import '../../markdown_widget.dart';
 import '../../preview_style_painter.dart';
 
 class ClassicEditorBody extends ConsumerStatefulWidget {
@@ -98,26 +93,10 @@ class ClassicEditorBody extends ConsumerStatefulWidget {
 class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
   bool _showBgPicker = false;
 
-  String _getMarkdownData() {
-    if (widget.editorMode == EditorMode.gentleNote && widget.quillController != null) {
-      return QuillMarkdownConverter.deltaToMarkdown(
-        jsonEncode(widget.quillController!.document.toDelta().toJson()),
-      );
-    } else {
-      return QuillMarkdownConverter.deltaToMarkdown(
-        ConvertBlocksToDelta.execute(widget.blocks),
-      );
-    }
-  }
-
   String get _currentFontFamily {
     return widget.noteType == NoteType.mixed
         ? 'Georgia'
         : (widget.noteType == NoteType.code ? 'Courier' : 'Inter');
-  }
-
-  String _getResolvedFontFamily(AppSettingsModel settings) {
-    return settings.editorFontFamily == 'System' ? _currentFontFamily : settings.editorFontFamily;
   }
 
   ThemeData _getCustomTheme(ThemeData theme, AppSettingsModel settings) {
@@ -242,85 +221,47 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
     final customTheme = _getCustomTheme(theme, settings);
     final bgColor = widget.previewBgColor ?? (isDark ? const Color(0xFF0F0B1E) : Colors.white);
 
-    // Use IndexedStack so the QuillEditor always stays in the widget tree.
-    // Removing it from the tree during preview caused the Quill document state
-    // to be reset when toggling back to edit mode (the editor would show raw
-    // markup or an empty document).  IndexedStack keeps both layers mounted and
-    // simply switches which one is on top.
-    return IndexedStack(
-      index: widget.isPreviewMode ? 0 : 1,
+    return Stack(
       children: [
-        // ── index 0: Preview layer ───────────────────────────────────────────
-        Builder(
-          builder: (context) {
-            final markdown = widget.isPreviewMode ? _getMarkdownData() : '';
-            return Stack(
-              children: [
-                if (widget.previewBgImagePath != null)
-                  Positioned.fill(
-                    child: widget.previewBgImagePath!.startsWith('data:image')
-                        ? Image.memory(
-                            base64Decode(widget.previewBgImagePath!.split(',').last),
-                            fit: BoxFit.cover,
-                          )
-                        : Image.file(io.File(widget.previewBgImagePath!), fit: BoxFit.cover),
+        if (widget.previewBgImagePath != null)
+          Positioned.fill(
+            child: widget.previewBgImagePath!.startsWith('data:image')
+                ? Image.memory(
+                    base64Decode(widget.previewBgImagePath!.split(',').last),
+                    fit: BoxFit.cover,
                   )
-                else
-                  Positioned.fill(child: ColoredBox(color: bgColor)),
-                if (widget.previewOverlayOpacity > 0.0)
-                  Positioned.fill(
-                    child: ColoredBox(
-                        color: widget.previewOverlayColor.withOpacity(widget.previewOverlayOpacity)),
-                  ),
-                if (widget.previewStyle != PreviewStyle.plain)
-                  Positioned.fill(
-                    child: CustomPaint(painter: PreviewStylePainter(widget.previewStyle)),
-                  ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: styleContentPadding(widget.previewStyle),
-                        child: MarkdownWidget(
-                          data: markdown,
-                          attachments: widget.attachments,
-                          fontFamily: _getResolvedFontFamily(settings),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-
-        // ── index 1: Editor layer ────────────────────────────────────────────
-        Stack(
-          children: [
-            if (widget.previewStyle != PreviewStyle.plain)
-              Positioned.fill(
-                child: CustomPaint(painter: PreviewStylePainter(widget.previewStyle)),
-              ),
-            Theme(
-              data: customTheme,
-              child: Padding(
-                padding: styleContentPadding(widget.previewStyle),
-                child: EditorBodyWidget(
-                  editorMode: widget.editorMode,
-                  quillController: widget.quillController,
-                  editorFocusNode: widget.editorFocusNode,
-                  noteType: widget.noteType,
-                  attachments: widget.attachments,
-                  blocks: widget.blocks,
-                  focusNodes: widget.focusNodes,
-                  scrollController: widget.scrollController,
-                  isReorderable: false,
-                ),
-              ),
+                : (kIsWeb
+                    ? Image.network(widget.previewBgImagePath!, fit: BoxFit.cover)
+                    : Image.file(io.File(widget.previewBgImagePath!), fit: BoxFit.cover)),
+          )
+        else
+          Positioned.fill(child: ColoredBox(color: bgColor)),
+        if (widget.previewOverlayOpacity > 0.0)
+          Positioned.fill(
+            child: ColoredBox(
+                color: widget.previewOverlayColor.withOpacity(widget.previewOverlayOpacity)),
+          ),
+        if (widget.previewStyle != PreviewStyle.plain)
+          Positioned.fill(
+            child: CustomPaint(painter: PreviewStylePainter(widget.previewStyle)),
+          ),
+        Theme(
+          data: customTheme,
+          child: Padding(
+            padding: styleContentPadding(widget.previewStyle),
+            child: EditorBodyWidget(
+              editorMode: widget.editorMode,
+              quillController: widget.quillController,
+              editorFocusNode: widget.editorFocusNode,
+              noteType: widget.noteType,
+              attachments: widget.attachments,
+              blocks: widget.blocks,
+              focusNodes: widget.focusNodes,
+              scrollController: widget.scrollController,
+              isReorderable: false,
+              readOnly: widget.isPreviewMode,
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -328,7 +269,6 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
 
   Widget _buildFullScreenBody(ThemeData theme, bool isDark) {
     final bgColor = widget.previewBgColor ?? (isDark ? const Color(0xFF0D0B18) : Colors.white);
-    final isMarkdownPreview = widget.isPreviewMode;
     final settings = ref.watch(settingsProvider);
 
     final customTheme = _getCustomTheme(theme, settings);
@@ -345,7 +285,9 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                         base64Decode(widget.previewBgImagePath!.split(',').last),
                         fit: BoxFit.cover,
                       )
-                    : Image.file(io.File(widget.previewBgImagePath!), fit: BoxFit.cover),
+                    : (kIsWeb
+                        ? Image.network(widget.previewBgImagePath!, fit: BoxFit.cover)
+                        : Image.file(io.File(widget.previewBgImagePath!), fit: BoxFit.cover)),
               ),
             if (widget.previewOverlayOpacity > 0.0)
               Positioned.fill(
@@ -374,43 +316,23 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                 Divider(height: 1,
                     color: isDark ? const Color(0xFF1E1A30) : const Color(0xFFE9E6F5)),
                 Expanded(
-                  child: IndexedStack(
-                    index: isMarkdownPreview ? 0 : 1,
-                    children: [
-                      Stack(
-                        children: [
-                          if (widget.previewStyle != PreviewStyle.plain)
-                            Positioned.fill(
-                              child: CustomPaint(painter: PreviewStylePainter(widget.previewStyle)),
-                            ),
-                          Padding(
-                            padding: styleContentPadding(widget.previewStyle),
-                            child: MarkdownWidget(
-                              data: isMarkdownPreview ? _getMarkdownData() : '',
-                              attachments: widget.attachments,
-                              fontFamily: _getResolvedFontFamily(settings),
-                            ),
-                          ),
-                        ],
+                  child: Theme(
+                    data: customTheme,
+                    child: Padding(
+                      padding: styleContentPadding(widget.previewStyle),
+                      child: EditorBodyWidget(
+                        editorMode: widget.editorMode,
+                        quillController: widget.quillController,
+                        editorFocusNode: widget.editorFocusNode,
+                        noteType: widget.noteType,
+                        attachments: widget.attachments,
+                        blocks: widget.blocks,
+                        focusNodes: widget.focusNodes,
+                        scrollController: widget.scrollController,
+                        isReorderable: false,
+                        readOnly: widget.isPreviewMode,
                       ),
-                      Theme(
-                        data: customTheme,
-                        child: Padding(
-                          padding: styleContentPadding(widget.previewStyle),
-                          child: EditorBodyWidget(
-                            editorMode: widget.editorMode,
-                            quillController: widget.quillController,
-                            editorFocusNode: widget.editorFocusNode,
-                            noteType: widget.noteType,
-                            attachments: widget.attachments,
-                            blocks: widget.blocks,
-                            focusNodes: widget.focusNodes,
-                            scrollController: widget.scrollController,
-                            isReorderable: false,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -608,6 +530,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                     focusNodes: widget.focusNodes,
                     scrollController: widget.scrollController,
                     isReorderable: false,
+                    readOnly: widget.isPreviewMode,
                   ),
                 ),
               ),

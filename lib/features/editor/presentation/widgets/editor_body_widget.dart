@@ -12,6 +12,7 @@ import 'embeds/image_embed_builder.dart';
 import 'embeds/audio_embed_builder.dart';
 import 'embeds/horizontal_rule_embed_builder.dart';
 import 'embeds/sticker_embed_builder.dart';
+import 'embeds/photo_frame_embed_builder.dart';
 import '../controllers/floating_stickers_controller.dart';
 import 'blocks/floating_stickers_overlay.dart';
 import 'markdown/markdown_code_block.dart';
@@ -26,6 +27,7 @@ class EditorBodyWidget extends ConsumerWidget {
   final Map<String, FocusNode> focusNodes;
   final ScrollController scrollController;
   final bool isReorderable;
+  final bool readOnly;
 
   const EditorBodyWidget({
     super.key,
@@ -38,6 +40,7 @@ class EditorBodyWidget extends ConsumerWidget {
     required this.focusNodes,
     required this.scrollController,
     this.isReorderable = true,
+    this.readOnly = false,
   });
 
   String get _currentFontFamily {
@@ -104,6 +107,7 @@ class EditorBodyWidget extends ConsumerWidget {
         ),
       );
 
+      quillController!.readOnly = readOnly;
       final quillConfig = QuillEditorConfig(
         placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
         autoFocus: false,
@@ -116,6 +120,7 @@ class EditorBodyWidget extends ConsumerWidget {
           HorizontalRuleEmbedBuilder(key: 'horizontal-rule'),
           HorizontalRuleEmbedBuilder(key: 'divider'),
           StickerEmbedBuilder(),
+          PhotoFrameEmbedBuilder(),
         ],
         textSpanBuilder: (context, node, nodeOffset, text, style, recognizer) {
           final isCodeBlock = node.style.containsKey(Attribute.codeBlock.key) ||
@@ -224,7 +229,8 @@ class EditorBodyWidget extends ConsumerWidget {
         blocks: blocks,
         focusNodes: focusNodes,
         scrollController: scrollController,
-        isReorderable: isReorderable,
+        isReorderable: isReorderable && !readOnly,
+        readOnly: readOnly,
       );
     }
 
@@ -239,6 +245,7 @@ class EditorBodyWidget extends ConsumerWidget {
               scrollController: scrollController,
               quillController: quillController,
               editorMode: editorMode,
+              readOnly: readOnly,
             ),
           ),
       ],

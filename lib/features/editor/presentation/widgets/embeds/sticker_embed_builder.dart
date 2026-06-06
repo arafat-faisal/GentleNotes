@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -132,10 +134,36 @@ class StickerEmbedBuilder extends EmbedBuilder {
   }
 
   Widget _buildStickerImage(String name) {
+    if (name.startsWith('data:image')) {
+      final base64Str = name.split(',').last;
+      try {
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.contain,
+        );
+      } catch (e) {
+        return const Icon(
+          Icons.broken_image_rounded,
+          size: 48,
+          color: Colors.grey,
+        );
+      }
+    }
     if (name.startsWith('/') ||
         name.contains(':\\') ||
         name.contains(':/') ||
         name.startsWith('content:')) {
+      if (kIsWeb) {
+        return Image.network(
+          name,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.broken_image_rounded,
+            size: 48,
+            color: Colors.grey,
+          ),
+        );
+      }
       return Image.file(
         File(name),
         fit: BoxFit.contain,

@@ -12,17 +12,20 @@ import 'blocks/code_block.dart';
 import 'blocks/drawing_block.dart';
 import 'blocks/hr_block.dart';
 import 'blocks/sticker_block.dart';
+import 'blocks/photo_frame_block.dart';
 
 class BlockRenderer extends ConsumerWidget {
   final BlockEntity block;
   final int index;
   final FocusNode focusNode;
+  final bool readOnly;
 
   const BlockRenderer({
     super.key,
     required this.block,
     required this.index,
     required this.focusNode,
+    this.readOnly = false,
   });
 
   @override
@@ -37,6 +40,7 @@ class BlockRenderer extends ConsumerWidget {
           onChanged: (val) => controller.updateBlockContent(block.id, val),
           onSubmitted: () => controller.insertBlock(index, BlockType.text),
           onDelete: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.heading:
         return HeadingBlock(
@@ -45,6 +49,7 @@ class BlockRenderer extends ConsumerWidget {
           onChanged: (val) => controller.updateBlockContent(block.id, val),
           onSubmitted: () => controller.insertBlock(index, BlockType.text),
           onDelete: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.checklist:
         return ChecklistBlock(
@@ -54,6 +59,7 @@ class BlockRenderer extends ConsumerWidget {
           onAttributesChanged: (attrs) => controller.updateBlockAttributes(block.id, attrs),
           onSubmitted: () => controller.insertBlock(index, BlockType.checklist),
           onDelete: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.code:
         return CodeBlock(
@@ -63,32 +69,53 @@ class BlockRenderer extends ConsumerWidget {
           onAttributesChanged: (attrs) => controller.updateBlockAttributes(block.id, attrs),
           onSubmitted: () => controller.insertBlock(index, BlockType.text),
           onDelete: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.image:
         return ImageBlock(
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
+          onConvertToFrame: () {
+            final frameBlock = BlockEntity(
+              id: block.id,
+              type: BlockType.photoFrame,
+              data: {'images': [block.content]},
+              attributes: {'layout': 'grid'},
+            );
+            controller.replaceBlock(block.id, frameBlock);
+          },
+          readOnly: readOnly,
+        );
+      case BlockType.photoFrame:
+        return PhotoFrameBlock(
+          block: block,
+          onRemoved: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.audio:
         return AudioBlock(
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.drawing:
         return DrawingBlock(
           block: block,
           onSaved: (val) => controller.updateBlockContent(block.id, val),
           onRemoved: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.horizontalRule:
         return HrBlock(
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       case BlockType.sticker:
         return StickerBlock(
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
         );
       default:
         return const SizedBox.shrink();

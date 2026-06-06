@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
@@ -22,6 +23,12 @@ class ImageEmbedBuilder extends EmbedBuilder {
       } catch (e) {
         imageWidget = const Icon(Icons.broken_image, size: 50, color: Colors.grey);
       }
+    } else if (kIsWeb) {
+      imageWidget = Image.network(
+        imageUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+      );
     } else if (imageUrl.startsWith('file://')) {
       final path = imageUrl.replaceFirst('file://', '');
       imageWidget = Image.file(
@@ -101,6 +108,24 @@ class ImageEmbedBuilder extends EmbedBuilder {
               ),
               if (!embedContext.readOnly) ...[
                 ListTile(
+                  leading: const Icon(Icons.collections_rounded, color: Color(0xFF8B5CF6)),
+                  title: const Text('Convert to Photo Frame', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final offset = embedContext.node.offset;
+                    final blockData = {
+                      'images': [imageUrl],
+                      'layout': 'grid',
+                    };
+                    embedContext.controller.replaceText(
+                      offset,
+                      1,
+                      BlockEmbed('photo-frame', jsonEncode(blockData)),
+                      TextSelection.collapsed(offset: offset + 1),
+                    );
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
                   title: const Text('Delete Image', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                   onTap: () {
@@ -158,6 +183,8 @@ class ImageEmbedBuilder extends EmbedBuilder {
     if (imageUrl.startsWith('data:image')) {
       final base64Str = imageUrl.split(',').last;
       return Image.memory(base64Decode(base64Str));
+    } else if (kIsWeb) {
+      return Image.network(imageUrl);
     } else if (imageUrl.startsWith('file://')) {
       final path = imageUrl.replaceFirst('file://', '');
       return Image.file(io.File(path));

@@ -15,10 +15,36 @@ class EditorBlockController extends EditorCoreController {
     _selectionController = EditorSelectionController(this);
   }
 
-  void insertBlock(int index, BlockType type, {String content = ''}) {
+  void insertBlock(
+    int index,
+    BlockType type, {
+    String content = '',
+    Map<String, dynamic>? data,
+    Map<String, dynamic> attributes = const {},
+  }) {
     _historyController.saveToUndoStack();
-    final newBlock = BlockEntity.create(type, content: content);
+    final newBlock = BlockEntity.create(
+      type,
+      content: content,
+      data: data,
+      attrs: attributes,
+    );
     insertBlockDirectly(index + 1, newBlock);
+
+    if (type != BlockType.text && type != BlockType.heading) {
+      final trailingText = BlockEntity.create(BlockType.text);
+      insertBlockDirectly(index + 2, trailingText);
+    }
+  }
+
+  void replaceBlock(String id, BlockEntity newBlock) {
+    _historyController.saveToUndoStack();
+    super.replaceBlockDirectly(id, newBlock);
+  }
+
+  void updateBlockData(String id, Map<String, dynamic> data) {
+    _historyController.saveToUndoStack();
+    super.updateBlockData(id, data);
   }
 
   void removeBlock(String id) {

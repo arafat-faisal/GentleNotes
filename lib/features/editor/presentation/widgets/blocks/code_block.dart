@@ -73,6 +73,7 @@ class CodeBlock extends ConsumerStatefulWidget {
   final ValueChanged<Map<String, dynamic>> onAttributesChanged;
   final VoidCallback onSubmitted;
   final VoidCallback? onDelete;
+  final bool readOnly;
 
   const CodeBlock({
     super.key,
@@ -82,6 +83,7 @@ class CodeBlock extends ConsumerStatefulWidget {
     required this.onAttributesChanged,
     required this.onSubmitted,
     this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -173,6 +175,7 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
 
     return Focus(
       onKeyEvent: (node, event) {
+        if (widget.readOnly) return KeyEventResult.ignored;
         if (event is KeyEvent && event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
@@ -228,7 +231,7 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
                         value: currentLanguage,
                         dropdownColor: headerBgColor,
                         underline: const SizedBox(),
-                        icon: Icon(Icons.arrow_drop_down_rounded, size: 16, color: headerTextColor),
+                        icon: widget.readOnly ? const SizedBox.shrink() : Icon(Icons.arrow_drop_down_rounded, size: 16, color: headerTextColor),
                         style: TextStyle(
                           fontFamily: 'Outfit',
                           fontSize: 9,
@@ -241,7 +244,7 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
                             child: Text(lang.toUpperCase()),
                           );
                         }).toList(),
-                        onChanged: (newLang) {
+                        onChanged: widget.readOnly ? null : (newLang) {
                           if (newLang != null) {
                             setState(() {
                               currentLanguage = newLang;
@@ -299,8 +302,9 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
                   height: 1.4,
                   color: textColor,
                 ),
+                readOnly: widget.readOnly,
                 decoration: InputDecoration(
-                  hintText: '// Write your code here...',
+                  hintText: widget.readOnly ? null : '// Write your code here...',
                   hintStyle: TextStyle(
                     fontFamily: 'Courier',
                     fontSize: 13,
