@@ -4,11 +4,13 @@ import '../../../domain/entities/block_entity.dart';
 class HrBlock extends StatelessWidget {
   final BlockEntity block;
   final VoidCallback onRemoved;
+  final bool readOnly;
 
   const HrBlock({
     super.key,
     required this.block,
     required this.onRemoved,
+    this.readOnly = false,
   });
 
   @override
@@ -19,9 +21,9 @@ class HrBlock extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 4.0),
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: readOnly ? SystemMouseCursors.basic : SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: () {
+          onTap: readOnly ? null : () {
             // Show a quick tooltip/dialog or tap to delete directly
             showDialog(
               context: context,

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
@@ -9,12 +11,14 @@ class DrawingBlock extends StatelessWidget {
   final BlockEntity block;
   final ValueChanged<String> onSaved;
   final VoidCallback onRemoved;
+  final bool readOnly;
 
   const DrawingBlock({
     super.key,
     required this.block,
     required this.onSaved,
     required this.onRemoved,
+    this.readOnly = false,
   });
 
   Future<void> _openCanvas(BuildContext context) async {
@@ -24,6 +28,11 @@ class DrawingBlock extends StatelessWidget {
         builder: (ctx) => DrawingCanvasScreen(
           onSave: (strokes, pngBytes) async {
             if (pngBytes != null) {
+              if (kIsWeb) {
+                final base64String = base64Encode(pngBytes);
+                onSaved('data:image/png;base64,$base64String');
+                return;
+              }
               final dir = await getApplicationDocumentsDirectory();
               final fileName = 'drawing_${const Uuid().v4()}.png';
               final file = File('${dir.path}/$fileName');
@@ -47,7 +56,7 @@ class DrawingBlock extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
         child: InkWell(
-          onTap: () => _openCanvas(context),
+          onTap: readOnly ? null : () => _openCanvas(context),
           borderRadius: BorderRadius.circular(16),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -69,7 +78,7 @@ class DrawingBlock extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tap to start drawing',
+                  readOnly ? 'No drawing' : 'Tap to start drawing',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Outfit',
@@ -83,7 +92,23 @@ class DrawingBlock extends StatelessWidget {
     }
 
     Widget imageWidget;
-    if (drawingPath.startsWith('file://')) {
+    if (drawingPath.startsWith('data:image')) {
+      final base64Str = drawingPath.split(',').last;
+      try {
+        imageWidget = Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.contain,
+        );
+      } catch (e) {
+        imageWidget = const _BrokenDrawingPlaceholder();
+      }
+    } else if (kIsWeb) {
+      imageWidget = Image.network(
+        drawingPath,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const _BrokenDrawingPlaceholder(),
+      );
+    } else if (drawingPath.startsWith('file://')) {
       final path = drawingPath.replaceFirst('file://', '');
       imageWidget = Image.file(
         File(path),
@@ -120,48 +145,49 @@ class DrawingBlock extends StatelessWidget {
                 child: Center(child: imageWidget),
               ),
               // Hover action overlay
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Material(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
+              if (!readOnly)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Material(
+                        color: Colors.black54,
                         borderRadius: BorderRadius.circular(20),
-                        onTap: () => _openCanvas(context),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6.0),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            color: Colors.white,
-                            size: 18,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => _openCanvas(context),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6.0),
+                            child: Icon(
+                              Icons.edit_outlined,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Material(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
+                      const SizedBox(width: 8),
+                      Material(
+                        color: Colors.black54,
                         borderRadius: BorderRadius.circular(20),
-                        onTap: onRemoved,
-                        child: const Padding(
-                          padding: EdgeInsets.all(6.0),
-                          child: Icon(
-                            Icons.delete_outline_rounded,
-                            color: Colors.white,
-                            size: 18,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: onRemoved,
+                          child: const Padding(
+                            padding: EdgeInsets.all(6.0),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),

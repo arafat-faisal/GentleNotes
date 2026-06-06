@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'sticker_creator_controller.dart';
 
@@ -125,12 +126,19 @@ class StickerPreview extends StatelessWidget {
         );
       }
 
-      Widget imgWidget = Image.file(
-        File(photoPath!),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-      );
+      Widget imgWidget = kIsWeb
+          ? Image.network(
+              photoPath!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            )
+          : Image.file(
+              File(photoPath!),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            );
 
       if (photoMask != 'original') {
         imgWidget = ClipPath(

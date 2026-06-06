@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -10,6 +12,7 @@ class FloatingStickerWidget extends ConsumerStatefulWidget {
   final ScrollController scrollController;
   final QuillController? quillController;
   final EditorMode editorMode;
+  final bool readOnly;
 
   const FloatingStickerWidget({
     super.key,
@@ -17,6 +20,7 @@ class FloatingStickerWidget extends ConsumerStatefulWidget {
     required this.scrollController,
     this.quillController,
     required this.editorMode,
+    this.readOnly = false,
   });
 
   @override
@@ -69,7 +73,7 @@ class _FloatingStickerWidgetState extends ConsumerState<FloatingStickerWidget> {
         children: [
           // ── Main sticker body (draggable) ──────────────────────────────
           GestureDetector(
-            onTap: () {
+            onTap: widget.readOnly ? null : () {
               final selectedId = ref.read(selectedStickerIdProvider);
               if (selectedId == sticker.id) {
                 ref.read(selectedStickerIdProvider.notifier).state = null;
@@ -77,7 +81,7 @@ class _FloatingStickerWidgetState extends ConsumerState<FloatingStickerWidget> {
                 ref.read(selectedStickerIdProvider.notifier).state = sticker.id;
               }
             },
-            onPanUpdate: (details) {
+            onPanUpdate: widget.readOnly ? null : (details) {
               final screenWidth = MediaQuery.of(context).size.width;
               final newX = (sticker.x + details.delta.dx)
                   .clamp(0.0, (screenWidth - sticker.width).clamp(0.0, screenWidth));
@@ -143,6 +147,7 @@ class _FloatingStickerWidgetState extends ConsumerState<FloatingStickerWidget> {
                                 focusNode: _textFocusNode,
                                 textAlign: TextAlign.center,
                                 maxLines: null,
+                                readOnly: widget.readOnly,
                                 style: const TextStyle(
                                   fontFamily: 'Outfit',
                                   fontSize: 13,
@@ -156,14 +161,14 @@ class _FloatingStickerWidgetState extends ConsumerState<FloatingStickerWidget> {
                                     ),
                                   ],
                                 ),
-                                decoration: const InputDecoration(
-                                  hintText: 'Add text…',
-                                  hintStyle: TextStyle(
+                                decoration: InputDecoration(
+                                  hintText: widget.readOnly ? null : 'Add text…',
+                                  hintStyle: const TextStyle(
                                       color: Colors.white60, fontSize: 12),
                                   border: InputBorder.none,
                                   isDense: true,
                                   contentPadding:
-                                      EdgeInsets.symmetric(vertical: 4),
+                                      const EdgeInsets.symmetric(vertical: 4),
                                 ),
                                 onChanged: (text) {
                                   ref
@@ -183,52 +188,83 @@ class _FloatingStickerWidgetState extends ConsumerState<FloatingStickerWidget> {
           ),
 
           // ── Resize handle (bottom-right) ───────────────────────────────
-          Positioned(
-            bottom: -6,
-            right: -6,
-            child: GestureDetector(
-              onPanUpdate: (details) {
-                final screenWidth = MediaQuery.of(context).size.width;
-                final maxW = screenWidth - sticker.x;
-                final newW = (sticker.width + details.delta.dx)
-                    .clamp(60.0, maxW.clamp(60.0, 320.0));
-                final newH =
-                    (sticker.height + details.delta.dy).clamp(60.0, 320.0);
-                ref.read(floatingStickersProvider.notifier).updateSticker(
-                      sticker.copyWith(width: newW, height: newH),
-                    );
-              },
-              child: Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.zoom_out_map_rounded,
-                  size: 11,
-                  color: Colors.white,
+          if (!widget.readOnly)
+            Positioned(
+              bottom: -6,
+              right: -6,
+              child: GestureDetector(
+                onPanUpdate: (details) {
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final maxW = screenWidth - sticker.x;
+                  final newW = (sticker.width + details.delta.dx)
+                      .clamp(60.0, maxW.clamp(60.0, 320.0));
+                  final newH =
+                      (sticker.height + details.delta.dy).clamp(60.0, 320.0);
+                  ref.read(floatingStickersProvider.notifier).updateSticker(
+                        sticker.copyWith(width: newW, height: newH),
+                      );
+                },
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.zoom_out_map_rounded,
+                    size: 11,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildStickerImage(String name) {
+    if (name.startsWith('data:image')) {
+      final base64Str = name.split(',').last;
+      try {
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.contain,
+        );
+      } catch (e) {
+        return const Center(
+          child: Icon(
+            Icons.broken_image_rounded,
+            size: 40,
+            color: Colors.redAccent,
+          ),
+        );
+      }
+    }
     if (name.startsWith('/') ||
         name.contains(':\\') ||
         name.contains(':/') ||
         name.startsWith('content:')) {
+      if (kIsWeb) {
+        return Image.network(
+          name,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(
+              Icons.broken_image_rounded,
+              size: 40,
+              color: Colors.redAccent,
+            ),
+          ),
+        );
+      }
       return Image.file(
         File(name),
         fit: BoxFit.contain,

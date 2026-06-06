@@ -11,6 +11,7 @@ class ClassicMetadataBar extends ConsumerWidget {
   final ValueChanged<NoteType> onNoteTypeChanged;
   final String colorHex;
   final ValueChanged<String> onColorChanged;
+  final bool readOnly;
 
   const ClassicMetadataBar({
     super.key,
@@ -20,6 +21,7 @@ class ClassicMetadataBar extends ConsumerWidget {
     required this.onNoteTypeChanged,
     required this.colorHex,
     required this.onColorChanged,
+    this.readOnly = false,
   });
 
   @override
@@ -86,7 +88,7 @@ class ClassicMetadataBar extends ConsumerWidget {
                           ),
                         )),
                   ],
-                  onChanged: onFolderChanged,
+                  onChanged: readOnly ? null : onFolderChanged,
                 ),
               ),
             ),
@@ -112,11 +114,13 @@ class ClassicMetadataBar extends ConsumerWidget {
                             ),
                           ))
                       .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      onNoteTypeChanged(val);
-                    }
-                  },
+                  onChanged: readOnly
+                      ? null
+                      : (val) {
+                          if (val != null) {
+                            onNoteTypeChanged(val);
+                          }
+                        },
                 ),
               ),
             ),
@@ -135,7 +139,7 @@ class ClassicMetadataBar extends ConsumerWidget {
                       ? Colors.grey.shade300
                       : Color(int.parse('FF${colHex.replaceAll('#', '')}', radix: 16));
                   return GestureDetector(
-                    onTap: () => onColorChanged(colHex),
+                    onTap: readOnly ? null : () => onColorChanged(colHex),
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       width: 16,

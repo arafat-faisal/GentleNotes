@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -72,7 +74,7 @@ class _StickerCreatorSheetState extends ConsumerState<StickerCreatorSheet> with 
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file != null) {
-      final bytes = await File(file.path).readAsBytes();
+      final bytes = await file.readAsBytes();
       final completer = Completer<ui.Image>();
       ui.decodeImageFromList(bytes, (ui.Image img) {
         completer.complete(img);
@@ -135,10 +137,19 @@ class _StickerCreatorSheetState extends ConsumerState<StickerCreatorSheet> with 
         );
       }
 
+      if (kIsWeb) {
+        final base64String = base64Encode(pngBytes!);
+        widget.onSelect('data:image/png;base64,$base64String');
+        if (mounted) {
+          Navigator.pop(context);
+        }
+        return;
+      }
+
       final dir = await getApplicationDocumentsDirectory();
       final fileName = 'custom_sticker_${const Uuid().v4()}.png';
       final file = File('${dir.path}/$fileName');
-      await file.writeAsBytes(pngBytes);
+      await file.writeAsBytes(pngBytes!);
 
       widget.onSelect(file.path);
       if (mounted) {

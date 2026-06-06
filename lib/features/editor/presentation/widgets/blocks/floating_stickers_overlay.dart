@@ -12,12 +12,14 @@ class FloatingStickersOverlay extends ConsumerWidget {
   final ScrollController scrollController;
   final QuillController? quillController;
   final EditorMode editorMode;
+  final bool readOnly;
 
   const FloatingStickersOverlay({
     super.key,
     required this.scrollController,
     this.quillController,
     required this.editorMode,
+    this.readOnly = false,
   });
 
   @override
@@ -75,12 +77,13 @@ class FloatingStickersOverlay extends ConsumerWidget {
                   scrollController: scrollController,
                   quillController: quillController,
                   editorMode: editorMode,
+                  readOnly: readOnly,
                 ),
               );
             }),
 
             // Render options toolbar above/below the active sticker
-            if (selectedSticker != null && toolbarTop != null && toolbarLeft != null)
+            if (selectedSticker != null && toolbarTop != null && toolbarLeft != null && !readOnly)
               Positioned(
                 top: toolbarTop,
                 left: toolbarLeft,

@@ -8,6 +8,7 @@ class TextBlock extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onSubmitted;
   final VoidCallback? onDelete;
+  final bool readOnly;
 
   const TextBlock({
     super.key,
@@ -16,6 +17,7 @@ class TextBlock extends StatefulWidget {
     required this.onChanged,
     required this.onSubmitted,
     this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -61,6 +63,7 @@ class _TextBlockState extends State<TextBlock> {
 
     return Focus(
       onKeyEvent: (node, event) {
+        if (widget.readOnly) return KeyEventResult.ignored;
         if (event is KeyEvent && event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
@@ -82,8 +85,9 @@ class _TextBlockState extends State<TextBlock> {
         maxLines: null,
         onChanged: widget.onChanged,
         style: fontStyle,
+        readOnly: widget.readOnly,
         decoration: InputDecoration(
-          hintText: 'Type something...',
+          hintText: widget.readOnly ? null : 'Type something...',
           hintStyle: theme.textTheme.bodyLarge?.copyWith(
             color: theme.hintColor.withOpacity(0.4),
             fontFamily: theme.textTheme.bodyLarge?.fontFamily ?? 'Inter',

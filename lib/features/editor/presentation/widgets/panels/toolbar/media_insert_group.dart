@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -38,7 +40,7 @@ class MediaInsertGroup extends StatelessWidget {
 
   Future<void> _pickImage(BuildContext context) async {
     final picker = ImagePicker();
-    final source = await showModalBottomSheet<ImageSource>(
+    final action = await showModalBottomSheet<dynamic>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
@@ -63,13 +65,18 @@ class MediaInsertGroup extends StatelessWidget {
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined, color: Color(0xFF8B5CF6)),
-                title: const Text('Choose from Gallery'),
+                title: const Text('Choose Single Image'),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
               ListTile(
                 leading: const Icon(Icons.camera_alt_outlined, color: Color(0xFF8B5CF6)),
                 title: const Text('Take a Photo'),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.collections_outlined, color: Color(0xFF8B5CF6)),
+                title: const Text('Create Photo Frame (Multiple Images)'),
+                onTap: () => Navigator.pop(ctx, 'photo_frame'),
               ),
               const SizedBox(height: 8),
             ],
@@ -78,11 +85,34 @@ class MediaInsertGroup extends StatelessWidget {
       },
     );
 
-    if (source != null) {
-      final file = await picker.pickImage(source: source);
-      if (file != null) {
-        onInsertBlock(BlockType.image, content: 'file://${file.path}');
+    if (action == 'photo_frame') {
+      final files = await picker.pickMultiImage();
+      if (files.isNotEmpty) {
+        final List<String> paths = files.map((f) => kIsWeb ? f.path : 'file://${f.path}').toList();
+        onInsertBlock(
+          BlockType.photoFrame,
+          content: jsonEncode(paths),
+          attributes: {'layout': 'grid'},
+        );
       }
+    } else if (action is ImageSource) {
+      final file = await picker.pickImage(source: action);
+      if (file != null) {
+        onInsertBlock(BlockType.image, content: kIsWeb ? file.path : 'file://${file.path}');
+      }
+    }
+  }
+
+  Future<void> _createPhotoFrame(BuildContext context) async {
+    final picker = ImagePicker();
+    final files = await picker.pickMultiImage();
+    if (files.isNotEmpty) {
+      final List<String> paths = files.map((f) => kIsWeb ? f.path : 'file://${f.path}').toList();
+      onInsertBlock(
+        BlockType.photoFrame,
+        content: jsonEncode(paths),
+        attributes: {'layout': 'grid'},
+      );
     }
   }
 
@@ -127,6 +157,12 @@ class MediaInsertGroup extends StatelessWidget {
               icon: Icons.image_outlined,
               tooltip: 'Insert Image',
               onTap: () => _pickImage(context),
+              accentColor: accentColor,
+            ),
+            ToolbarActionButton(
+              icon: Icons.collections_rounded,
+              tooltip: 'Photo Frame / Folder',
+              onTap: () => _createPhotoFrame(context),
               accentColor: accentColor,
             ),
             ToolbarActionButton(
@@ -185,6 +221,7 @@ class MediaInsertGroup extends StatelessWidget {
       ),
       onSelected: (value) {
         if (value == 'image') _pickImage(context);
+        if (value == 'photo_frame') _createPhotoFrame(context);
         if (value == 'sticker') _showStickersPicker(context);
         if (value == 'drawing') onInsertBlock(BlockType.drawing);
         if (value == 'voice') _recordAudio(context);
@@ -200,6 +237,16 @@ class MediaInsertGroup extends StatelessWidget {
                 Icon(Icons.image_outlined, size: 18),
                 SizedBox(width: 8),
                 Text('Insert Image'),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'photo_frame',
+            child: Row(
+              children: [
+                Icon(Icons.collections_rounded, size: 18),
+                SizedBox(width: 8),
+                Text('Photo Frame / Folder'),
               ],
             ),
           ),

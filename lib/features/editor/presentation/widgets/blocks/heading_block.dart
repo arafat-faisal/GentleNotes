@@ -8,6 +8,7 @@ class HeadingBlock extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final VoidCallback onSubmitted;
   final VoidCallback? onDelete;
+  final bool readOnly;
 
   const HeadingBlock({
     super.key,
@@ -16,6 +17,7 @@ class HeadingBlock extends StatefulWidget {
     required this.onChanged,
     required this.onSubmitted,
     this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -84,6 +86,7 @@ class _HeadingBlockState extends State<HeadingBlock> {
 
     return Focus(
       onKeyEvent: (node, event) {
+        if (widget.readOnly) return KeyEventResult.ignored;
         if (event is KeyEvent && event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
@@ -105,8 +108,9 @@ class _HeadingBlockState extends State<HeadingBlock> {
         maxLines: null,
         onChanged: widget.onChanged,
         style: textStyle,
+        readOnly: widget.readOnly,
         decoration: InputDecoration(
-          hintText: hintText,
+          hintText: widget.readOnly ? null : hintText,
           hintStyle: textStyle?.copyWith(
             color: theme.hintColor.withOpacity(0.3),
           ),

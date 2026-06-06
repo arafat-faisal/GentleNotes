@@ -11,6 +11,7 @@ class EditorBlocksList extends ConsumerWidget {
   final bool shrinkWrap;
   final ScrollPhysics? physics;
   final bool isReorderable;
+  final bool readOnly;
 
   const EditorBlocksList({
     super.key,
@@ -20,6 +21,7 @@ class EditorBlocksList extends ConsumerWidget {
     this.shrinkWrap = false,
     this.physics,
     this.isReorderable = true,
+    this.readOnly = false,
   });
 
   @override
@@ -47,6 +49,7 @@ class EditorBlocksList extends ConsumerWidget {
               block: block,
               index: index,
               focusNode: node,
+              readOnly: readOnly,
             ),
           );
         },
@@ -96,6 +99,7 @@ class EditorBlocksList extends ConsumerWidget {
                   block: block,
                   index: index,
                   focusNode: node,
+                  readOnly: readOnly,
                 ),
               ),
             ],

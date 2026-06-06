@@ -174,6 +174,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
                   onNoteTypeChanged: widget.onNoteTypeChanged,
                   colorHex: widget.colorHex,
                   onColorChanged: widget.onColorChanged,
+                  readOnly: _isPreviewMode,
                 ),
                 const Divider(height: 1),
                 Expanded(

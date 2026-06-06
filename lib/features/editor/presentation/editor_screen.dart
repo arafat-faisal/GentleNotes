@@ -419,6 +419,19 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         case BlockType.image:
           _quillController.replaceText(index, length, BlockEmbed('image', content), null);
           break;
+        case BlockType.photoFrame:
+          List<String> paths;
+          try {
+            paths = List<String>.from(jsonDecode(content));
+          } catch (_) {
+            paths = [];
+          }
+          final blockData = {
+            'images': paths,
+            'layout': attributes['layout'] ?? 'grid',
+          };
+          _quillController.replaceText(index, length, BlockEmbed('photo-frame', jsonEncode(blockData)), null);
+          break;
         case BlockType.audio:
           _quillController.replaceText(index, length, BlockEmbed('audio', content), null);
           break;
@@ -440,7 +453,12 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     } else {
       final state = ref.read(editorBlockControllerProvider);
       final index = state.selectedIndex >= 0 ? state.selectedIndex : state.blocks.length - 1;
-      ref.read(editorBlockControllerProvider.notifier).insertBlock(index, type, content: content);
+      ref.read(editorBlockControllerProvider.notifier).insertBlock(
+            index,
+            type,
+            content: content,
+            attributes: attributes,
+          );
       _markDirty();
     }
   }

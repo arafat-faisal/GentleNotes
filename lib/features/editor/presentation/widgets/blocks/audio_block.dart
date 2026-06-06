@@ -7,11 +7,13 @@ import '../../../domain/entities/block_entity.dart';
 class AudioBlock extends StatefulWidget {
   final BlockEntity block;
   final VoidCallback onRemoved;
+  final bool readOnly;
 
   const AudioBlock({
     super.key,
     required this.block,
     required this.onRemoved,
+    this.readOnly = false,
   });
 
   @override
@@ -233,42 +235,44 @@ class _AudioBlockState extends State<AudioBlock> with SingleTickerProviderStateM
                       ),
                     )).toList(),
                   ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Row(
-                          children: [
-                            Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
-                            SizedBox(width: 8),
-                            Text('Delete Audio Block', style: TextStyle(fontSize: 16)),
+                if (!widget.readOnly) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                              SizedBox(width: 8),
+                              Text('Delete Audio Block', style: TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                          content: const Text('Remove this audio block from the editor?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                widget.onRemoved();
+                              },
+                              child: const Text('Delete'),
+                            ),
                           ],
                         ),
-                        content: const Text('Remove this audio block from the editor?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              widget.onRemoved();
-                            },
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(maxWidth: 32, maxHeight: 32),
-                ),
+                      );
+                    },
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(maxWidth: 32, maxHeight: 32),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 10),
@@ -314,7 +318,7 @@ class _AudioBlockState extends State<AudioBlock> with SingleTickerProviderStateM
                   max: _duration.inMilliseconds > 0
                       ? _duration.inMilliseconds.toDouble()
                       : 1.0,
-                  onChanged: (val) {
+                  onChanged: widget.readOnly ? null : (val) {
                     _player.seek(Duration(milliseconds: val.toInt()));
                   },
                 ),

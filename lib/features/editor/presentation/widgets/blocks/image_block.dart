@@ -1,16 +1,21 @@
 import 'dart:convert';
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../../../domain/entities/block_entity.dart';
 
 class ImageBlock extends StatelessWidget {
   final BlockEntity block;
   final VoidCallback onRemoved;
+  final VoidCallback onConvertToFrame;
+  final bool readOnly;
 
   const ImageBlock({
     super.key,
     required this.block,
     required this.onRemoved,
+    required this.onConvertToFrame,
+    this.readOnly = false,
   });
 
   @override
@@ -31,6 +36,12 @@ class ImageBlock extends StatelessWidget {
       } catch (e) {
         imageWidget = const _BrokenImagePlaceholder();
       }
+    } else if (kIsWeb) {
+      imageWidget = Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const _BrokenImagePlaceholder(),
+      );
     } else if (imageUrl.startsWith('file://')) {
       final path = imageUrl.replaceFirst('file://', '');
       imageWidget = Image.file(
@@ -84,26 +95,55 @@ class ImageBlock extends StatelessWidget {
                     child: imageWidget,
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Material(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(20),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: onRemoved,
-                      child: const Padding(
-                        padding: EdgeInsets.all(6.0),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          color: Colors.white,
-                          size: 18,
+                if (!readOnly)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Tooltip(
+                          message: 'Convert to Photo Frame',
+                          child: Material(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: onConvertToFrame,
+                              child: const Padding(
+                                padding: EdgeInsets.all(6.0),
+                                child: Icon(
+                                  Icons.collections_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 6),
+                        Tooltip(
+                          message: 'Delete Image',
+                          child: Material(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(20),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(20),
+                              onTap: onRemoved,
+                              child: const Padding(
+                                padding: EdgeInsets.all(6.0),
+                                child: Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -153,6 +193,8 @@ class ImageBlock extends StatelessWidget {
     if (imageUrl.startsWith('data:image')) {
       final base64Str = imageUrl.split(',').last;
       return Image.memory(base64Decode(base64Str));
+    } else if (kIsWeb) {
+      return Image.network(imageUrl);
     } else if (imageUrl.startsWith('file://')) {
       final path = imageUrl.replaceFirst('file://', '');
       return Image.file(io.File(path));

@@ -9,6 +9,7 @@ class ChecklistBlock extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onAttributesChanged;
   final VoidCallback onSubmitted;
   final VoidCallback? onDelete;
+  final bool readOnly;
 
   const ChecklistBlock({
     super.key,
@@ -18,6 +19,7 @@ class ChecklistBlock extends StatefulWidget {
     required this.onAttributesChanged,
     required this.onSubmitted,
     this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -67,6 +69,7 @@ class _ChecklistBlockState extends State<ChecklistBlock> {
 
     return Focus(
       onKeyEvent: (node, event) {
+        if (widget.readOnly) return KeyEventResult.ignored;
         if (event is KeyEvent && event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
@@ -95,7 +98,7 @@ class _ChecklistBlockState extends State<ChecklistBlock> {
               ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () {
+              onPressed: widget.readOnly ? null : () {
                 final newAttrs = Map<String, dynamic>.from(widget.block.attributes);
                 newAttrs['list'] = isChecked ? 'unchecked' : 'checked';
                 widget.onAttributesChanged(newAttrs);
@@ -109,8 +112,9 @@ class _ChecklistBlockState extends State<ChecklistBlock> {
                 maxLines: null,
                 onChanged: widget.onChanged,
                 style: textStyle,
+                readOnly: widget.readOnly,
                 decoration: InputDecoration(
-                  hintText: 'To-do item...',
+                  hintText: widget.readOnly ? null : 'To-do item...',
                   hintStyle: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.hintColor.withOpacity(0.3),
                     fontFamily: 'Inter',

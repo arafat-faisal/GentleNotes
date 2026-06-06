@@ -8,5 +8,7 @@ enum BlockType {
   drawing,
   horizontalRule,
   sticker,
+  photoFrame,
 }
+
 
