@@ -38,6 +38,7 @@ class AppConstants {
   static const String prefEditorFontFamily = 'editorFontFamily';
   static const String prefEditorFontSize = 'editorFontSize';
   static const String prefEditorLineHeight = 'editorLineHeight';
+  static const String prefHomeLayout = 'homeLayout';
   static const String prefHasSeededV1 = 'has_seeded_v1';
   static const String prefHasSeededV2 = 'has_seeded_v2';
 

@@ -9,6 +9,7 @@ export '../features/templates/data/models/note_template_model.dart';
 export '../features/settings/data/models/app_settings_model.dart';
 export '../features/settings/data/models/user_profile.dart';
 export '../features/settings/data/models/custom_workspace_profile.dart';
+export '../features/home/data/models/home_layout_preset.dart';
 
 // --- ENUMS ---
 

@@ -21,6 +21,7 @@ class AppSettingsModel {
   final String editorFontFamily;
   final double editorFontSize;
   final double editorLineHeight;
+  final HomeLayoutPreset homeLayout;
 
   AppSettingsModel({
     required this.themeMode,
@@ -71,7 +72,8 @@ class AppSettingsModel {
     ],
     this.editorFontFamily = 'Inter',
     this.editorFontSize = 16.0,
-    this.editorLineHeight = 1.5,
+    this.editorLineHeight = 1.4,
+    this.homeLayout = HomeLayoutPreset.dashboard,
   });
 
   CustomWorkspaceProfile? get activeCustomProfile {
@@ -102,6 +104,7 @@ class AppSettingsModel {
     String? editorFontFamily,
     double? editorFontSize,
     double? editorLineHeight,
+    HomeLayoutPreset? homeLayout,
   }) {
     return AppSettingsModel(
       themeMode: themeMode ?? this.themeMode,
@@ -123,6 +126,7 @@ class AppSettingsModel {
       editorFontFamily: editorFontFamily ?? this.editorFontFamily,
       editorFontSize: editorFontSize ?? this.editorFontSize,
       editorLineHeight: editorLineHeight ?? this.editorLineHeight,
+      homeLayout: homeLayout ?? this.homeLayout,
     );
   }
 
@@ -310,6 +314,7 @@ class AppSettingsModel {
       'editorFontFamily': editorFontFamily,
       'editorFontSize': editorFontSize,
       'editorLineHeight': editorLineHeight,
+      'homeLayout': homeLayout.name,
     };
   }
 
@@ -354,7 +359,14 @@ class AppSettingsModel {
           const ['format', 'color', 'heading', 'align', 'lists', 'insert', 'indent'],
       editorFontFamily: map['editorFontFamily'] ?? 'Inter',
       editorFontSize: (map['editorFontSize'] as num?)?.toDouble() ?? 16.0,
-      editorLineHeight: (map['editorLineHeight'] as num?)?.toDouble() ?? 1.5,
+      editorLineHeight: (() {
+        final val = (map['editorLineHeight'] as num?)?.toDouble() ?? 1.4;
+        return (val == 1.2 || val == 1.4 || val == 1.6 || val == 1.8) ? val : 1.4;
+      })(),
+      homeLayout: HomeLayoutPreset.values.firstWhere(
+        (e) => e.name == map['homeLayout'],
+        orElse: () => HomeLayoutPreset.dashboard,
+      ),
     );
   }
 

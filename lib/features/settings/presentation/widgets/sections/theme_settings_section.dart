@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../../../models/models.dart';
 import '../../controllers/settings_controller.dart';
 import '../editor_layout_picker.dart';
+import '../home_layout_picker.dart';
 import '../theme_mode_toggle.dart';
 import '../theme_preset_picker.dart';
 
@@ -36,6 +35,21 @@ class ThemeSettingsSection extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         ThemePresetPicker(settings: settings),
+        const SizedBox(height: 24),
+
+        _buildSectionHeader(context, 'Home Screen Layout'),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            'Choose the visual layout style for your home workspace',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        HomeLayoutPicker(settings: settings),
         const SizedBox(height: 24),
 
         _buildSectionHeader(context, 'Editor Layout'),

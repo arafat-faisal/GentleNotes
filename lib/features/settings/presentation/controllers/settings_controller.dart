@@ -43,6 +43,11 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
     await _repository.saveSettings(state);
   }
 
+  Future<void> updateHomeLayout(HomeLayoutPreset preset) async {
+    state = state.copyWith(homeLayout: preset);
+    await _repository.saveSettings(state);
+  }
+
   Future<void> updateEditorMode(EditorMode editorMode) async {
     state = state.copyWith(editorMode: editorMode);
     await _repository.saveSettings(state);

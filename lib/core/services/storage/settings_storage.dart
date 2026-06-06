@@ -27,7 +27,11 @@ class SettingsStorage {
         ['format', 'color', 'heading', 'align', 'lists', 'insert', 'indent'];
     final fontFamily = sharedPrefs.getString(AppConstants.prefEditorFontFamily) ?? 'Inter';
     final fontSize = sharedPrefs.getDouble(AppConstants.prefEditorFontSize) ?? 16.0;
-    final lineHeight = sharedPrefs.getDouble(AppConstants.prefEditorLineHeight) ?? 1.5;
+    double lineHeight = sharedPrefs.getDouble(AppConstants.prefEditorLineHeight) ?? 1.4;
+    if (lineHeight != 1.2 && lineHeight != 1.4 && lineHeight != 1.6 && lineHeight != 1.8) {
+      lineHeight = 1.4;
+    }
+    final homeLayoutStr = sharedPrefs.getString(AppConstants.prefHomeLayout) ?? 'dashboard';
 
     return AppSettingsModel(
       themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == theme, orElse: () => ThemeModeSetting.system),
@@ -46,7 +50,7 @@ class SettingsStorage {
       customEnabledTools: customTools,
       editorFontFamily: fontFamily,
       editorFontSize: fontSize,
-      editorLineHeight: lineHeight,
+      homeLayout: HomeLayoutPreset.values.firstWhere((e) => e.name == homeLayoutStr, orElse: () => HomeLayoutPreset.dashboard),
     );
   }
 
@@ -68,6 +72,7 @@ class SettingsStorage {
     await sharedPrefs.setString(AppConstants.prefEditorFontFamily, settings.editorFontFamily);
     await sharedPrefs.setDouble(AppConstants.prefEditorFontSize, settings.editorFontSize);
     await sharedPrefs.setDouble(AppConstants.prefEditorLineHeight, settings.editorLineHeight);
+    await sharedPrefs.setString(AppConstants.prefHomeLayout, settings.homeLayout.name);
   }
 
   UserRole getUserRole() {
