@@ -432,6 +432,15 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           };
           _quillController.replaceText(index, length, BlockEmbed('photo-frame', jsonEncode(blockData)), null);
           break;
+        case BlockType.pdf:
+          final pdfBlockData = {
+            'path': content,
+            'name': attributes['name'] ?? 'PDF Document',
+            'pages': attributes['pages'] ?? <int>[],
+            'crops': attributes['crops'] ?? <String, dynamic>{},
+          };
+          _quillController.replaceText(index, length, BlockEmbed('pdf', jsonEncode(pdfBlockData)), null);
+          break;
         case BlockType.audio:
           _quillController.replaceText(index, length, BlockEmbed('audio', content), null);
           break;

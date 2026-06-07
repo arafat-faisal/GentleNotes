@@ -9,6 +9,7 @@ enum BlockType {
   horizontalRule,
   sticker,
   photoFrame,
+  pdf,
 }
 
 

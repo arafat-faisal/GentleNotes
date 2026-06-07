@@ -54,7 +54,12 @@ class ConvertDeltaToBlocks {
             if (insert.containsKey('image')) {
               blocks.add(BlockEntity.create(BlockType.image, content: insert['image'].toString()));
             } else if (insert.containsKey('photo-frame')) {
-              final pf = insert['photo-frame'];
+              dynamic pf = insert['photo-frame'];
+              if (pf is String) {
+                try {
+                  pf = jsonDecode(pf);
+                } catch (_) {}
+              }
               if (pf is Map) {
                 final images = List<String>.from(pf['images'] ?? <String>[]);
                 final layout = pf['layout'] ?? 'grid';
@@ -62,6 +67,31 @@ class ConvertDeltaToBlocks {
                   BlockType.photoFrame,
                   data: {'images': images},
                   attrs: {'layout': layout},
+                ));
+              }
+            } else if (insert.containsKey('pdf')) {
+              dynamic pdf = insert['pdf'];
+              if (pdf is String) {
+                try {
+                  pdf = jsonDecode(pdf);
+                } catch (_) {}
+              }
+              if (pdf is Map) {
+                final path = pdf['path']?.toString() ?? '';
+                final name = pdf['name']?.toString() ?? 'PDF Document';
+                final pages = List<int>.from(pdf['pages'] ?? <int>[]);
+                final crops = Map<String, dynamic>.from(pdf['crops'] ?? <String, dynamic>{});
+                blocks.add(BlockEntity.create(
+                  BlockType.pdf,
+                  content: path,
+                  data: {
+                    'path': path,
+                    'pages': pages,
+                    'crops': crops,
+                  },
+                  attrs: {
+                    'name': name,
+                  },
                 ));
               }
             } else if (insert.containsKey('drawing')) {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../../domain/entities/block_type.dart';
 import '../voice_recorder_bottom_sheet.dart';
@@ -116,6 +117,23 @@ class MediaInsertGroup extends StatelessWidget {
     }
   }
 
+  Future<void> _pickPdf(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null && result.files.single.path != null) {
+      final path = result.files.single.path!.replaceAll(r'\', '/');
+      onInsertBlock(
+        BlockType.pdf,
+        content: path,
+        attributes: {
+          'name': result.files.single.name,
+        },
+      );
+    }
+  }
+
   void _recordAudio(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -149,66 +167,75 @@ class MediaInsertGroup extends StatelessWidget {
     if (isInline) {
       final showDictation = showVoice; // match toolbar criteria
 
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showImage) ...[
-            ToolbarActionButton(
-              icon: Icons.image_outlined,
-              tooltip: 'Insert Image',
-              onTap: () => _pickImage(context),
-              accentColor: accentColor,
-            ),
-            ToolbarActionButton(
-              icon: Icons.collections_rounded,
-              tooltip: 'Photo Frame / Folder',
-              onTap: () => _createPhotoFrame(context),
-              accentColor: accentColor,
-            ),
-            ToolbarActionButton(
-              icon: Icons.sticky_note_2_outlined,
-              tooltip: 'Insert Sticker',
-              onTap: () => _showStickersPicker(context),
-              accentColor: accentColor,
-            ),
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showImage) ...[
+              ToolbarActionButton(
+                icon: Icons.image_outlined,
+                tooltip: 'Insert Image',
+                onTap: () => _pickImage(context),
+                accentColor: accentColor,
+              ),
+              ToolbarActionButton(
+                icon: Icons.picture_as_pdf_outlined,
+                tooltip: 'Insert PDF',
+                onTap: () => _pickPdf(context),
+                accentColor: accentColor,
+              ),
+              ToolbarActionButton(
+                icon: Icons.collections_rounded,
+                tooltip: 'Photo Frame / Folder',
+                onTap: () => _createPhotoFrame(context),
+                accentColor: accentColor,
+              ),
+              ToolbarActionButton(
+                icon: Icons.sticky_note_2_outlined,
+                tooltip: 'Insert Sticker',
+                onTap: () => _showStickersPicker(context),
+                accentColor: accentColor,
+              ),
+            ],
+            if (showDivider)
+              ToolbarActionButton(
+                icon: Icons.horizontal_rule_rounded,
+                tooltip: 'Divider',
+                onTap: () => onInsertBlock(BlockType.horizontalRule),
+                accentColor: accentColor,
+              ),
+            if (showCode)
+              ToolbarActionButton(
+                icon: Icons.code_rounded,
+                tooltip: 'Code Block',
+                onTap: () => onInsertBlock(BlockType.code),
+                accentColor: accentColor,
+              ),
+            if (showVoice)
+              ToolbarActionButton(
+                icon: Icons.mic_outlined,
+                tooltip: 'Voice Note',
+                onTap: () => _recordAudio(context),
+                accentColor: accentColor,
+              ),
+            if (showDictation)
+              ToolbarActionButton(
+                icon: isSpeechListening ? Icons.mic_rounded : Icons.mic_none_outlined,
+                tooltip: 'Dictation (STT)',
+                onTap: onSpeechToggle,
+                isActive: isSpeechListening,
+                accentColor: accentColor,
+              ),
+            if (showDrawing)
+              ToolbarActionButton(
+                icon: Icons.draw_outlined,
+                tooltip: 'Drawing',
+                onTap: () => onInsertBlock(BlockType.drawing),
+                accentColor: accentColor,
+              ),
           ],
-          if (showDivider)
-            ToolbarActionButton(
-              icon: Icons.horizontal_rule_rounded,
-              tooltip: 'Divider',
-              onTap: () => onInsertBlock(BlockType.horizontalRule),
-              accentColor: accentColor,
-            ),
-          if (showCode)
-            ToolbarActionButton(
-              icon: Icons.code_rounded,
-              tooltip: 'Code Block',
-              onTap: () => onInsertBlock(BlockType.code),
-              accentColor: accentColor,
-            ),
-          if (showVoice)
-            ToolbarActionButton(
-              icon: Icons.mic_outlined,
-              tooltip: 'Voice Note',
-              onTap: () => _recordAudio(context),
-              accentColor: accentColor,
-            ),
-          if (showDictation)
-            ToolbarActionButton(
-              icon: isSpeechListening ? Icons.mic_rounded : Icons.mic_none_outlined,
-              tooltip: 'Dictation (STT)',
-              onTap: onSpeechToggle,
-              isActive: isSpeechListening,
-              accentColor: accentColor,
-            ),
-          if (showDrawing)
-            ToolbarActionButton(
-              icon: Icons.draw_outlined,
-              tooltip: 'Drawing',
-              onTap: () => onInsertBlock(BlockType.drawing),
-              accentColor: accentColor,
-            ),
-        ],
+        ),
       );
     }
 
@@ -221,6 +248,7 @@ class MediaInsertGroup extends StatelessWidget {
       ),
       onSelected: (value) {
         if (value == 'image') _pickImage(context);
+        if (value == 'pdf') _pickPdf(context);
         if (value == 'photo_frame') _createPhotoFrame(context);
         if (value == 'sticker') _showStickersPicker(context);
         if (value == 'drawing') onInsertBlock(BlockType.drawing);
@@ -232,78 +260,40 @@ class MediaInsertGroup extends StatelessWidget {
         if (showImage) ...[
           const PopupMenuItem(
             value: 'image',
-            child: Row(
-              children: [
-                Icon(Icons.image_outlined, size: 18),
-                SizedBox(width: 8),
-                Text('Insert Image'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.image_outlined, size: 18), SizedBox(width: 8), Text('Insert Image')]),
+          ),
+          const PopupMenuItem(
+            value: 'pdf',
+            child: Row(children: [Icon(Icons.picture_as_pdf_outlined, size: 18), SizedBox(width: 8), Text('PDF Document')]),
           ),
           const PopupMenuItem(
             value: 'photo_frame',
-            child: Row(
-              children: [
-                Icon(Icons.collections_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Photo Frame / Folder'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.collections_rounded, size: 18), SizedBox(width: 8), Text('Photo Frame / Folder')]),
           ),
           const PopupMenuItem(
             value: 'sticker',
-            child: Row(
-              children: [
-                Icon(Icons.sticky_note_2_outlined, size: 18),
-                SizedBox(width: 8),
-                Text('Insert Sticker'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.sticky_note_2_outlined, size: 18), SizedBox(width: 8), Text('Insert Sticker')]),
           ),
         ],
         if (showDrawing)
           const PopupMenuItem(
             value: 'drawing',
-            child: Row(
-              children: [
-                Icon(Icons.draw_outlined, size: 18),
-                SizedBox(width: 8),
-                Text('Sketch Canvas'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.draw_outlined, size: 18), SizedBox(width: 8), Text('Sketch Canvas')]),
           ),
         if (showVoice)
           const PopupMenuItem(
             value: 'voice',
-            child: Row(
-              children: [
-                Icon(Icons.mic_none_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Voice Recording'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.mic_none_rounded, size: 18), SizedBox(width: 8), Text('Voice Recording')]),
           ),
         if (showDivider)
           const PopupMenuItem(
             value: 'divider',
-            child: Row(
-              children: [
-                Icon(Icons.horizontal_rule_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Divider'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.horizontal_rule_rounded, size: 18), SizedBox(width: 8), Text('Divider')]),
           ),
         if (showCode)
           const PopupMenuItem(
             value: 'code',
-            child: Row(
-              children: [
-                Icon(Icons.code_rounded, size: 18),
-                SizedBox(width: 8),
-                Text('Code Snippet'),
-              ],
-            ),
+            child: Row(children: [Icon(Icons.code_rounded, size: 18), SizedBox(width: 8), Text('Code Snippet')]),
           ),
       ],
     );

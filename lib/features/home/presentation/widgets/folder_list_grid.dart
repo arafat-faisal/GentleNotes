@@ -121,8 +121,16 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
   Widget build(BuildContext context) {
     final folders = ref.watch(foldersProvider);
     final settings = ref.watch(settingsProvider);
+    final searchVal = ref.watch(searchQueryProvider).trim();
 
-    if (folders.isEmpty) {
+    final displayFolders = searchVal.isEmpty
+        ? folders.where((f) => f.parentFolderId == null).toList()
+        : folders.where((f) => f.name.toLowerCase().contains(searchVal.toLowerCase())).toList();
+
+    if (displayFolders.isEmpty) {
+      if (searchVal.isNotEmpty) {
+        return const SizedBox.shrink();
+      }
       return _buildEmptyState(
         context,
         'No Folders Yet',
@@ -141,10 +149,10 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
           mainAxisSpacing: 12,
           childAspectRatio: 1.4,
         ),
-        itemCount: folders.length,
+        itemCount: displayFolders.length,
         itemBuilder: (context, index) => FolderCard(
-          folder: folders[index],
-          onTapMore: () => _showFolderOptions(context, folders[index]),
+          folder: displayFolders[index],
+          onTapMore: () => _showFolderOptions(context, displayFolders[index]),
         ),
       );
     }
@@ -152,12 +160,12 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: folders.length,
+      itemCount: displayFolders.length,
       itemBuilder: (context, index) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: FolderListItem(
-          folder: folders[index],
-          onTapMore: () => _showFolderOptions(context, folders[index]),
+          folder: displayFolders[index],
+          onTapMore: () => _showFolderOptions(context, displayFolders[index]),
         ),
       ),
     );

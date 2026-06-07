@@ -24,6 +24,7 @@ class FolderModel {
   FolderModel copyWith({
     String? name,
     String? parentFolderId,
+    bool clearParentFolder = false,
     String? colorHex,
     String? iconName,
     DateTime? updatedAt,
@@ -32,7 +33,7 @@ class FolderModel {
     return FolderModel(
       id: this.id,
       name: name ?? this.name,
-      parentFolderId: parentFolderId ?? this.parentFolderId,
+      parentFolderId: clearParentFolder ? null : (parentFolderId ?? this.parentFolderId),
       colorHex: colorHex ?? this.colorHex,
       iconName: iconName ?? this.iconName,
       createdAt: this.createdAt,

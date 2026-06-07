@@ -74,6 +74,7 @@ class AudioEmbedBuilder extends EmbedBuilder {
                   child: IconButton(
                     icon: const Icon(Icons.more_vert, size: 20),
                     onPressed: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
                       _showAudioOptionsBottomSheet(context, attachmentId, width, embedContext);
                     },
                   ),

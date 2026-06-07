@@ -49,6 +49,7 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   void _updateImages(List<String> newImages) {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (widget.onUpdate != null) {
       widget.onUpdate!(newImages, _layout);
     } else {
@@ -59,6 +60,7 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
   }
 
   void _updateLayout(String layout) {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (widget.onUpdate != null) {
       widget.onUpdate!(_images, layout);
     } else {
@@ -71,6 +73,7 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
   }
 
   Future<void> _addPhotos() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final picker = ImagePicker();
     final files = await picker.pickMultiImage();
     if (files.isNotEmpty) {
@@ -83,6 +86,7 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
   }
 
   void _deletePhoto(int index) {
+    FocusManager.instance.primaryFocus?.unfocus();
     if (_images.length <= 1) {
       widget.onRemoved();
       return;
@@ -94,6 +98,7 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
   }
 
   void _openFullscreenGallery(int startIndex) {
+    FocusManager.instance.primaryFocus?.unfocus();
     showDialog(
       context: context,
       useSafeArea: false,
@@ -119,7 +124,11 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
       onEnter: (_) { if (!widget.readOnly) setState(() => _showSettings = true); },
       onExit: (_)  { if (!widget.readOnly) setState(() => _showSettings = false); },
       child: GestureDetector(
+        onTapDown: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
         onTap: () {
+          FocusManager.instance.primaryFocus?.unfocus();
           if (!widget.readOnly) setState(() => _showSettings = !_showSettings);
         },
         child: Padding(
@@ -147,7 +156,10 @@ class _PhotoFrameBlockState extends ConsumerState<PhotoFrameBlock> {
                         borderRadius: BorderRadius.circular(20),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(20),
-                          onTap: () => setState(() => _showSettings = !_showSettings),
+                          onTap: () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            setState(() => _showSettings = !_showSettings);
+                          },
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Icon(

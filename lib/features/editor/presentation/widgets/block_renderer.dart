@@ -13,6 +13,7 @@ import 'blocks/drawing_block.dart';
 import 'blocks/hr_block.dart';
 import 'blocks/sticker_block.dart';
 import 'blocks/photo_frame_block.dart';
+import 'blocks/pdf_block.dart';
 
 class BlockRenderer extends ConsumerWidget {
   final BlockEntity block;
@@ -88,6 +89,12 @@ class BlockRenderer extends ConsumerWidget {
         );
       case BlockType.photoFrame:
         return PhotoFrameBlock(
+          block: block,
+          onRemoved: () => controller.removeBlock(block.id),
+          readOnly: readOnly,
+        );
+      case BlockType.pdf:
+        return PdfBlock(
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
           readOnly: readOnly,

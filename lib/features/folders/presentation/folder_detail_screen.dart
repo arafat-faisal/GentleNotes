@@ -8,6 +8,8 @@ import '../../../models/models.dart';
 import '../data/folders_repository.dart';
 import '../../notes/data/notes_repository.dart';
 import '../../settings/data/settings_repository.dart';
+import '../../home/presentation/widgets/folder_form_dialog.dart';
+import 'widgets/folder_note_card.dart';
 
 class FolderDetailScreen extends ConsumerStatefulWidget {
   final String folderId;
@@ -52,6 +54,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
 
     final folderColor = folder.color;
     final settings = ref.watch(settingsProvider);
+    final subfolders = folders.where((f) => f.parentFolderId == widget.folderId).toList();
     
     // Fetch notes inside this folder and filter by local query
     final allNotes = ref.watch(notesProvider);
@@ -116,6 +119,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
               ],
             ),
           ),
+
+          // Breadcrumbs
+          _buildBreadcrumbs(context, folder, folders),
+
+          // Subfolders
+          _buildSubfoldersSection(context, subfolders, folder),
 
           // Folder-Specific Search Bar
           Padding(
@@ -190,147 +199,24 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                           childAspectRatio: 1.3,
                         ),
                         itemCount: folderNotes.length,
-                        itemBuilder: (context, index) => _buildNoteGridCard(context, folderNotes[index], folderColor),
+                        itemBuilder: (context, index) => FolderNoteGridCard(
+                          note: folderNotes[index],
+                          folderColor: folderColor,
+                        ),
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: folderNotes.length,
                         itemBuilder: (context, index) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildNoteListItem(context, folderNotes[index], folderColor),
+                          child: FolderNoteListItem(
+                            note: folderNotes[index],
+                            folderColor: folderColor,
+                          ),
                         ),
                       )),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNoteGridCard(BuildContext context, NoteModel note, Color folderColor) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
-      ),
-      child: InkWell(
-        onTap: () => context.push('/notes/edit/${note.id}'),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Icon(note.noteType.icon, size: 18, color: folderColor),
-                  Row(
-                    children: [
-                      if (note.isPinned)
-                        Icon(Icons.push_pin, size: 14, color: theme.colorScheme.secondary),
-                      if (note.isPinned && note.isFavorite) const SizedBox(width: 4),
-                      if (note.isFavorite)
-                        const Icon(Icons.favorite, size: 14, color: Color(0xFFF43F5E)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      note.title.isEmpty ? 'Untitled Note' : note.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Expanded(
-                      child: Text(
-                        note.plainText,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteListItem(BuildContext context, NoteModel note, Color folderColor) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      color: theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
-      ),
-      child: InkWell(
-        onTap: () => context.push('/notes/edit/${note.id}'),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: folderColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(note.noteType.icon, size: 20, color: folderColor),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      note.title.isEmpty ? 'Untitled Note' : note.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      note.plainText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (note.isPinned)
-                Icon(Icons.push_pin, size: 16, color: theme.colorScheme.secondary),
-              if (note.isPinned && note.isFavorite) const SizedBox(width: 6),
-              if (note.isFavorite)
-                const Icon(Icons.favorite, size: 16, color: Color(0xFFF43F5E)),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -365,6 +251,145 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
           ],
         );
       },
+    );
+  }
+  List<FolderModel> _getBreadcrumbs(FolderModel folder, List<FolderModel> folders) {
+    FolderModel? findFolder(String id) {
+      for (var f in folders) {
+        if (f.id == id) return f;
+      }
+      return null;
+    }
+
+    final list = <FolderModel>[folder];
+    var current = folder;
+    while (current.parentFolderId != null) {
+      final parent = findFolder(current.parentFolderId!);
+      if (parent == null) break;
+      list.insert(0, parent);
+      current = parent;
+    }
+    return list;
+  }
+
+  Widget _buildBreadcrumbs(BuildContext context, FolderModel currentFolder, List<FolderModel> folders) {
+    final breadcrumbs = _getBreadcrumbs(currentFolder, folders);
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: breadcrumbs.map((f) {
+          final isLast = f.id == currentFolder.id;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: isLast
+                    ? null
+                    : () {
+                        context.push('/folders/${f.id}');
+                      },
+                child: Text(
+                  f.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: isLast ? FontWeight.bold : FontWeight.normal,
+                    color: isLast ? theme.colorScheme.onSurface : theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              if (!isLast)
+                Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSubfoldersSection(BuildContext context, List<FolderModel> subfolders, FolderModel folder) {
+    final theme = Theme.of(context);
+    final folderColor = folder.color;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Subfolders',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  FolderFormDialog.show(context, preselectedParentId: folder.id);
+                },
+                icon: Icon(Icons.create_new_folder, size: 16, color: folderColor),
+                label: Text(
+                  'Add Subfolder',
+                  style: TextStyle(color: folderColor, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (subfolders.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(
+              'No subfolders created yet.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 52,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: subfolders.length,
+              itemBuilder: (context, index) {
+                final sub = subfolders[index];
+                final subColor = sub.color;
+                return Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: ActionChip(
+                    avatar: Icon(IconHelper.getIcon(sub.iconName), color: subColor, size: 18),
+                    label: Text(sub.name),
+                    onPressed: () {
+                      context.push('/folders/${sub.id}');
+                    },
+                    backgroundColor: subColor.withOpacity(0.08),
+                    side: BorderSide(color: subColor.withOpacity(0.2)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }

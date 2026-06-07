@@ -17,7 +17,9 @@ class BlockEntity {
     this.attributes = const {},
   }) : data = data ??
             (content != null
-                ? (type == BlockType.photoFrame ? _parsePhotoFrame(content) : {'text': content})
+                ? (type == BlockType.photoFrame
+                    ? _parsePhotoFrame(content)
+                    : (type == BlockType.pdf ? {'path': content} : {'text': content}))
                 : const {});
 
   static Map<String, dynamic> _parsePhotoFrame(String content) {

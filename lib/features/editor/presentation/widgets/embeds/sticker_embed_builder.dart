@@ -18,6 +18,7 @@ class StickerEmbedBuilder extends EmbedBuilder {
 
     return GestureDetector(
       onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
         if (!embedContext.readOnly) {
           _showStickerOptionsBottomSheet(context, stickerName, embedContext);
         }

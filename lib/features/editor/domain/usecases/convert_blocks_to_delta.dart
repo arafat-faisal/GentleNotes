@@ -39,6 +39,18 @@ class ConvertBlocksToDelta {
           },
         });
         ops.add({'insert': '\n'});
+      } else if (block.type == BlockType.pdf) {
+        ops.add({
+          'insert': {
+            'pdf': {
+              'path': block.content,
+              'name': block.attributes['name'] ?? 'PDF Document',
+              'pages': block.data['pages'] ?? <int>[],
+              'crops': block.data['crops'] ?? <String, dynamic>{},
+            }
+          },
+        });
+        ops.add({'insert': '\n'});
       } else if (block.type == BlockType.horizontalRule) {
         ops.add({
           'insert': {'horizontal-rule': ''},

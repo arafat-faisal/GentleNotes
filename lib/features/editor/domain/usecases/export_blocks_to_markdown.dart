@@ -30,6 +30,10 @@ class ExportBlocksToMarkdown {
         case BlockType.audio:
           buffer.writeln('[Audio Attachment](${block.content})');
           break;
+        case BlockType.pdf:
+          final name = block.attributes['name'] ?? 'PDF Document';
+          buffer.writeln('[$name](${block.content})');
+          break;
         case BlockType.horizontalRule:
           buffer.writeln('---');
           break;

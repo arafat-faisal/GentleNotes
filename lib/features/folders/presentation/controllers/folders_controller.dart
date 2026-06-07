@@ -43,6 +43,11 @@ class FoldersController extends StateNotifier<List<FolderModel>> {
   }
 
   Future<void> deleteFolder(String id) async {
+    // Unlink any subfolders of this folder
+    final subfolders = state.where((f) => f.parentFolderId == id).toList();
+    for (var sub in subfolders) {
+      await updateFolder(sub.copyWith(clearParentFolder: true));
+    }
     await _repository.deleteFolder(id);
     loadFolders();
   }

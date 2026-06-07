@@ -8,12 +8,16 @@ import '../../../folders/presentation/controllers/folders_controller.dart';
 
 class FolderFormDialog extends ConsumerWidget {
   final FolderModel? existingFolder;
-  const FolderFormDialog({super.key, this.existingFolder});
+  final String? preselectedParentId;
+  const FolderFormDialog({super.key, this.existingFolder, this.preselectedParentId});
 
-  static void show(BuildContext context, {FolderModel? existingFolder}) {
+  static void show(BuildContext context, {FolderModel? existingFolder, String? preselectedParentId}) {
     showDialog(
       context: context,
-      builder: (context) => FolderFormDialog(existingFolder: existingFolder),
+      builder: (context) => FolderFormDialog(
+        existingFolder: existingFolder,
+        preselectedParentId: preselectedParentId,
+      ),
     );
   }
 
@@ -37,15 +41,13 @@ class FolderFormDialog extends ConsumerWidget {
 
     return StatefulBuilder(
       builder: (context, setStateDialog) {
-        // Since selectedColor and selectedIcon need to be stateful in the dialog,
-        // we keep them as local variables initialized once.
-        // StatefulBuilder lets us rebuild this subtree when we call setStateDialog.
         return _DialogContent(
           isEdit: isEdit,
           nameController: nameController,
           colors: colors,
           icons: icons,
           existingFolder: existingFolder,
+          preselectedParentId: preselectedParentId,
           ref: ref,
         );
       },
@@ -59,6 +61,7 @@ class _DialogContent extends StatefulWidget {
   final List<String> colors;
   final List<String> icons;
   final FolderModel? existingFolder;
+  final String? preselectedParentId;
   final WidgetRef ref;
 
   const _DialogContent({
@@ -67,6 +70,7 @@ class _DialogContent extends StatefulWidget {
     required this.colors,
     required this.icons,
     required this.existingFolder,
+    this.preselectedParentId,
     required this.ref,
   });
 
@@ -77,17 +81,70 @@ class _DialogContent extends StatefulWidget {
 class _DialogContentState extends State<_DialogContent> {
   late String _selectedColor;
   late String _selectedIcon;
+  String? _selectedParentId;
 
   @override
   void initState() {
     super.initState();
     _selectedColor = widget.existingFolder?.colorHex ?? widget.colors.first;
     _selectedIcon = widget.existingFolder?.iconName ?? widget.icons.first;
+    _selectedParentId = widget.existingFolder?.parentFolderId ?? widget.preselectedParentId;
+  }
+
+  bool _isDescendant(String descendantId, String possibleAncestorId, List<FolderModel> folders) {
+    FolderModel? findFolder(String id) {
+      for (var f in folders) {
+        if (f.id == id) return f;
+      }
+      return null;
+    }
+
+    var current = findFolder(descendantId);
+    while (current != null && current.parentFolderId != null) {
+      if (current.parentFolderId == possibleAncestorId) {
+        return true;
+      }
+      current = findFolder(current.parentFolderId!);
+    }
+    return false;
+  }
+
+  String _getFolderPath(FolderModel folder, List<FolderModel> folders) {
+    FolderModel? findFolder(String id) {
+      for (var f in folders) {
+        if (f.id == id) return f;
+      }
+      return null;
+    }
+
+    final parts = <String>[folder.name];
+    var current = folder;
+    while (current.parentFolderId != null) {
+      final parent = findFolder(current.parentFolderId!);
+      if (parent == null) break;
+      parts.insert(0, parent.name);
+      current = parent;
+    }
+    return parts.join(' > ');
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final folders = widget.ref.watch(foldersProvider);
+
+    final eligibleFolders = folders.where((f) {
+      if (widget.existingFolder != null) {
+        if (f.id == widget.existingFolder!.id) return false;
+        if (_isDescendant(f.id, widget.existingFolder!.id, folders)) return false;
+      }
+      return true;
+    }).toList();
+
+    // Ensure selected parent ID is valid
+    if (_selectedParentId != null && !eligibleFolders.any((f) => f.id == _selectedParentId)) {
+      _selectedParentId = null;
+    }
 
     return AlertDialog(
       title: Text(widget.isEdit ? 'Edit Folder' : 'New Folder'),
@@ -105,7 +162,41 @@ class _DialogContentState extends State<_DialogContent> {
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 18),
-            
+
+            Text('Parent Folder', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String?>(
+              value: _selectedParentId,
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('None (Root Folder)'),
+                ),
+                ...eligibleFolders.map((f) {
+                  return DropdownMenuItem<String?>(
+                    value: f.id,
+                    child: Text(
+                      _getFolderPath(f, folders),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }),
+              ],
+              onChanged: (val) {
+                setState(() {
+                  _selectedParentId = val;
+                });
+              },
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              isExpanded: true,
+            ),
+            const SizedBox(height: 18),
+
             Text('Select Color', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SizedBox(
@@ -141,7 +232,7 @@ class _DialogContentState extends State<_DialogContent> {
               ),
             ),
             const SizedBox(height: 18),
-            
+
             Text('Select Icon', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
@@ -189,6 +280,8 @@ class _DialogContentState extends State<_DialogContent> {
             if (widget.isEdit && widget.existingFolder != null) {
               final updated = widget.existingFolder!.copyWith(
                 name: name,
+                parentFolderId: _selectedParentId,
+                clearParentFolder: _selectedParentId == null,
                 colorHex: _selectedColor,
                 iconName: _selectedIcon,
                 updatedAt: DateTime.now(),
@@ -198,6 +291,7 @@ class _DialogContentState extends State<_DialogContent> {
               final newFolder = FolderModel(
                 id: const Uuid().v4(),
                 name: name,
+                parentFolderId: _selectedParentId,
                 colorHex: _selectedColor,
                 iconName: _selectedIcon,
                 createdAt: DateTime.now(),

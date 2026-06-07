@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+ 
 import '../features/home/presentation/home_screen.dart';
 import '../features/home/presentation/splash_screen.dart';
 import '../features/home/presentation/onboarding_screen.dart';
@@ -11,10 +12,18 @@ import '../features/templates/presentation/templates_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/about_screen.dart';
 import '../features/calendar/calendar_screen.dart';
-
+import '../features/editor/presentation/widgets/blocks/pdf_reader_screen.dart';
+ 
 final routerProvider = Provider<GoRouter>((ref) {
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/',
+    redirect: (context, state) {
+      final uriStr = state.uri.toString();
+      if (!uriStr.startsWith('/')) {
+        return '/';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
@@ -55,6 +64,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/pdf-reader',
+        builder: (context, state) {
+          final path = state.uri.queryParameters['path'] ?? '';
+          return PdfReaderScreen(pdfPath: path);
+        },
+      ),
+      GoRoute(
         path: '/templates',
         builder: (context, state) => const TemplatesScreen(),
       ),
@@ -72,4 +88,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  // Set up MethodChannel listener globally for PDF sharing
+  const channel = MethodChannel('com.gentlegraph.gentlenotes/pdf_share');
+  
+  channel.setMethodCallHandler((call) async {
+    if (call.method == 'onPdfShared') {
+      final path = call.arguments as String?;
+      if (path != null && path.isNotEmpty) {
+        router.push('/pdf-reader?path=${Uri.encodeComponent(path)}');
+      }
+    }
+  });
+
+  return router;
 });

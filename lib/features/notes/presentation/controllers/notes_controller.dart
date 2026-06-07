@@ -14,6 +14,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/storage/hive_local_storage.dart';
 import '../../../../core/services/storage/i_local_storage.dart';
 import '../../../../models/models.dart';
+import '../../../folders/presentation/controllers/folders_controller.dart';
 import '../../data/datasources/notes_local_datasource.dart';
 import '../../data/repositories/notes_repository_impl.dart';
 import '../../domain/repositories/i_notes_repository.dart';
@@ -102,9 +103,43 @@ final filterPinnedProvider = StateProvider<bool>((ref) => false);
 
 // ── Derived Providers ─────────────────────────────────────────────────────────
 
+Set<String> _getDescendantFolderIds(String parentId, List<FolderModel> folders) {
+  final result = <String>{};
+  void helper(String id) {
+    for (var f in folders) {
+      if (f.parentFolderId == id) {
+        if (result.add(f.id)) {
+          helper(f.id);
+        }
+      }
+    }
+  }
+  helper(parentId);
+  return result;
+}
+
+bool _folderOrAncestorMatches(String folderId, String search, List<FolderModel> folders) {
+  FolderModel? findFolder(String id) {
+    for (var f in folders) {
+      if (f.id == id) return f;
+    }
+    return null;
+  }
+  var current = findFolder(folderId);
+  while (current != null) {
+    if (current.name.toLowerCase().contains(search)) {
+      return true;
+    }
+    if (current.parentFolderId == null) break;
+    current = findFolder(current.parentFolderId!);
+  }
+  return false;
+}
+
 /// Returns a filtered + sorted list of notes based on active filter state.
 final filteredNotesProvider = Provider<List<NoteModel>>((ref) {
   final notes = ref.watch(notesProvider);
+  final folders = ref.watch(foldersProvider);
   final search = ref.watch(searchQueryProvider).toLowerCase();
   final folderId = ref.watch(selectedFolderFilterProvider);
   final tag = ref.watch(selectedTagFilterProvider);
@@ -112,14 +147,21 @@ final filteredNotesProvider = Provider<List<NoteModel>>((ref) {
   final favoriteOnly = ref.watch(filterFavoriteProvider);
   final pinnedOnly = ref.watch(filterPinnedProvider);
 
+  final eligibleFolderIds = <String>{};
+  if (folderId != null) {
+    eligibleFolderIds.add(folderId);
+    eligibleFolderIds.addAll(_getDescendantFolderIds(folderId, folders));
+  }
+
   return notes.where((note) {
     if (search.isNotEmpty) {
       final titleMatch = note.title.toLowerCase().contains(search);
       final contentMatch = note.plainText.toLowerCase().contains(search);
       final tagMatch = note.tags.any((t) => t.toLowerCase().contains(search));
-      if (!titleMatch && !contentMatch && !tagMatch) return false;
+      final folderMatch = note.folderId != null && _folderOrAncestorMatches(note.folderId!, search, folders);
+      if (!titleMatch && !contentMatch && !tagMatch && !folderMatch) return false;
     }
-    if (folderId != null && note.folderId != folderId) return false;
+    if (folderId != null && (note.folderId == null || !eligibleFolderIds.contains(note.folderId))) return false;
     if (tag != null && !note.tags.contains(tag)) return false;
     if (type != null && note.noteType != type) return false;
     if (favoriteOnly && !note.isFavorite) return false;

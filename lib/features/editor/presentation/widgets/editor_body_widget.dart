@@ -13,6 +13,7 @@ import 'embeds/audio_embed_builder.dart';
 import 'embeds/horizontal_rule_embed_builder.dart';
 import 'embeds/sticker_embed_builder.dart';
 import 'embeds/photo_frame_embed_builder.dart';
+import 'embeds/pdf_embed_builder.dart';
 import '../controllers/floating_stickers_controller.dart';
 import 'blocks/floating_stickers_overlay.dart';
 import 'markdown/markdown_code_block.dart';
@@ -121,6 +122,7 @@ class EditorBodyWidget extends ConsumerWidget {
           HorizontalRuleEmbedBuilder(key: 'divider'),
           StickerEmbedBuilder(),
           PhotoFrameEmbedBuilder(),
+          PdfEmbedBuilder(),
         ],
         textSpanBuilder: (context, node, nodeOffset, text, style, recognizer) {
           final isCodeBlock = node.style.containsKey(Attribute.codeBlock.key) ||

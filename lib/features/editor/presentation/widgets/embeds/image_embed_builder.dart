@@ -53,6 +53,7 @@ class ImageEmbedBuilder extends EmbedBuilder {
 
     return GestureDetector(
       onTap: () {
+        FocusManager.instance.primaryFocus?.unfocus();
         _showImageOptionsBottomSheet(context, imageUrl, embedContext);
       },
       child: Padding(

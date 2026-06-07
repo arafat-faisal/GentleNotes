@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,14 +41,31 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     if (!mounted) return;
 
-    // 3. Check if onboarding completed
+    // Check if there is a shared PDF path
+    const channel = MethodChannel('com.gentlegraph.gentlenotes/pdf_share');
+    String? sharedPdfPath;
+    try {
+      sharedPdfPath = await channel.invokeMethod<String>('getSharedPdfPath');
+    } catch (_) {}
+
+    // Check if onboarding completed
     final prefs = await SharedPreferences.getInstance();
     final bool seenOnboarding = prefs.getBool('seen_onboarding_v1') ?? false;
 
-    if (seenOnboarding) {
-      context.go('/home');
+    if (sharedPdfPath != null && sharedPdfPath.isNotEmpty) {
+      if (!seenOnboarding) {
+        await prefs.setBool('seen_onboarding_v1', true);
+      }
+      if (mounted) {
+        context.go('/home');
+        context.push('/pdf-reader?path=${Uri.encodeComponent(sharedPdfPath)}');
+      }
     } else {
-      context.go('/onboarding');
+      if (seenOnboarding) {
+        context.go('/home');
+      } else {
+        context.go('/onboarding');
+      }
     }
   }
 
