@@ -18,6 +18,7 @@ class AppConstants {
   static const String notesBox = 'gentle_notes_box_v1';
   static const String templatesBox = 'gentle_templates_box_v1';
   static const String settingsBox = 'gentle_settings_box_v1';
+  static const String plannerBox = 'gentle_planner_box_v1';
 
   // ── SharedPreferences Keys ──────────────────────────────────────────────────
   static const String prefThemeMode = 'themeMode';
@@ -75,4 +76,13 @@ class AppConstants {
   static const String routeSettings = '/settings';
   static const String routeAbout = '/about';
   static const String routeCalendar = '/calendar';
+
+  // ── Planner Routes ───────────────────────────────────────────────────────────
+  static const String routePlanner = '/planner';
+  static const String routePlannerCreate = '/planner/create';
+  static const String routePlannerEdit = '/planner/edit/:id';
+  static const String routePlannerItem = '/planner/item/:id';
+
+  // ── Notification Channel IDs ─────────────────────────────────────────────────
+  static const String notifChannelPlanner = 'gentle_planner_reminders';
 }

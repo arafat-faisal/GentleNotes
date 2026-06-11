@@ -11,17 +11,21 @@ import 'i_local_storage.dart';
 import 'note_storage.dart';
 import 'folder_storage.dart';
 import 'settings_storage.dart';
+import 'planner_storage.dart';
+import '../../../features/planner/domain/entities/planner_item_entity.dart';
 
 class HiveLocalStorage implements ILocalStorage {
   late Box _foldersBox;
   late Box _notesBox;
   late Box _templatesBox;
   late Box _settingsBox;
+  late Box _plannerBox;
   late SharedPreferences _sharedPrefs;
 
   late NoteStorage _noteStorage;
   late FolderStorage _folderStorage;
   late SettingsStorage _settingsStorage;
+  late PlannerStorage _plannerStorage;
 
   // ── Singleton ───────────────────────────────────────────────────────────────
   static final HiveLocalStorage _instance = HiveLocalStorage._internal();
@@ -38,11 +42,13 @@ class HiveLocalStorage implements ILocalStorage {
     _notesBox = await Hive.openBox(AppConstants.notesBox);
     _templatesBox = await Hive.openBox(AppConstants.templatesBox);
     _settingsBox = await Hive.openBox(AppConstants.settingsBox);
+    _plannerBox = await Hive.openBox(AppConstants.plannerBox);
     _sharedPrefs = await SharedPreferences.getInstance();
 
     _noteStorage = NoteStorage(notesBox: _notesBox);
     _folderStorage = FolderStorage(foldersBox: _foldersBox, notesBox: _notesBox);
     _settingsStorage = SettingsStorage(sharedPrefs: _sharedPrefs);
+    _plannerStorage = PlannerStorage(plannerBox: _plannerBox);
 
     await _seedInitialDataIfNeeded();
   }
@@ -115,6 +121,19 @@ class HiveLocalStorage implements ILocalStorage {
     }
     await _templatesBox.delete(id);
   }
+
+  // ── Planner ──────────────────────────────────────────────────────────────────
+
+  @override
+  List<PlannerItemEntity> getPlannerItems() => _plannerStorage.getPlannerItems();
+
+  @override
+  Future<void> savePlannerItem(PlannerItemEntity item) =>
+      _plannerStorage.savePlannerItem(item);
+
+  @override
+  Future<void> deletePlannerItem(String id) =>
+      _plannerStorage.deletePlannerItem(id);
 
   // ── Seed Initial Data ────────────────────────────────────────────────────────
 

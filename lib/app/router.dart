@@ -12,6 +12,9 @@ import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/about_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/editor/presentation/widgets/blocks/pdf_reader_screen.dart';
+import '../features/planner/presentation/screens/planner_screen.dart';
+import '../features/planner/presentation/screens/planner_item_detail_screen.dart';
+import '../features/planner/presentation/screens/create_edit_planner_item_screen.dart';
  
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -84,6 +87,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/calendar',
         builder: (context, state) => const CalendarScreen(),
+      ),
+      GoRoute(
+        path: '/planner',
+        builder: (context, state) => const PlannerScreen(),
+      ),
+      GoRoute(
+        path: '/planner/create',
+        builder: (context, state) => const CreateEditPlannerItemScreen(),
+      ),
+      GoRoute(
+        path: '/planner/item/:id',
+        builder: (context, state) {
+          final itemId = state.pathParameters['id']!;
+          return PlannerItemDetailScreen(itemId: itemId);
+        },
+      ),
+      GoRoute(
+        path: '/planner/edit/:id',
+        builder: (context, state) {
+          // Edit is handled via Navigator.push from detail screen.
+          // This route exists for notification tap deep links.
+          final itemId = state.pathParameters['id']!;
+          return PlannerItemDetailScreen(itemId: itemId);
+        },
       ),
     ],
   );

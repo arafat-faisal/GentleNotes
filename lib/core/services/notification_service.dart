@@ -104,4 +104,59 @@ class NotificationService {
   Future<List<PendingNotificationRequest>> getPendingReminders() async {
     return await _plugin.pendingNotificationRequests();
   }
+
+  // ── Planner Notifications ────────────────────────────────────────────────────
+
+  /// Schedules a reminder for a planner item.
+  ///
+  /// Uses a separate notification channel so planner reminders can be
+  /// managed independently from note reminders.
+  ///
+  /// [notifId] should be derived from the planner item (e.g. hashCode of id).
+  /// [payload] is the planner item ID for navigation on tap.
+  Future<void> schedulePlannerReminder({
+    required int notifId,
+    required String title,
+    required String body,
+    required DateTime scheduledAt,
+    String? payload,
+  }) async {
+    await initialize();
+    // Skip reminders scheduled in the past.
+    if (scheduledAt.isBefore(DateTime.now())) return;
+
+    final scheduledDate = tz.TZDateTime.from(scheduledAt, tz.local);
+
+    const androidDetails = AndroidNotificationDetails(
+      'gentle_planner_reminders',
+      'Gentle Planner Reminders',
+      channelDescription: 'Planner item reminders from GentleNotes',
+      importance: Importance.high,
+      priority: Priority.high,
+      color: Color(0xFF8B5CF6),
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _plugin.zonedSchedule(
+      notifId,
+      title,
+      body,
+      scheduledDate,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+  }
+
+  /// Cancels a previously scheduled planner reminder.
+  Future<void> cancelPlannerReminder(int notifId) async {
+    await _plugin.cancel(notifId);
+  }
 }
