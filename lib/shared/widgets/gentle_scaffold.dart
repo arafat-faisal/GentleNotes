@@ -88,6 +88,11 @@ class GentleScaffold extends ConsumerWidget {
                       label: 'Templates',
                     ),
                     BottomNavigationBarItem(
+                      icon: Icon(Icons.calendar_month_outlined),
+                      activeIcon: Icon(Icons.calendar_month_rounded),
+                      label: 'Planner',
+                    ),
+                    BottomNavigationBarItem(
                       icon: Icon(Icons.tune_rounded),
                       activeIcon: Icon(Icons.tune_rounded),
                       label: 'Settings',
@@ -120,7 +125,8 @@ class GentleScaffold extends ConsumerWidget {
 
   int _getBottomNavIndex(String route) {
     if (route.startsWith('/templates')) return 1;
-    if (route.startsWith('/settings')) return 2;
+    if (route.startsWith('/planner'))   return 2;
+    if (route.startsWith('/settings'))  return 3;
     return 0;
   }
 
@@ -133,6 +139,9 @@ class GentleScaffold extends ConsumerWidget {
         context.go('/templates');
         break;
       case 2:
+        context.go('/planner');
+        break;
+      case 3:
         context.go('/settings');
         break;
     }
@@ -281,6 +290,7 @@ class GentleScaffold extends ConsumerWidget {
               children: [
                 _buildSidebarTile(context: context, icon: Icons.grid_view_rounded, activeIcon: Icons.grid_view_rounded, label: 'Dashboard', route: '/home', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.assignment_outlined, activeIcon: Icons.assignment_rounded, label: 'Templates', route: '/templates', currentRoute: currentRoute),
+                _buildSidebarTile(context: context, icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month_rounded, label: 'Planner', route: '/planner', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.tune_rounded, activeIcon: Icons.tune_rounded, label: 'Settings', route: '/settings', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.help_outline_rounded, activeIcon: Icons.help_rounded, label: 'About & Help', route: '/about', currentRoute: currentRoute),
 

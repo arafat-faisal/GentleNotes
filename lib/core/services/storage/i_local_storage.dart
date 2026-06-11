@@ -8,6 +8,7 @@
 library;
 
 import '../../../models/models.dart';
+import '../../../features/planner/domain/entities/planner_item_entity.dart';
 
 abstract class ILocalStorage {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -42,4 +43,11 @@ abstract class ILocalStorage {
   List<NoteTemplateModel> getTemplates();
   Future<void> saveTemplate(NoteTemplateModel template);
   Future<void> deleteTemplate(String id);
+
+  // ── Planner ────────────────────────────────────────────────────────────────
+
+  List<PlannerItemEntity> getPlannerItems();
+  Future<void> savePlannerItem(PlannerItemEntity item);
+  Future<void> deletePlannerItem(String id);
 }
+
