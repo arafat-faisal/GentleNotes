@@ -4,7 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 class HorizontalRuleEmbedBuilder extends EmbedBuilder {
   final String _key;
 
-  HorizontalRuleEmbedBuilder({String key = 'horizontal-rule'}) : _key = key;
+  HorizontalRuleEmbedBuilder({this._key = 'horizontal-rule'});
 
   @override
   String get key => _key;

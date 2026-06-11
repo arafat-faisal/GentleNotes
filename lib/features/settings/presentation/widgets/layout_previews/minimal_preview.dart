@@ -11,7 +11,7 @@ class LayoutPreviewMinimal extends StatelessWidget {
     final line = isDark ? const Color(0xFF252234) : const Color(0xFFEEEBFF);
     final accent = Theme.of(context).colorScheme.primary;
     final textMuted = isDark ? const Color(0xFF4A4370) : const Color(0xFFD1CBE8);
-    final textMain = isDark ? Colors.white.withOpacity(0.85) : const Color(0xFF1A1A2E);
+    final textMain = isDark ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF1A1A2E);
 
     return Container(
       color: bg,
@@ -43,13 +43,13 @@ class LayoutPreviewMinimal extends StatelessWidget {
               height: 16,
               width: 80,
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.15),
+                color: accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accent.withOpacity(0.3)),
+                border: Border.all(color: accent.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: List.generate(4, (i) => Container(width: 5, height: 5, decoration: BoxDecoration(color: accent.withOpacity(0.6), shape: BoxShape.circle))),
+                children: List.generate(4, (i) => Container(width: 5, height: 5, decoration: BoxDecoration(color: accent.withValues(alpha: 0.6), shape: BoxShape.circle))),
               ),
             ),
           ),

@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../../models/models.dart';
-import 'attachment_model.dart';
-import 'floating_sticker_model.dart';
 
 class NoteModel {
   final String id;
@@ -71,7 +69,7 @@ class NoteModel {
     List<FloatingStickerModel>? stickers,
   }) {
     return NoteModel(
-      id: this.id,
+      id: id,
       folderId: folderId ?? this.folderId,
       title: title ?? this.title,
       content: content ?? this.content,
@@ -82,7 +80,7 @@ class NoteModel {
       isPinned: isPinned ?? this.isPinned,
       isFavorite: isFavorite ?? this.isFavorite,
       colorHex: colorHex ?? this.colorHex,
-      createdAt: this.createdAt,
+      createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       stickers: stickers ?? this.stickers,
     );

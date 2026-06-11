@@ -74,7 +74,7 @@ class EditorBodyWidget extends ConsumerWidget {
       final isDarkCodeTheme = activeCodeTheme.contains('dark') || activeCodeTheme == 'monokai';
 
       final codeBlockBg = isDarkCodeTheme ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
-      final codeBlockBorder = theme.colorScheme.outlineVariant.withOpacity(0.5);
+      final codeBlockBorder = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
       final codeBlockTextColor = isDarkCodeTheme ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
 
       final customStyles = DefaultStyles(
@@ -184,8 +184,9 @@ class EditorBodyWidget extends ConsumerWidget {
             if (sizeVal is String) {
               fontSize = double.tryParse(sizeVal);
               if (fontSize == null) {
-                if (sizeVal == 'small') fontSize = 12.0;
-                else if (sizeVal == 'large') fontSize = 20.0;
+                if (sizeVal == 'small') {
+                  fontSize = 12.0;
+                } else if (sizeVal == 'large') fontSize = 20.0;
                 else if (sizeVal == 'huge') fontSize = 28.0;
               }
             } else if (sizeVal is int) {
@@ -210,7 +211,7 @@ class EditorBodyWidget extends ConsumerWidget {
       editorContent = DefaultTextStyle(
         style: _getEditorStyle(
           settings,
-          isDark ? Colors.white.withOpacity(0.92) : const Color(0xFF1A1A2E),
+          isDark ? Colors.white.withValues(alpha: 0.92) : const Color(0xFF1A1A2E),
         ),
         child: kIsWeb
             ? quillEditor

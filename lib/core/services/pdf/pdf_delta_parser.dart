@@ -1,7 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart' show debugPrint;
-import '../../utils/quill_markdown_converter.dart';
-import '../../../../models/models.dart';
 
 enum PdfBlockType {
   header1, header2, header3, header4, header5, header6,
@@ -42,51 +38,58 @@ class PdfDeltaParser {
     bool inTable = false;
     int orderedCounter = 0;
 
-    final imageRe = RegExp(r'!\[(.*?)\]\((.*?)\)');
-    final hrRe = RegExp(r'^\s*(\*|-|_)\s*\1\s*\1\s*(\1|\s)*$');
-    final orderedRe = RegExp(r'^\s*(\d+)\.\s+(.+)');
+      final imageRe = RegExp(r'!\[(.*?)\]\(([^)]*?(?:\([^)]*\)[^)]*?)*)\)');
+      final hrRe = RegExp(r'^\s*(\*|-|_)\s*\1\s*\1\s*(\1|\s)*$');
+      final orderedRe = RegExp(r'^\s*(\d+)\.\s+(.+)');
+      final audioRe = RegExp(r'\[(.*?)\]\((audio://[^)]*?(?:\([^)]*\)[^)]*?)*)\)');
 
-    for (final line in lines) {
-      if (line.trim().startsWith('```')) {
-        if (inCodeBlock) {
-          blocks.add(PdfContentBlock(type: PdfBlockType.code, text: codeLines.join('\n'), altText: codeLanguage));
-          codeLines.clear();
-          inCodeBlock = false;
-        } else {
-          inCodeBlock = true;
-          codeLanguage = line.trim().substring(3).trim();
-          if (codeLanguage.isEmpty) codeLanguage = 'code';
-        }
-        continue;
-      }
-      if (inCodeBlock) { codeLines.add(line); continue; }
-
-      final isTableRow = line.trim().startsWith('|') && line.trim().endsWith('|');
-      if (isTableRow) {
-        if (!inTable) { inTable = true; tableRows = []; }
-        if (!RegExp(r'^\s*\|(?:\s*:?-+:?\s*\|)+\s*$').hasMatch(line)) {
-          final cells = line.split('|').skip(1).toList();
-          if (cells.length > 1) {
-            cells.removeLast();
-            tableRows.add(cells.map((c) => c.trim()).toList());
+      for (final line in lines) {
+        if (line.trim().startsWith('```')) {
+          if (inCodeBlock) {
+            blocks.add(PdfContentBlock(type: PdfBlockType.code, text: codeLines.join('\n'), altText: codeLanguage));
+            codeLines.clear();
+            inCodeBlock = false;
+          } else {
+            inCodeBlock = true;
+            codeLanguage = line.trim().substring(3).trim();
+            if (codeLanguage.isEmpty) codeLanguage = 'code';
           }
+          continue;
         }
-        continue;
-      } else if (inTable) {
-        if (tableRows.isNotEmpty) {
-          blocks.add(PdfContentBlock(type: PdfBlockType.table, text: '', tableData: List.from(tableRows)));
+        if (inCodeBlock) { codeLines.add(line); continue; }
+
+        final isTableRow = line.trim().startsWith('|') && line.trim().endsWith('|');
+        if (isTableRow) {
+          if (!inTable) { inTable = true; tableRows = []; }
+          if (!RegExp(r'^\s*\|(?:\s*:?-+:?\s*\|)+\s*$').hasMatch(line)) {
+            final cells = line.split('|').skip(1).toList();
+            if (cells.length > 1) {
+              cells.removeLast();
+              tableRows.add(cells.map((c) => c.trim()).toList());
+            }
+          }
+          continue;
+        } else if (inTable) {
+          if (tableRows.isNotEmpty) {
+            blocks.add(PdfContentBlock(type: PdfBlockType.table, text: '', tableData: List.from(tableRows)));
+          }
+          tableRows.clear();
+          inTable = false;
         }
-        tableRows.clear();
-        inTable = false;
-      }
 
-      if (hrRe.hasMatch(line)) { blocks.add(PdfContentBlock(type: PdfBlockType.divider, text: '')); continue; }
+        if (hrRe.hasMatch(line)) { blocks.add(PdfContentBlock(type: PdfBlockType.divider, text: '')); continue; }
 
-      final imgM = imageRe.firstMatch(line);
-      if (imgM != null) {
-        blocks.add(PdfContentBlock(type: PdfBlockType.image, text: imgM.group(2) ?? '', altText: imgM.group(1)));
-        continue;
-      }
+        final imgM = imageRe.firstMatch(line);
+        if (imgM != null) {
+          blocks.add(PdfContentBlock(type: PdfBlockType.image, text: imgM.group(2) ?? '', altText: imgM.group(1)));
+          continue;
+        }
+
+        final audioM = audioRe.firstMatch(line);
+        if (audioM != null) {
+          blocks.add(PdfContentBlock(type: PdfBlockType.image, text: audioM.group(2) ?? '', altText: audioM.group(1)));
+          continue;
+        }
 
       if (line.startsWith('# '))       { blocks.add(PdfContentBlock(type: PdfBlockType.header1, text: line.substring(2))); orderedCounter = 0; continue; }
       if (line.startsWith('## '))      { blocks.add(PdfContentBlock(type: PdfBlockType.header2, text: line.substring(3))); orderedCounter = 0; continue; }

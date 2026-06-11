@@ -51,7 +51,7 @@ class QuickActionsBar extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withOpacity(0.8),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -66,10 +66,10 @@ class QuickActionsBar extends ConsumerWidget {
 
     return Card(
       elevation: 0,
-      color: theme.colorScheme.primary.withOpacity(0.05),
+      color: theme.colorScheme.primary.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.1)),
+        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),

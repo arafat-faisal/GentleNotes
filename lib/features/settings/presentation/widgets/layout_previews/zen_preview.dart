@@ -10,7 +10,7 @@ class LayoutPreviewZen extends StatelessWidget {
     final bg = isDark ? const Color(0xFF090B16) : const Color(0xFFFDFCFF);
     final accent = Theme.of(context).colorScheme.primary;
     final textMuted = isDark ? const Color(0xFF3D3557) : const Color(0xFFD8D4EE);
-    final textMain = isDark ? Colors.white.withOpacity(0.7) : const Color(0xFF2A2540);
+    final textMain = isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0xFF2A2540);
 
     return Container(
       color: bg,
@@ -18,9 +18,9 @@ class LayoutPreviewZen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.arrow_back_ios_new_rounded, size: 7, color: accent.withOpacity(0.3)),
+          Icon(Icons.arrow_back_ios_new_rounded, size: 7, color: accent.withValues(alpha: 0.3)),
           const SizedBox(height: 10),
-          Container(height: 9, width: 70, decoration: BoxDecoration(color: textMain.withOpacity(0.8), borderRadius: BorderRadius.circular(4))),
+          Container(height: 9, width: 70, decoration: BoxDecoration(color: textMain.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 6),
           previewLine(textMuted, 1.0),
           const SizedBox(height: 5),
@@ -36,11 +36,11 @@ class LayoutPreviewZen extends StatelessWidget {
               width: 16,
               height: 16,
               decoration: BoxDecoration(
-                color: accent.withOpacity(0.08),
+                color: accent.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
-                border: Border.all(color: accent.withOpacity(0.2)),
+                border: Border.all(color: accent.withValues(alpha: 0.2)),
               ),
-              child: Icon(Icons.save_outlined, size: 8, color: accent.withOpacity(0.5)),
+              child: Icon(Icons.save_outlined, size: 8, color: accent.withValues(alpha: 0.5)),
             ),
           ),
         ],

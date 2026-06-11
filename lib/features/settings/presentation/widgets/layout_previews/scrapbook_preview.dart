@@ -32,7 +32,7 @@ class LayoutPreviewScrapbook extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF241824) : Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFF69B4).withOpacity(0.2)),
+                border: Border.all(color: const Color(0xFFFF69B4).withValues(alpha: 0.2)),
               ),
               padding: const EdgeInsets.all(6),
               child: Column(
@@ -56,16 +56,16 @@ class LayoutPreviewScrapbook extends StatelessWidget {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? accent.withOpacity(0.15) : bg,
+          color: isDark ? accent.withValues(alpha: 0.15) : bg,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: accent.withOpacity(0.3)),
+          border: Border.all(color: accent.withValues(alpha: 0.3)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(width: 20, height: 3, color: accent, margin: const EdgeInsets.only(bottom: 2)),
-            Container(height: 2, color: accent.withOpacity(0.3)),
+            Container(height: 2, color: accent.withValues(alpha: 0.3)),
           ],
         ),
       ),

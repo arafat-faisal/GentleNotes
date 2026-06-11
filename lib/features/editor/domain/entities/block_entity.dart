@@ -19,7 +19,9 @@ class BlockEntity {
             (content != null
                 ? (type == BlockType.photoFrame
                     ? _parsePhotoFrame(content)
-                    : (type == BlockType.pdf ? {'path': content} : {'text': content}))
+                    : (type == BlockType.audio
+                        ? _parseAudioBlock(content)
+                        : (type == BlockType.pdf ? {'path': content} : {'text': content})))
                 : const {});
 
   static Map<String, dynamic> _parsePhotoFrame(String content) {
@@ -30,6 +32,56 @@ class BlockEntity {
       }
     } catch (_) {}
     return {'images': <String>[]};
+  }
+
+  static Map<String, dynamic> _parseAudioBlock(String content) {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is List) {
+        final tracks = decoded.map((item) {
+          if (item is Map) {
+            return {
+              'path': item['path']?.toString() ?? '',
+              'name': item['name']?.toString() ?? 'Track',
+            };
+          }
+          final path = item.toString();
+          return {
+            'path': path,
+            'name': path.split('/').last.split('\\').last,
+          };
+        }).toList();
+        return {'audios': tracks};
+      } else if (decoded is Map) {
+        if (decoded.containsKey('audios')) {
+          final audios = decoded['audios'];
+          if (audios is List) {
+            final tracks = audios.map((item) {
+              if (item is Map) {
+                return {
+                  'path': item['path']?.toString() ?? '',
+                  'name': item['name']?.toString() ?? 'Track',
+                };
+              }
+              final path = item.toString();
+              return {
+                'path': path,
+                'name': path.split('/').last.split('\\').last,
+              };
+            }).toList();
+            return {'audios': tracks};
+          }
+        }
+      }
+    } catch (_) {}
+    final name = content.startsWith('data:') 
+        ? 'Voice Note.webm' 
+        : content.split('/').last.split('\\').last;
+    return {
+      'audios': [
+        {'path': content, 'name': name}
+      ]
+    };
   }
 
   factory BlockEntity.create(
@@ -52,6 +104,14 @@ class BlockEntity {
     if (data.containsKey('value')) return data['value']?.toString() ?? '';
     if (data.containsKey('url')) return data['url']?.toString() ?? '';
     if (data.containsKey('path')) return data['path']?.toString() ?? '';
+    if (data.containsKey('audios')) {
+      final audios = data['audios'];
+      if (audios is List && audios.isNotEmpty) {
+        final first = audios.first;
+        if (first is Map) return first['path']?.toString() ?? '';
+        return first.toString();
+      }
+    }
     return '';
   }
 

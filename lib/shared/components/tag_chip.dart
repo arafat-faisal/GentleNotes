@@ -1,7 +1,7 @@
 /// Reusable tag chip component for displaying note tags.
 ///
 /// Used in note cards, note editor, and filter chips.
-library tag_chip;
+library;
 
 import 'package:flutter/material.dart';
 
@@ -48,10 +48,10 @@ class TagChip extends StatelessWidget {
           vertical: compact ? 2 : 4,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : color.withOpacity(0.07),
+          color: isSelected ? color.withValues(alpha: 0.15) : color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color.withOpacity(0.5) : color.withOpacity(0.2),
+            color: isSelected ? color.withValues(alpha: 0.5) : color.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -64,7 +64,7 @@ class TagChip extends StatelessWidget {
                 fontFamily: 'Inter',
                 fontSize: compact ? 11 : 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: color.withOpacity(isSelected ? 1.0 : 0.8),
+                color: color.withValues(alpha: isSelected ? 1.0 : 0.8),
               ),
             ),
             if (onDeleted != null) ...[
@@ -74,7 +74,7 @@ class TagChip extends StatelessWidget {
                 child: Icon(
                   Icons.close_rounded,
                   size: 14,
-                  color: color.withOpacity(0.7),
+                  color: color.withValues(alpha: 0.7),
                 ),
               ),
             ],

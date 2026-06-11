@@ -73,7 +73,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
+                    colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.7)],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -113,7 +113,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                     decoration: BoxDecoration(
                       color: selected
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: selected
@@ -129,7 +129,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                         fontSize: 13,
                         color: selected
                             ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.onSurface.withOpacity(0.7),
+                            : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -267,7 +267,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
         decoration: BoxDecoration(
           color: selected
               ? theme.colorScheme.primary
-              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected
@@ -282,7 +282,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               size: 16,
               color: selected
                   ? theme.colorScheme.onPrimary
-                  : theme.colorScheme.onSurface.withOpacity(0.7),
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             const SizedBox(width: 6),
             Text(
@@ -293,7 +293,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                 fontSize: 13,
                 color: selected
                     ? theme.colorScheme.onPrimary
-                    : theme.colorScheme.onSurface.withOpacity(0.7),
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -316,8 +316,8 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: active
-              ? theme.colorScheme.primary.withOpacity(0.1)
-              : theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: active
@@ -332,7 +332,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
               size: 16,
               color: active
                   ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface.withOpacity(0.7),
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             const SizedBox(width: 6),
             Text(
@@ -343,7 +343,7 @@ class _PdfExportDialogState extends ConsumerState<PdfExportDialog> {
                 fontSize: 13,
                 color: active
                     ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface.withOpacity(0.7),
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],

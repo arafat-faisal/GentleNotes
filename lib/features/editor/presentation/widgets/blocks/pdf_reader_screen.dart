@@ -100,7 +100,7 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
 
     final note = NoteModel(
       id: noteId,
-      title: name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '') + ' Note',
+      title: '${name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '')} Note',
       content: content,
       noteType: NoteType.mixed,
       tags: ['imported-pdf'],

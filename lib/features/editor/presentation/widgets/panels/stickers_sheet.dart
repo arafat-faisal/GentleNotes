@@ -95,8 +95,8 @@ class StickersSheet extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isDark
-                              ? const Color(0xFF2E2845).withOpacity(0.5)
-                              : const Color(0xFFE3DCF5).withOpacity(0.5),
+                              ? const Color(0xFF2E2845).withValues(alpha: 0.5)
+                              : const Color(0xFFE3DCF5).withValues(alpha: 0.5),
                         ),
                       ),
                       child: Column(
@@ -152,8 +152,8 @@ class StickersSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isDark
-                            ? const Color(0xFF2E2845).withOpacity(0.5)
-                            : const Color(0xFFE3DCF5).withOpacity(0.5),
+                            ? const Color(0xFF2E2845).withValues(alpha: 0.5)
+                            : const Color(0xFFE3DCF5).withValues(alpha: 0.5),
                       ),
                     ),
                     child: Column(

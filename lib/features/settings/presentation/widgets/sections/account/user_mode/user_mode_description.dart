@@ -18,7 +18,7 @@ class UserModeDescription extends StatelessWidget {
     return Text(
       text,
       style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurface.withOpacity(opacity),
+        color: theme.colorScheme.onSurface.withValues(alpha: opacity),
         fontStyle: isItalic ? FontStyle.italic : null,
       ),
     );

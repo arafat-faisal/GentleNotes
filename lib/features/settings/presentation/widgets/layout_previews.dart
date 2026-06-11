@@ -1,5 +1,5 @@
 /// Barrel export for all editor layout preview thumbnails.
-library layout_previews;
+library;
 
 export 'layout_previews/classic_preview.dart';
 export 'layout_previews/minimal_preview.dart';

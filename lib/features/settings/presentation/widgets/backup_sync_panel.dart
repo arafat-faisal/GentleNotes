@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/services/export_import_service.dart';
 import '../../../../models/models.dart';
@@ -17,11 +16,7 @@ class BackupSyncPanel extends ConsumerStatefulWidget {
 
 class _BackupSyncPanelState extends ConsumerState<BackupSyncPanel> {
   Future<void> _handleExportBackup(BuildContext context) async {
-    final jsonStr = ExportImportService().exportBackupAsJson();
-    await Share.share(
-      jsonStr,
-      subject: 'GentleNotes_Backup_${DateTime.now().millisecondsSinceEpoch}.json',
-    );
+    await ExportImportService().backupToGentleArchive();
   }
 
   Future<void> _handleImportBackup(BuildContext context, WidgetRef ref) async {
@@ -31,19 +26,23 @@ class _BackupSyncPanelState extends ConsumerState<BackupSyncPanel> {
       ref.read(foldersProvider.notifier).loadFolders();
       ref.read(notesProvider.notifier).loadNotes();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Backup restored successfully!'),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Backup restored successfully!'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to restore backup or cancelled.'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to restore backup or cancelled.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -55,7 +54,7 @@ class _BackupSyncPanelState extends ConsumerState<BackupSyncPanel> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -82,7 +81,7 @@ class _BackupSyncPanelState extends ConsumerState<BackupSyncPanel> {
           ListTile(
             leading: const Icon(Icons.upload_rounded, color: Colors.indigo),
             title: const Text('Export Backup File'),
-            subtitle: const Text('Save entire folders, templates, and notes as JSON'),
+            subtitle: const Text('Save entire folders, templates, notes, and media as .gentlebackup (ZIP)'),
             onTap: () => _handleExportBackup(context),
           ),
         ],

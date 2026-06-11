@@ -12,7 +12,7 @@
 ///
 /// This widget does NOT contain business logic. Navigation decisions are
 /// driven by route state, and data (folders, user role) is read via Riverpod.
-library gentle_scaffold;
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,7 +73,7 @@ class GentleScaffold extends ConsumerWidget {
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   selectedItemColor: theme.bottomNavigationBarTheme.selectedItemColor ?? theme.colorScheme.primary,
-                  unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor ?? theme.colorScheme.onSurface.withOpacity(0.4),
+                  unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   showUnselectedLabels: true,
                   type: BottomNavigationBarType.fixed,
                   items: const [
@@ -168,14 +168,14 @@ class GentleScaffold extends ConsumerWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
+                      colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.7)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.4),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -223,7 +223,7 @@ class GentleScaffold extends ConsumerWidget {
                     height: 30,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.7)],
+                        colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.7)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -249,7 +249,7 @@ class GentleScaffold extends ConsumerWidget {
                           margin: const EdgeInsets.only(top: 2),
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -313,7 +313,7 @@ class GentleScaffold extends ConsumerWidget {
                         curve: Curves.easeOut,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                         decoration: BoxDecoration(
-                          color: isActive ? theme.colorScheme.primary.withOpacity(0.12) : Colors.transparent,
+                          color: isActive ? theme.colorScheme.primary.withValues(alpha: 0.12) : Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
@@ -324,7 +324,7 @@ class GentleScaffold extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: color,
                                 shape: BoxShape.circle,
-                                boxShadow: isActive ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 6)] : null,
+                                boxShadow: isActive ? [BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6)] : null,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -337,7 +337,7 @@ class GentleScaffold extends ConsumerWidget {
                                   fontFamily: 'Inter',
                                   fontSize: 13,
                                   fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                                  color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.7),
+                                  color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                                 ),
                               ),
                             ),
@@ -377,17 +377,17 @@ class GentleScaffold extends ConsumerWidget {
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isActive ? theme.colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1) : Colors.transparent,
+            color: isActive ? theme.colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: isActive
-                ? Border.all(color: theme.colorScheme.primary.withOpacity(0.3), width: 1)
+                ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3), width: 1)
                 : Border.all(color: Colors.transparent, width: 1),
           ),
           child: Row(
             children: [
               Icon(
                 isActive ? activeIcon : icon,
-                color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.5),
+                color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 size: 18,
               ),
               const SizedBox(width: 12),
@@ -398,7 +398,7 @@ class GentleScaffold extends ConsumerWidget {
                     fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                    color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.65),
+                    color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.65),
                     letterSpacing: 0.1,
                   ),
                 ),

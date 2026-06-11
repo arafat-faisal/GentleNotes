@@ -30,10 +30,10 @@ class SubscriptionPanel extends ConsumerWidget {
 
     return Card(
       elevation: 0,
-      color: color.withOpacity(0.08),
+      color: color.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.25)),
+        side: BorderSide(color: color.withValues(alpha: 0.25)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -45,7 +45,7 @@ class SubscriptionPanel extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(Icons.verified_user_rounded, color: color, size: 24),
@@ -61,7 +61,7 @@ class SubscriptionPanel extends ConsumerWidget {
                       ),
                       Text(
                         'Configure role to test interface states',
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                       ),
                     ],
                   ),
@@ -99,7 +99,7 @@ class SubscriptionPanel extends ConsumerWidget {
             Text(
               description,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: 13,
                 height: 1.4,
               ),

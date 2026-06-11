@@ -15,7 +15,7 @@ class UserModeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bg = backgroundColor ?? theme.colorScheme.primary.withOpacity(0.1);
+    final bg = backgroundColor ?? theme.colorScheme.primary.withValues(alpha: 0.1);
     final tc = textColor ?? theme.colorScheme.primary;
 
     return Container(

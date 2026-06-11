@@ -166,7 +166,7 @@ class _DialogContentState extends State<_DialogContent> {
             Text('Parent Folder', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String?>(
-              value: _selectedParentId,
+              initialValue: _selectedParentId,
               items: [
                 const DropdownMenuItem<String?>(
                   value: null,
@@ -251,13 +251,13 @@ class _DialogContentState extends State<_DialogContent> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isSelected ? color.withOpacity(0.15) : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      color: isSelected ? color.withValues(alpha: 0.15) : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(10),
                       border: isSelected ? Border.all(color: color, width: 1.5) : null,
                     ),
                     child: Icon(
                       iconData,
-                      color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: isSelected ? color : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       size: 22,
                     ),
                   ),

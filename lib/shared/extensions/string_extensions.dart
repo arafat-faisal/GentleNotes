@@ -1,7 +1,7 @@
 /// String extension methods used throughout the app.
 ///
 /// Import once where needed — avoids repeated utility functions in screens.
-library string_extensions;
+library;
 
 extension StringExtensions on String {
   /// Truncates the string to [maxLength] characters, appending [ellipsis].

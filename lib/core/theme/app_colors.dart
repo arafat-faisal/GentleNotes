@@ -3,7 +3,7 @@
 /// All colors used across the app are defined here, organized by role.
 /// Screens and widgets import this file instead of hardcoding hex values,
 /// making theme changes a single-file operation.
-library app_colors;
+library;
 
 import 'package:flutter/material.dart';
 

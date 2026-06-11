@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../../../../models/models.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceRecorderBottomSheet extends StatefulWidget {
   final String noteId;
@@ -73,11 +75,42 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
     super.dispose();
   }
 
+  Source _getAudioSource(String pathOrUrl) {
+    if (pathOrUrl.startsWith('data:')) {
+      final base64Str = pathOrUrl.split(',').last;
+      return BytesSource(base64Decode(base64Str));
+    }
+    if (pathOrUrl.startsWith('blob:') || pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+      return UrlSource(pathOrUrl);
+    }
+    return DeviceFileSource(pathOrUrl);
+  }
+
   Future<void> _startRecording() async {
     try {
-      if (await _audioRecorder.hasPermission()) {
-        final dir = await getTemporaryDirectory();
-        final path = '${dir.path}/voice_note_${const Uuid().v4()}.m4a';
+      bool hasPerm = false;
+      if (kIsWeb) {
+        hasPerm = await _audioRecorder.hasPermission();
+      } else {
+        var status = await Permission.microphone.status;
+        if (!status.isGranted) {
+          status = await Permission.microphone.request();
+        }
+        hasPerm = status.isGranted;
+      }
+
+      if (hasPerm) {
+        String? path;
+        RecordConfig config;
+
+        if (kIsWeb) {
+          path = '';
+          config = const RecordConfig(encoder: AudioEncoder.opus);
+        } else {
+          final dir = await getTemporaryDirectory();
+          path = '${dir.path}/voice_note_${const Uuid().v4()}.m4a';
+          config = const RecordConfig(encoder: AudioEncoder.aacLc);
+        }
 
         setState(() {
           _isRecording = true;
@@ -86,7 +119,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
         });
 
         await _audioRecorder.start(
-          const RecordConfig(encoder: AudioEncoder.aacLc),
+          config,
           path: path,
         );
 
@@ -125,9 +158,12 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
 
     setState(() {
       _isRecording = false;
+      if (path != null) {
+        _recordingPath = path;
+      }
     });
 
-    if (path != null) {
+    if (_recordingPath != null) {
       setState(() {
         _isPreviewMode = true;
       });
@@ -173,7 +209,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
         _isPlaying = false;
       });
     } else {
-      await _audioPlayer.play(DeviceFileSource(_recordingPath!));
+      await _audioPlayer.play(_getAudioSource(_recordingPath!));
       setState(() {
         _isPlaying = true;
       });
@@ -188,7 +224,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
     await _audioPlayer.stop();
 
     // Delete temp file if exists
-    if (_recordingPath != null) {
+    if (!kIsWeb && _recordingPath != null) {
       final file = io.File(_recordingPath!);
       if (await file.exists()) {
         try {
@@ -202,10 +238,49 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
     }
   }
 
-  void _attachToNote() {
+  Future<void> _attachToNote() async {
     if (_recordingPath == null) return;
-    widget.onAttach(_recordingPath!);
-    Navigator.pop(context);
+
+    try {
+      if (kIsWeb) {
+        // Show loading indicator since fetching blob and base64-encoding might take a brief moment
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+
+        final response = await http.get(Uri.parse(_recordingPath!));
+        if (response.statusCode == 200) {
+          final bytes = response.bodyBytes;
+          final base64Str = base64Encode(bytes);
+          final dataUrl = 'data:audio/webm;base64,$base64Str';
+
+          if (mounted) {
+            Navigator.pop(context); // Close loading indicator
+            widget.onAttach(dataUrl);
+            Navigator.pop(context); // Close bottom sheet
+          }
+        } else {
+          throw Exception('Failed to load recorded audio blob: ${response.statusCode}');
+        }
+      } else {
+        widget.onAttach(_recordingPath!);
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        // Pop loading indicator if open
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save audio recording: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   String _formatDuration(Duration d) {
@@ -293,7 +368,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
                         height: 72,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.red.withOpacity(0.15),
+                          color: Colors.red.withValues(alpha: 0.15),
                         ),
                       ),
                     ),

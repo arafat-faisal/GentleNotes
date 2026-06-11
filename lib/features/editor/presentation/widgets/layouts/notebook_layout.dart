@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +11,7 @@ import '../../../domain/entities/block_entity.dart';
 import '../../../domain/entities/block_type.dart';
 import '../editor_body_widget.dart';
 import '../panels/floating_toolbar.dart';
+import '../panels/share_note_bottom_sheet.dart';
 
 class NotebookLayout extends ConsumerWidget {
   final String noteId;
@@ -170,7 +171,7 @@ class NotebookLayout extends ConsumerWidget {
                             fontFamily: 'Outfit',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
@@ -201,12 +202,12 @@ class NotebookLayout extends ConsumerWidget {
                           isDense: true,
                           hint: Row(
                             children: [
-                              Icon(Icons.folder_outlined, size: 12, color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                              Icon(Icons.folder_outlined, size: 12, color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text('No Folder',
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withOpacity(0.5))),
+                                    style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                               ),
                             ],
                           ),
@@ -289,7 +290,7 @@ class NotebookLayout extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                       child: Row(
                         children: [
-                          Icon(Icons.local_offer_outlined, size: 12, color: accent.withOpacity(0.7)),
+                          Icon(Icons.local_offer_outlined, size: 12, color: accent.withValues(alpha: 0.7)),
                           const SizedBox(width: 5),
                           Expanded(
                             child: TextField(
@@ -343,7 +344,15 @@ class NotebookLayout extends ConsumerWidget {
                                       (f) => f?.id == selectedFolderId,
                                       orElse: () => null,
                                     );
-                                ExportImportService().shareNote(note, folderName: folder?.name);
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (ctx) => ShareNoteBottomSheet(
+                                    note: note,
+                                    folderName: folder?.name,
+                                  ),
+                                );
                               }
                               if (val == 'md') {
                                 onSave();

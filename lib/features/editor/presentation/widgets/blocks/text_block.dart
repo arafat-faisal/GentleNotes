@@ -64,7 +64,7 @@ class _TextBlockState extends State<TextBlock> {
     return Focus(
       onKeyEvent: (node, event) {
         if (widget.readOnly) return KeyEventResult.ignored;
-        if (event is KeyEvent && event is KeyDownEvent) {
+        if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
               widget.onDelete != null) {
@@ -89,7 +89,7 @@ class _TextBlockState extends State<TextBlock> {
         decoration: InputDecoration(
           hintText: widget.readOnly ? null : 'Type something...',
           hintStyle: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.hintColor.withOpacity(0.4),
+            color: theme.hintColor.withValues(alpha: 0.4),
             fontFamily: theme.textTheme.bodyLarge?.fontFamily ?? 'Inter',
           ),
           border: InputBorder.none,

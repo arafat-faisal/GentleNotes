@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart';
@@ -66,9 +68,14 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
   @override
   void didUpdateWidget(PdfBlock oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldPages = oldWidget.block.data['pages'] as List?;
+    final newPages = widget.block.data['pages'] as List?;
+    final oldCrops = oldWidget.block.data['crops'] as Map?;
+    final newCrops = widget.block.data['crops'] as Map?;
+
     final changed = oldWidget.block.content != widget.block.content ||
-        oldWidget.block.data['pages'] != widget.block.data['pages'] ||
-        oldWidget.block.data['crops'] != widget.block.data['crops'] ||
+        !listEquals(oldPages, newPages) ||
+        !mapEquals(oldCrops, newCrops) ||
         oldWidget.block.attributes['layout'] != widget.block.attributes['layout'];
     if (changed) _loadPdf();
   }
@@ -106,7 +113,18 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
       final path = _normalizedPath;
       if (path.isEmpty) throw Exception('PDF file path is empty.');
 
-      final doc = await PdfDocument.openData(await File(path).readAsBytes());
+      final Uint8List pdfBytes;
+      if (path.startsWith('data:')) {
+        final base64Str = path.split(',').last;
+        pdfBytes = base64Decode(base64Str);
+      } else {
+        if (kIsWeb) {
+          throw Exception('Local file paths are not supported on Web.');
+        }
+        pdfBytes = await File(path).readAsBytes();
+      }
+
+      final doc = await PdfDocument.openData(pdfBytes);
       if (currentLoadId != _loadId) {
         await doc.close();
         return;
@@ -453,7 +471,7 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        '+' + remaining.toString(),
+                        '+$remaining',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -608,7 +626,7 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Page ' + (page.index + 1).toString() + '/' + _rasterPages.length.toString(),
+                            'Page ${page.index + 1}/${_rasterPages.length}',
                             style: const TextStyle(
                               fontFamily: 'Georgia',
                               fontSize: 11,

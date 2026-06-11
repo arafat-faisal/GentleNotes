@@ -13,7 +13,7 @@ class LayoutPreviewCards extends StatelessWidget {
     final accent = Theme.of(context).colorScheme.primary;
     final coverColor = accent;
     final textMuted = isDark ? const Color(0xFF4A4370) : const Color(0xFFD1CBE8);
-    final textMain = isDark ? Colors.white.withOpacity(0.85) : Colors.white;
+    final textMain = isDark ? Colors.white.withValues(alpha: 0.85) : Colors.white;
 
     return Container(
       color: bg,
@@ -28,15 +28,15 @@ class LayoutPreviewCards extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.arrow_back_ios_new_rounded, size: 7, color: Colors.white.withOpacity(0.8)),
+                    Icon(Icons.arrow_back_ios_new_rounded, size: 7, color: Colors.white.withValues(alpha: 0.8)),
                     const Spacer(),
-                    Icon(Icons.more_vert, size: 7, color: Colors.white.withOpacity(0.8)),
+                    Icon(Icons.more_vert, size: 7, color: Colors.white.withValues(alpha: 0.8)),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Container(height: 8, width: 65, decoration: BoxDecoration(color: textMain.withOpacity(0.9), borderRadius: BorderRadius.circular(3))),
+                Container(height: 8, width: 65, decoration: BoxDecoration(color: textMain.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(3))),
                 const SizedBox(height: 3),
-                Container(height: 5, width: 40, decoration: BoxDecoration(color: textMain.withOpacity(0.5), borderRadius: BorderRadius.circular(2))),
+                Container(height: 5, width: 40, decoration: BoxDecoration(color: textMain.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(2))),
               ],
             ),
           ),
@@ -46,9 +46,9 @@ class LayoutPreviewCards extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-                previewPill(accent.withOpacity(0.15), accent, 24),
+                previewPill(accent.withValues(alpha: 0.15), accent, 24),
                 const SizedBox(width: 4),
-                previewPill(accent.withOpacity(0.15), accent, 18),
+                previewPill(accent.withValues(alpha: 0.15), accent, 18),
               ],
             ),
           ),
@@ -74,7 +74,7 @@ class LayoutPreviewCards extends StatelessWidget {
             color: card,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(6, (i) => Icon(Icons.circle, size: 5, color: accent.withOpacity(0.5))),
+              children: List.generate(6, (i) => Icon(Icons.circle, size: 5, color: accent.withValues(alpha: 0.5))),
             ),
           ),
         ],

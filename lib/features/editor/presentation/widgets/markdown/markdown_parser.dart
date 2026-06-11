@@ -1,4 +1,3 @@
-import 'package:gentle_notes/models/models.dart';
 import 'markdown_renderer.dart';
 
 class MarkdownParser {

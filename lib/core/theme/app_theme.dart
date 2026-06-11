@@ -5,7 +5,7 @@
 ///
 /// When preset == [AppThemePreset.none], falls back to the original
 /// seed-colour approach using [AppColors].
-library app_theme;
+library;
 
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
@@ -81,7 +81,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.lightSurface,
         elevation: 16,
-        shadowColor: AppColors.violet.withOpacity(0.15),
+        shadowColor: AppColors.violet.withValues(alpha: 0.15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       appBarTheme: AppBarTheme(
@@ -130,7 +130,7 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFFEDE9FB),
-        selectedColor: accent.withOpacity(0.15),
+        selectedColor: accent.withValues(alpha: 0.15),
         labelStyle: const TextStyle(fontFamily: 'Inter', fontSize: 13, color: AppColors.lightTextSecondary),
         shape: const StadiumBorder(side: BorderSide(color: AppColors.lightBorder)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -146,7 +146,7 @@ class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: AppColors.lightSurface,
         elevation: 8,
-        shadowColor: AppColors.violet.withOpacity(0.15),
+        shadowColor: AppColors.violet.withValues(alpha: 0.15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.lightBorder)),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
@@ -193,7 +193,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.darkCard,
         elevation: 24,
-        shadowColor: AppColors.violet.withOpacity(0.3),
+        shadowColor: AppColors.violet.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: AppColors.darkBorder)),
       ),
       appBarTheme: const AppBarTheme(
@@ -242,7 +242,7 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFF1E1A35),
-        selectedColor: AppColors.violetLight.withOpacity(0.2),
+        selectedColor: AppColors.violetLight.withValues(alpha: 0.2),
         labelStyle: const TextStyle(fontFamily: 'Inter', fontSize: 13, color: Color(0xFFD4CEEE)),
         shape: const StadiumBorder(side: BorderSide(color: AppColors.darkBorder)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -258,7 +258,7 @@ class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: AppColors.darkCard,
         elevation: 12,
-        shadowColor: AppColors.violet.withOpacity(0.3),
+        shadowColor: AppColors.violet.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: AppColors.darkBorder)),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(

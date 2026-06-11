@@ -31,12 +31,12 @@ class FolderModel {
     int? sortOrder,
   }) {
     return FolderModel(
-      id: this.id,
+      id: id,
       name: name ?? this.name,
       parentFolderId: clearParentFolder ? null : (parentFolderId ?? this.parentFolderId),
       colorHex: colorHex ?? this.colorHex,
       iconName: iconName ?? this.iconName,
-      createdAt: this.createdAt,
+      createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       sortOrder: sortOrder ?? this.sortOrder,
     );

@@ -97,9 +97,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.1),
+                        color: accentColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: accentColor.withOpacity(0.2), width: 2),
+                        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 2),
                       ),
                       child: Icon(
                         Icons.edit_note_rounded,
@@ -114,7 +114,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       style: theme.textTheme.headlineLarge?.copyWith(
                         fontFamily: 'Outfit',
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onBackground,
+                        color: theme.colorScheme.onSurface,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -126,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         'Organize your learning, ideas, and projects beautifully.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onBackground.withOpacity(0.6),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),

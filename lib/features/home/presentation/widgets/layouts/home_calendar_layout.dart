@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../../models/models.dart';
 import '../../../../folders/presentation/controllers/folders_controller.dart';
 import '../../../../notes/presentation/controllers/notes_controller.dart';
 import '../note_card.dart';
@@ -69,7 +68,7 @@ class _HomeCalendarLayoutState extends ConsumerState<HomeCalendarLayout> {
                 Text(
                   'Review and schedule your notes chronologically.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -118,15 +117,15 @@ class _HomeCalendarLayoutState extends ConsumerState<HomeCalendarLayout> {
                       color: isSelected
                           ? theme.colorScheme.primary
                           : (isToday
-                              ? theme.colorScheme.primary.withOpacity(0.08)
+                              ? theme.colorScheme.primary.withValues(alpha: 0.08)
                               : theme.colorScheme.surface),
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? theme.colorScheme.primary
                             : (isToday
-                                ? theme.colorScheme.primary.withOpacity(0.3)
-                                : theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                                ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                         width: 1.5,
                       ),
                     ),
@@ -139,8 +138,8 @@ class _HomeCalendarLayoutState extends ConsumerState<HomeCalendarLayout> {
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
                             color: isSelected
-                                ? theme.colorScheme.onPrimary.withOpacity(0.8)
-                                : theme.colorScheme.onSurface.withOpacity(0.4),
+                                ? theme.colorScheme.onPrimary.withValues(alpha: 0.8)
+                                : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -202,7 +201,7 @@ class _HomeCalendarLayoutState extends ConsumerState<HomeCalendarLayout> {
                     Icon(
                       Icons.event_busy_outlined,
                       size: 48,
-                      color: theme.colorScheme.onSurface.withOpacity(0.25),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -213,7 +212,7 @@ class _HomeCalendarLayoutState extends ConsumerState<HomeCalendarLayout> {
                     Text(
                       'Tap other calendar dates or click "View All" to browse notes.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -248,7 +247,7 @@ class _HomeCalendarLayoutState extends ConsumerState<HomeCalendarLayout> {
                             Container(
                               width: 2,
                               height: 100, // estimated line height spacing
-                              color: theme.colorScheme.primary.withOpacity(0.15),
+                              color: theme.colorScheme.primary.withValues(alpha: 0.15),
                             ),
                           ],
                         ),

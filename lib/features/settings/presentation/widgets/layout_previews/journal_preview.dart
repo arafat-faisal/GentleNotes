@@ -19,21 +19,21 @@ class LayoutPreviewJournal extends StatelessWidget {
         children: [
           Container(
             height: 22,
-            color: accent.withOpacity(isDark ? 0.25 : 0.12),
+            color: accent.withValues(alpha: isDark ? 0.25 : 0.12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(children: [
               Container(width: 8, height: 8, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
               const SizedBox(width: 4),
-              previewBar(accent.withOpacity(0.6), 0.35),
+              previewBar(accent.withValues(alpha: 0.6), 0.35),
               const Spacer(),
-              previewBar(accent.withOpacity(0.4), 0.2),
+              previewBar(accent.withValues(alpha: 0.4), 0.2),
             ]),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
             child: previewBar(isDark ? Colors.white70 : const Color(0xFF2A3D20), 0.7),
           ),
-          Divider(height: 1, color: accent.withOpacity(0.3)),
+          Divider(height: 1, color: accent.withValues(alpha: 0.3)),
           Expanded(
             child: Stack(
               children: [

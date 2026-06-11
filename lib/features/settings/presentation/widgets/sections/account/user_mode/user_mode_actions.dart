@@ -32,7 +32,7 @@ class DeleteConfirmDialog extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(
             'Cancel', 
-            style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.bold),
+            style: TextStyle(color: theme.colorScheme.onSurface.withValues(alpha: 0.6), fontWeight: FontWeight.bold),
           ),
         ),
         ElevatedButton(
@@ -124,7 +124,7 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.dashboard_customize_rounded, color: theme.colorScheme.primary, size: 24),
@@ -174,14 +174,14 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
                   hintText: 'e.g., Writer Mode, Tech Logger',
                   prefixIcon: Icon(Icons.drive_file_rename_outline_rounded, color: theme.colorScheme.primary, size: 20),
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -248,19 +248,19 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
                       avatar: Icon(
                         UserModeIcon.getLayoutIcon(variant), 
                         size: 13, 
-                        color: isChecked ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: isChecked ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                       label: Text(
                         variant.displayName, 
                         style: const TextStyle(fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w500),
                       ),
                       selected: isChecked,
-                      selectedColor: theme.colorScheme.primary.withOpacity(0.1),
+                      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                       checkmarkColor: theme.colorScheme.primary,
                       showCheckmark: false,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       side: BorderSide(
-                        color: isChecked ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                        color: isChecked ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                         width: isChecked ? 1.5 : 1,
                       ),
                       onSelected: (selected) {
@@ -300,12 +300,12 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
                         style: const TextStyle(fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w500),
                       ),
                       selected: isChecked,
-                      selectedColor: theme.colorScheme.primary.withOpacity(0.1),
+                      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                       checkmarkColor: theme.colorScheme.primary,
                       showCheckmark: isChecked,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       side: BorderSide(
-                        color: isChecked ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                        color: isChecked ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                         width: isChecked ? 1.5 : 1,
                       ),
                       onSelected: (selected) {
@@ -354,12 +354,12 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
                       style: const TextStyle(fontSize: 11, fontFamily: 'Inter', fontWeight: FontWeight.w500),
                     ),
                     selected: isChecked,
-                    selectedColor: theme.colorScheme.primary.withOpacity(0.1),
+                    selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                     checkmarkColor: theme.colorScheme.primary,
                     showCheckmark: isChecked,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     side: BorderSide(
-                      color: isChecked ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                      color: isChecked ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                       width: isChecked ? 1.5 : 1,
                     ),
                     onSelected: (selected) {
@@ -407,7 +407,7 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color: theme.colorScheme.surface,
-                            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<EditorLayoutVariant>(
@@ -453,7 +453,7 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color: theme.colorScheme.surface,
-                            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<AppThemePreset>(
@@ -488,7 +488,7 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           style: TextButton.styleFrom(
-            foregroundColor: theme.colorScheme.onSurface.withOpacity(0.6),
+            foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
           ),
           child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
         ),
@@ -497,7 +497,7 @@ class _CreateProfileDialogState extends ConsumerState<CreateProfileDialog> {
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: theme.colorScheme.onPrimary,
             elevation: 2,
-            shadowColor: theme.colorScheme.primary.withOpacity(0.3),
+            shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
           ),

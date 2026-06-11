@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../../models/models.dart';
 import 'markdown_link_handler.dart';
@@ -216,8 +215,9 @@ class MarkdownStyleBuilder {
           if (d != null) {
             spanFontSize = d;
           } else {
-            if (sizeStr == 'small') spanFontSize = 12.0;
-            else if (sizeStr == 'large') spanFontSize = 20.0;
+            if (sizeStr == 'small') {
+              spanFontSize = 12.0;
+            } else if (sizeStr == 'large') spanFontSize = 20.0;
             else if (sizeStr == 'huge') spanFontSize = 28.0;
           }
         }

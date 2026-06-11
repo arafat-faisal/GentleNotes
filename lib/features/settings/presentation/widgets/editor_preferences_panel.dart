@@ -17,7 +17,7 @@ class EditorPreferencesPanel extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
@@ -279,7 +279,7 @@ class EditorPreferencesPanel extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: logsStr.isEmpty
                       ? const Center(child: Text('No logs available'))

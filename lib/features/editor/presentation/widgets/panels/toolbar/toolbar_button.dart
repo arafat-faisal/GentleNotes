@@ -25,7 +25,7 @@ class ToolbarGroupButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isActive ? accentColor.withOpacity(0.12) : Colors.transparent,
+          color: isActive ? accentColor.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -38,7 +38,7 @@ class ToolbarGroupButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? accentColor : theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                color: isActive ? accentColor : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
               ),
             ),
           ],
@@ -75,7 +75,7 @@ class ToolbarActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isActive ? accentColor.withOpacity(0.15) : Colors.transparent,
+            color: isActive ? accentColor.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 20, color: isActive ? accentColor : theme.colorScheme.onSurface),
@@ -112,7 +112,7 @@ class ToolbarTextButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isActive ? accentColor.withOpacity(0.15) : Colors.transparent,
+            color: isActive ? accentColor.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(

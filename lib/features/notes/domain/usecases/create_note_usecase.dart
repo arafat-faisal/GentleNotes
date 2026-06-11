@@ -4,7 +4,7 @@
 /// Controllers call this use case, not the repository directly.
 ///
 /// Following Single Responsibility Principle — this class does one thing only.
-library create_note_usecase;
+library;
 
 import 'package:uuid/uuid.dart';
 import '../../../../models/models.dart';

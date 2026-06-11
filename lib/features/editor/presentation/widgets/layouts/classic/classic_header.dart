@@ -15,6 +15,7 @@ import '../../../../domain/entities/block_entity.dart';
 import '../../../../domain/entities/block_type.dart';
 import '../../../../domain/usecases/convert_blocks_to_delta.dart';
 import '../../panels/voice_recorder_bottom_sheet.dart';
+import '../../panels/share_note_bottom_sheet.dart';
 import '../../preview_style_painter.dart';
 
 class ClassicHeader extends ConsumerStatefulWidget implements PreferredSizeWidget {
@@ -211,7 +212,7 @@ class _ClassicHeaderState extends ConsumerState<ClassicHeader> {
                         decoration: InputDecoration(
                           hintText: 'Note Title...',
                           hintStyle: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.38),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.38),
                             fontSize: 18,
                           ),
                           border: InputBorder.none,
@@ -270,7 +271,15 @@ class _ClassicHeaderState extends ConsumerState<ClassicHeader> {
                               (f) => f?.id == widget.selectedFolderId,
                               orElse: () => null,
                             );
-                        ExportImportService().shareNote(note, folderName: folder?.name);
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (ctx) => ShareNoteBottomSheet(
+                            note: note,
+                            folderName: folder?.name,
+                          ),
+                        );
                       }
                       if (val == 'delete') {
                         showDialog(
@@ -320,15 +329,15 @@ class _ClassicHeaderState extends ConsumerState<ClassicHeader> {
                 height: 46.0,
                 margin: const EdgeInsets.fromLTRB(12.0, 0.0, 12.0, 8.0),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.04) : theme.colorScheme.primary.withOpacity(0.06),
+                  color: isDark ? Colors.white.withValues(alpha: 0.04) : theme.colorScheme.primary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(14.0),
                   border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.08) : theme.colorScheme.primary.withOpacity(0.12),
+                    color: isDark ? Colors.white.withValues(alpha: 0.08) : theme.colorScheme.primary.withValues(alpha: 0.12),
                     width: 1.0,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.15 : 0.02),
+                      color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
                       blurRadius: 8.0,
                       offset: const Offset(0.0, 3.0),
                     ),

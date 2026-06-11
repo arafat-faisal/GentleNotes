@@ -1,5 +1,5 @@
 /// Use case: Delete a folder by ID.
-library delete_folder_usecase;
+library;
 
 import '../repositories/i_folders_repository.dart';
 

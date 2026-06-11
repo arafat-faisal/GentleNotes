@@ -30,9 +30,9 @@ class LayoutPreviewPetal extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  previewBar(Colors.white.withOpacity(0.9), 0.6),
+                  previewBar(Colors.white.withValues(alpha: 0.9), 0.6),
                   const SizedBox(height: 4),
-                  previewBar(Colors.white.withOpacity(0.6), 0.4),
+                  previewBar(Colors.white.withValues(alpha: 0.6), 0.4),
                 ],
               ),
             ),

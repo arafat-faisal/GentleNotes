@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import '../../../../../models/models.dart';
 import '../../../../folders/presentation/controllers/folders_controller.dart';
 import '../../../../notes/presentation/controllers/notes_controller.dart';
-import '../../../../../core/services/export_import_service.dart';
 import '../../../domain/entities/block_entity.dart';
 import '../../../domain/entities/block_type.dart';
 import '../editor_body_widget.dart';
 import '../panels/floating_toolbar.dart';
 import '../panels/metadata_panel.dart';
+import '../panels/share_note_bottom_sheet.dart';
 
 class ZenLayout extends ConsumerStatefulWidget {
   final String noteId;
@@ -115,7 +114,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
                           height: 1.2,
-                          color: theme.colorScheme.onSurface.withOpacity(0.9),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
                         ),
                         decoration: InputDecoration(
                           hintText: 'Begin…',
@@ -123,7 +122,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                             fontFamily: 'Outfit',
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onSurface.withOpacity(0.3),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
@@ -161,7 +160,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                   child: Container(
                     height: 60,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    color: theme.scaffoldBackgroundColor.withOpacity(0.8),
+                    color: theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -187,7 +186,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2.0,
                             fontSize: 12,
-                            color: theme.colorScheme.primary.withOpacity(0.8),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.8),
                           ),
                         ),
                         const Spacer(),
@@ -199,7 +198,7 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                                 widget.isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                                 size: 18,
                               ),
-                              color: widget.isPinned ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.6),
+                              color: widget.isPinned ? theme.colorScheme.primary : theme.colorScheme.primary.withValues(alpha: 0.6),
                               onPressed: () {
                                 widget.onPinChanged(!widget.isPinned);
                                 widget.onSave();
@@ -246,7 +245,15 @@ class _ZenLayoutState extends ConsumerState<ZenLayout> {
                                         (f) => f?.id == widget.selectedFolderId,
                                         orElse: () => null,
                                       );
-                                  ExportImportService().shareNote(note, folderName: folder?.name);
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (ctx) => ShareNoteBottomSheet(
+                                      note: note,
+                                      folderName: folder?.name,
+                                    ),
+                                  );
                                 }
                                 if (val == 'delete') {
                                   showDialog(

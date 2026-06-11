@@ -90,8 +90,8 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
 
   Color? _previewBgColor;
   String? _previewBgImagePath;
-  double _previewOverlayOpacity = 0.0;
-  Color _previewOverlayColor = Colors.black;
+  final double _previewOverlayOpacity = 0.0;
+  final Color _previewOverlayColor = Colors.black;
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +135,7 @@ class _ClassicLayoutState extends ConsumerState<ClassicLayout> {
 
     final bgColor = widget.colorHex == '#FFFFFF'
         ? (isDark ? const Color(0xFF0F0B1E) : Colors.white)
-        : Color(int.parse('FF${widget.colorHex.replaceAll('#', '')}', radix: 16)).withOpacity(isDark ? 0.15 : 0.8);
+        : Color(int.parse('FF${widget.colorHex.replaceAll('#', '')}', radix: 16)).withValues(alpha: isDark ? 0.15 : 0.8);
 
     return Scaffold(
       backgroundColor: bgColor,

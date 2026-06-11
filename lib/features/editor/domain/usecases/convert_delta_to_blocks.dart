@@ -97,7 +97,20 @@ class ConvertDeltaToBlocks {
             } else if (insert.containsKey('drawing')) {
               blocks.add(BlockEntity.create(BlockType.drawing, content: insert['drawing'].toString()));
             } else if (insert.containsKey('audio')) {
-              blocks.add(BlockEntity.create(BlockType.audio, content: insert['audio'].toString()));
+              final rawAudio = insert['audio'];
+              if (rawAudio is Map) {
+                final audios = List<Map<String, dynamic>>.from(
+                  (rawAudio['audios'] as List?)?.map((item) => Map<String, dynamic>.from(item as Map)) ?? []
+                );
+                final layout = rawAudio['layout'] ?? 'classic';
+                blocks.add(BlockEntity.create(
+                  BlockType.audio,
+                  data: {'audios': audios},
+                  attrs: {'layout': layout},
+                ));
+              } else {
+                blocks.add(BlockEntity.create(BlockType.audio, content: rawAudio.toString()));
+              }
             } else if (insert.containsKey('sticker')) {
               blocks.add(BlockEntity.create(BlockType.sticker, content: insert['sticker'].toString()));
             } else if (insert.containsKey('horizontal-rule') || insert.containsKey('divider')) {

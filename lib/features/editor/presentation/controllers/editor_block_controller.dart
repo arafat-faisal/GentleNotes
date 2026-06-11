@@ -42,6 +42,7 @@ class EditorBlockController extends EditorCoreController {
     super.replaceBlockDirectly(id, newBlock);
   }
 
+  @override
   void updateBlockData(String id, Map<String, dynamic> data) {
     _historyController.saveToUndoStack();
     super.updateBlockData(id, data);

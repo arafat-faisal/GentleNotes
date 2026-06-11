@@ -1,5 +1,5 @@
 /// Use case: Delete a note by ID.
-library delete_note_usecase;
+library;
 
 import '../repositories/i_notes_repository.dart';
 

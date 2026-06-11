@@ -1,7 +1,6 @@
 /// Hive-backed implementation of [ILocalStorage].
-library hive_local_storage;
+library;
 
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';

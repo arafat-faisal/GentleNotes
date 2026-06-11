@@ -64,8 +64,8 @@ class CustomProfileChip extends ConsumerWidget {
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       deleteIconColor: isSelected 
-          ? theme.colorScheme.onPrimary.withOpacity(0.8) 
-          : theme.colorScheme.onSurface.withOpacity(0.5),
+          ? theme.colorScheme.onPrimary.withValues(alpha: 0.8) 
+          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
       onSelected: (selected) {
         if (selected) {
           ref.read(settingsProvider.notifier).selectProfile(profile.id);

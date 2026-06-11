@@ -71,7 +71,7 @@ class _HeadingBlockState extends State<HeadingBlock> {
         textStyle = theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
           fontFamily: 'Outfit',
-          color: theme.colorScheme.onSurface.withOpacity(0.9),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
         );
         break;
       case 1:
@@ -87,7 +87,7 @@ class _HeadingBlockState extends State<HeadingBlock> {
     return Focus(
       onKeyEvent: (node, event) {
         if (widget.readOnly) return KeyEventResult.ignored;
-        if (event is KeyEvent && event is KeyDownEvent) {
+        if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
               widget.onDelete != null) {
@@ -112,7 +112,7 @@ class _HeadingBlockState extends State<HeadingBlock> {
         decoration: InputDecoration(
           hintText: widget.readOnly ? null : hintText,
           hintStyle: textStyle?.copyWith(
-            color: theme.hintColor.withOpacity(0.3),
+            color: theme.hintColor.withValues(alpha: 0.3),
           ),
           border: InputBorder.none,
           focusedBorder: InputBorder.none,

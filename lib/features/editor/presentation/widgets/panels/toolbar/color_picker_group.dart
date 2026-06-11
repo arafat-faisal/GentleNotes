@@ -44,7 +44,7 @@ class _ColorPickerGroupState extends State<ColorPickerGroup> {
 
   void _applyColor(Color? color) {
     final hexStr = color != null
-        ? '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}'
+        ? '#${color.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}'
         : null;
 
     if (_activeColorMode == 'text') {
@@ -121,7 +121,7 @@ class _ColorPickerGroupState extends State<ColorPickerGroup> {
   }
 
   Widget _buildInlineCustomColorPicker(ThemeData theme, bool isDark) {
-    final hexStr = '#${_customSelectedColor.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
+    final hexStr = '#${_customSelectedColor.toARGB32().toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

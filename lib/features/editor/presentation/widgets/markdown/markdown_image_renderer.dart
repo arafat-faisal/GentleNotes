@@ -101,6 +101,21 @@ class MarkdownImageRenderer extends StatelessWidget {
           ),
         );
       }
+    } else if (uriStr.startsWith('/') || uriStr.contains(r':\') || uriStr.contains(r':/')) {
+      if (kIsWeb) {
+        imageWidget = const Text('[Local Image (Unavailable on Web)]');
+      } else {
+        imageWidget = ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(
+            io.File(uriStr),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.broken_image_outlined, size: 48, color: Colors.grey);
+            },
+          ),
+        );
+      }
     } else {
       imageWidget = ClipRRect(
         borderRadius: BorderRadius.circular(8),

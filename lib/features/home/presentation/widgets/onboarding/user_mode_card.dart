@@ -22,7 +22,7 @@ class UserModeCard extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: isSelected
-            ? theme.colorScheme.primary.withOpacity(0.04)
+            ? theme.colorScheme.primary.withValues(alpha: 0.04)
             : theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
@@ -48,7 +48,7 @@ class UserModeCard extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? theme.colorScheme.primary
-                          : theme.colorScheme.primary.withOpacity(0.1),
+                          : theme.colorScheme.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -73,7 +73,7 @@ class UserModeCard extends ConsumerWidget {
                         Text(
                           mode.description,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                             fontSize: 11,
                           ),
                         ),
@@ -90,7 +90,7 @@ class UserModeCard extends ConsumerWidget {
                   else
                     Icon(
                       Icons.circle_outlined,
-                      color: theme.colorScheme.onSurface.withOpacity(0.2),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                       size: 20,
                     ),
                 ],
@@ -125,13 +125,13 @@ class UserModeCard extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Icon(Icons.lock_outline_rounded, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                  Icon(Icons.lock_outline_rounded, size: 14, color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Custom profile settings are locked. Toggle "Advanced Mode" above to choose custom configurations.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         fontSize: 11,
                         fontStyle: FontStyle.italic,
                       ),

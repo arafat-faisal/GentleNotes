@@ -1,5 +1,5 @@
 /// Concrete implementation of the settings repository backed by local storage.
-library settings_repository_impl;
+library;
 
 import '../../../../core/services/storage/i_local_storage.dart';
 import '../../../../models/models.dart';

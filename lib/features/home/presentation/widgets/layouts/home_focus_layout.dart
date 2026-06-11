@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../models/models.dart';
 import '../../../../folders/presentation/controllers/folders_controller.dart';
 import '../../../../notes/presentation/controllers/notes_controller.dart';
 import '../home_search_bar.dart';
@@ -51,11 +50,11 @@ class HomeFocusLayout extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Card(
                   elevation: 0,
-                  color: theme.colorScheme.primary.withOpacity(0.05),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: theme.colorScheme.primary.withOpacity(0.15),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.15),
                     ),
                   ),
                   child: Padding(
@@ -70,7 +69,7 @@ class HomeFocusLayout extends ConsumerWidget {
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontStyle: FontStyle.italic,
                               height: 1.4,
-                              color: theme.colorScheme.onSurface.withOpacity(0.8),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                             ),
                           ),
                         ),
@@ -117,7 +116,7 @@ class HomeFocusLayout extends ConsumerWidget {
                     Icon(
                       Icons.push_pin_outlined,
                       size: 48,
-                      color: theme.colorScheme.onSurface.withOpacity(0.2),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -129,7 +128,7 @@ class HomeFocusLayout extends ConsumerWidget {
                       'Pin notes from the editor to see them directly in Focus Mode.',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],

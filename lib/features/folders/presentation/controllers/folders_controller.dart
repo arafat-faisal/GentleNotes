@@ -1,5 +1,5 @@
 /// Riverpod controller and providers for the Folders feature.
-library folders_controller;
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

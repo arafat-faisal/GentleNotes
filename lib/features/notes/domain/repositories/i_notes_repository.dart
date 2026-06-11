@@ -6,7 +6,7 @@
 /// Implementations live in the data layer:
 /// - [NotesRepositoryImpl] — backed by [HiveLocalStorage]
 /// - Future: CloudNotesRepository — backed by Firebase/Supabase
-library i_notes_repository;
+library;
 
 import '../../../../models/models.dart';
 

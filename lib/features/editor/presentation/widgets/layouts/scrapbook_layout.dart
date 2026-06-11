@@ -150,10 +150,10 @@ class ScrapbookLayout extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF200A28) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: accent.withOpacity(0.2)),
+                border: Border.all(color: accent.withValues(alpha: 0.2)),
                 boxShadow: [
                   BoxShadow(
-                    color: accent.withOpacity(0.08),
+                    color: accent.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -194,10 +194,10 @@ class ScrapbookLayout extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor.withOpacity(0.5)),
+        border: Border.all(color: borderColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: borderColor.withOpacity(0.1),
+            color: borderColor.withValues(alpha: 0.1),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

@@ -113,7 +113,7 @@ class PetalLayout extends ConsumerWidget {
                         fontFamily: 'Outfit',
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white.withOpacity(0.55),
+                        color: Colors.white.withValues(alpha: 0.55),
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -181,9 +181,9 @@ class PetalLayout extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: accent.withOpacity(isDark ? 0.18 : 0.1),
+        color: accent.withValues(alpha: isDark ? 0.18 : 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withOpacity(0.25)),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -3,7 +3,7 @@
 /// Used on the home screen, folder detail screen, and search results.
 /// This widget is purely presentational — it receives data and callbacks,
 /// contains no business logic, and never accesses providers directly.
-library note_card;
+library;
 
 import 'package:flutter/material.dart';
 import '../../../../models/models.dart';
@@ -69,7 +69,7 @@ class NoteCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : AppColors.violet).withOpacity(0.06),
+              color: (isDark ? Colors.black : AppColors.violet).withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -89,22 +89,22 @@ class NoteCard extends StatelessWidget {
           // ── Header row: type icon + pin/fav indicators ──
           Row(
             children: [
-              Icon(note.noteType.icon, size: 14, color: theme.colorScheme.primary.withOpacity(0.7)),
+              Icon(note.noteType.icon, size: 14, color: theme.colorScheme.primary.withValues(alpha: 0.7)),
               const SizedBox(width: 6),
               Text(
                 note.noteType.displayName,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.primary.withOpacity(0.7),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const Spacer(),
               if (note.isPinned) ...[
-                Icon(Icons.push_pin_rounded, size: 14, color: AppColors.violet.withOpacity(0.7)),
+                Icon(Icons.push_pin_rounded, size: 14, color: AppColors.violet.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
               ],
               if (note.isFavorite)
-                Icon(Icons.favorite_rounded, size: 14, color: AppColors.rose.withOpacity(0.8)),
+                Icon(Icons.favorite_rounded, size: 14, color: AppColors.rose.withValues(alpha: 0.8)),
             ],
           ),
 
@@ -149,24 +149,24 @@ class NoteCard extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.access_time_rounded, size: 12,
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6)),
               const SizedBox(width: 4),
               Text(
                 _formatDate(note.updatedAt),
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                   fontSize: 11,
                 ),
               ),
               const Spacer(),
               if (note.attachments.isNotEmpty) ...[
                 Icon(Icons.attach_file_rounded, size: 12,
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6)),
                 const SizedBox(width: 2),
                 Text(
                   '${note.attachments.length}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     fontSize: 11,
                   ),
                 ),
@@ -217,9 +217,9 @@ class NoteCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.08),
+        color: theme.colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
       ),
       child: Text(
         '#$tag',

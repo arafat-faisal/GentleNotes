@@ -13,7 +13,7 @@ class AccountPrivacyNote extends StatelessWidget {
         children: [
           Icon(
             Icons.verified_user_outlined,
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -21,7 +21,7 @@ class AccountPrivacyNote extends StatelessWidget {
             child: Text(
               'GentleNotes is offline-first. Your workspace data, custom profiles, and drawings are stored safely on this device.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 fontSize: 10,
                 height: 1.3,
               ),

@@ -202,8 +202,9 @@ class TextPdfRenderer {
       default:
         if (block.text.trim().isEmpty) return pw.SizedBox(height: 6);
         pw.TextAlign tAlign = pw.TextAlign.left;
-        if (block.altText == 'center') tAlign = pw.TextAlign.center;
-        else if (block.altText == 'right') tAlign = pw.TextAlign.right;
+        if (block.altText == 'center') {
+          tAlign = pw.TextAlign.center;
+        } else if (block.altText == 'right') tAlign = pw.TextAlign.right;
         else if (block.altText == 'justify') tAlign = pw.TextAlign.justify;
 
         return pw.Padding(

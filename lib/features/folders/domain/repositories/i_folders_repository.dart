@@ -1,5 +1,5 @@
 /// Abstract repository contract for folders.
-library i_folders_repository;
+library;
 
 import '../../../../models/models.dart';
 

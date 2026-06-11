@@ -34,10 +34,9 @@ class HighlightingTextController extends TextEditingController {
   HighlightingTextController({
     super.text,
     required this.context,
-    required String activeCodeTheme,
-    required String language,
-  })  : _activeCodeTheme = activeCodeTheme,
-        _language = language;
+    required this._activeCodeTheme,
+    required this._language,
+  });
 
   String get activeCodeTheme => _activeCodeTheme;
   set activeCodeTheme(String value) {
@@ -168,7 +167,7 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
     _textController.activeCodeTheme = activeCodeTheme;
 
     final containerColor = isDarkCodeTheme ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC);
-    final borderColor = theme.colorScheme.outlineVariant.withOpacity(0.5);
+    final borderColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
     final textColor = isDarkCodeTheme ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B);
     final headerBgColor = isDarkCodeTheme ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
     final headerTextColor = isDarkCodeTheme ? Colors.grey.shade400 : Colors.grey.shade700;
@@ -176,7 +175,7 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
     return Focus(
       onKeyEvent: (node, event) {
         if (widget.readOnly) return KeyEventResult.ignored;
-        if (event is KeyEvent && event is KeyDownEvent) {
+        if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
               widget.onDelete != null) {
@@ -308,7 +307,7 @@ class _CodeBlockState extends ConsumerState<CodeBlock> {
                   hintStyle: TextStyle(
                     fontFamily: 'Courier',
                     fontSize: 13,
-                    color: textColor.withOpacity(0.3),
+                    color: textColor.withValues(alpha: 0.3),
                   ),
                   border: InputBorder.none,
                   focusedBorder: InputBorder.none,

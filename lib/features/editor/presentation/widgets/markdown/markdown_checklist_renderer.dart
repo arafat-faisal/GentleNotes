@@ -36,7 +36,7 @@ class MarkdownChecklistRenderer extends StatelessWidget {
               block.text,
               theme.textTheme.bodyMedium?.copyWith(
                 decoration: block.isChecked! ? TextDecoration.lineThrough : null,
-                color: block.isChecked! ? theme.colorScheme.onSurface.withOpacity(0.5) : null,
+                color: block.isChecked! ? theme.colorScheme.onSurface.withValues(alpha: 0.5) : null,
               ),
               fontFamily: fontFamily,
               attachments: attachments,

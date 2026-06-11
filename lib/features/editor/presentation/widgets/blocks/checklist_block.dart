@@ -62,7 +62,7 @@ class _ChecklistBlockState extends State<ChecklistBlock> {
       fontFamily: 'Inter',
       decoration: isChecked ? TextDecoration.lineThrough : null,
       color: isChecked
-          ? theme.colorScheme.onSurface.withOpacity(0.4)
+          ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
           : theme.colorScheme.onSurface,
       height: 1.5,
     );
@@ -70,7 +70,7 @@ class _ChecklistBlockState extends State<ChecklistBlock> {
     return Focus(
       onKeyEvent: (node, event) {
         if (widget.readOnly) return KeyEventResult.ignored;
-        if (event is KeyEvent && event is KeyDownEvent) {
+        if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.backspace &&
               _textController.text.isEmpty &&
               widget.onDelete != null) {
@@ -116,7 +116,7 @@ class _ChecklistBlockState extends State<ChecklistBlock> {
                 decoration: InputDecoration(
                   hintText: widget.readOnly ? null : 'To-do item...',
                   hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.hintColor.withOpacity(0.3),
+                    color: theme.hintColor.withValues(alpha: 0.3),
                     fontFamily: 'Inter',
                   ),
                   border: InputBorder.none,

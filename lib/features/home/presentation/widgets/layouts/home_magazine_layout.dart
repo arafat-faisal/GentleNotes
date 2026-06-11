@@ -33,7 +33,7 @@ class HomeMagazineLayout extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.article_outlined, size: 48, color: theme.colorScheme.primary.withOpacity(0.3)),
+                  Icon(Icons.article_outlined, size: 48, color: theme.colorScheme.primary.withValues(alpha: 0.3)),
                   const SizedBox(height: 12),
                   Text('No Notes Yet', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 ],
@@ -132,13 +132,11 @@ class HomeMagazineLayout extends ConsumerWidget {
     final formattedDate = DateFormat('MMMM d, yyyy').format(note.updatedAt);
 
     // Dynamic gradient background color based on note's custom colorHex if present
-    final Color baseColor = note.colorHex != null
-        ? Color(int.parse(note.colorHex!.replaceAll('#', 'FF'), radix: 16))
-        : theme.colorScheme.primaryContainer.withOpacity(0.3);
+    final Color baseColor = Color(int.parse(note.colorHex.replaceAll('#', 'FF'), radix: 16));
 
     return Card(
       elevation: 4,
-      shadowColor: theme.colorScheme.primary.withOpacity(0.08),
+      shadowColor: theme.colorScheme.primary.withValues(alpha: 0.08),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -163,7 +161,7 @@ class HomeMagazineLayout extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: folderColor.withOpacity(0.15),
+                      color: folderColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -196,7 +194,7 @@ class HomeMagazineLayout extends ConsumerWidget {
               Text(
                 formattedDate,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -206,7 +204,7 @@ class HomeMagazineLayout extends ConsumerWidget {
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.65),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                   height: 1.5,
                   fontSize: 14,
                 ),
@@ -219,9 +217,9 @@ class HomeMagazineLayout extends ConsumerWidget {
                   children: note.tags.map((t) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface.withOpacity(0.6),
+                      color: theme.colorScheme.surface.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
                     ),
                     child: Text(
                       '#$t',

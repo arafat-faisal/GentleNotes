@@ -55,7 +55,7 @@ class _HomeSearchBarState extends ConsumerState<HomeSearchBar> {
                   )
                 : null,
             filled: true,
-            fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+            fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           ),
         ),
         const SizedBox(height: 12),

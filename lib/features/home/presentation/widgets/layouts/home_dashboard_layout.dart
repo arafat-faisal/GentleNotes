@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../models/models.dart';
-import '../../../../folders/presentation/controllers/folders_controller.dart';
 import '../../../../notes/presentation/controllers/notes_controller.dart';
 import '../../../../settings/presentation/controllers/settings_controller.dart';
 import '../folder_list_grid.dart';

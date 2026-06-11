@@ -167,7 +167,7 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
                           color: _controller.activeTool == DrawingTool.eraser 
                               ? Colors.black12 
                               : _controller.activeTool == DrawingTool.highlighter
-                                  ? _controller.activeColor.withOpacity(0.4)
+                                  ? _controller.activeColor.withValues(alpha: 0.4)
                                   : _controller.activeColor,
                           shape: BoxShape.circle,
                           border: _controller.activeTool == DrawingTool.eraser 
@@ -258,7 +258,7 @@ class _DrawingCanvasScreenState extends State<DrawingCanvasScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF8B5CF6).withOpacity(0.25) : Colors.transparent,
+            color: isActive ? const Color(0xFF8B5CF6).withValues(alpha: 0.25) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: isActive ? const Color(0xFF8B5CF6) : Colors.transparent,

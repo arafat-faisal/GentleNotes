@@ -199,9 +199,9 @@ class HomePreviewFocus extends StatelessWidget {
           Container(
             height: 28,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.08),
+              color: accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: accent.withOpacity(0.2)),
+              border: Border.all(color: accent.withValues(alpha: 0.2)),
             ),
             padding: const EdgeInsets.all(4),
             child: Row(
@@ -304,7 +304,7 @@ class HomePreviewMagazine extends StatelessWidget {
             height: 45,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [accent.withOpacity(0.2), card],
+                colors: [accent.withValues(alpha: 0.2), card],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -406,7 +406,7 @@ class HomePreviewNotebook extends StatelessWidget {
                 width: 32,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.15),
+                  color: accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: accent),
                 ),
@@ -525,7 +525,7 @@ class HomePreviewCalendar extends StatelessWidget {
                 Column(
                   children: [
                     Container(width: 4, height: 4, decoration: BoxDecoration(color: accent, shape: BoxShape.circle)),
-                    Container(width: 1, height: 32, color: accent.withOpacity(0.3)),
+                    Container(width: 1, height: 32, color: accent.withValues(alpha: 0.3)),
                   ],
                 ),
                 const SizedBox(width: 6),

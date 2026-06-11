@@ -4,7 +4,7 @@
 /// placeholder configuration for planned features (cloud sync, AI, etc.).
 /// In a production app, values here would be populated from a remote config
 /// service (Firebase Remote Config, LaunchDarkly, etc.).
-library app_config;
+library;
 
 class AppConfig {
   AppConfig._(); // Prevent instantiation

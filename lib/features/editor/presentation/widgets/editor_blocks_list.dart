@@ -88,7 +88,7 @@ class EditorBlocksList extends ConsumerWidget {
                     child: Icon(
                       Icons.drag_indicator_rounded,
                       size: 16,
-                      color: Theme.of(context).hintColor.withOpacity(0.3),
+                      color: Theme.of(context).hintColor.withValues(alpha: 0.3),
                     ),
                   ),
                 ),

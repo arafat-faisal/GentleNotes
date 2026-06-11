@@ -2,7 +2,7 @@
 ///
 /// All magic strings, numeric limits, and shared configuration values live
 /// here so they are easy to find, update, and test in one place.
-library app_constants;
+library;
 
 class AppConstants {
   AppConstants._(); // Prevent instantiation

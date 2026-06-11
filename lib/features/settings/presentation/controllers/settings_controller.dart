@@ -1,5 +1,5 @@
 /// Riverpod controllers and providers for the Settings feature.
-library settings_controller;
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -99,8 +99,9 @@ class SettingsNotifier extends StateNotifier<AppSettingsModel> {
 
   Future<void> selectProfile(String profileId) async {
     AppUserMode userMode = AppUserMode.custom;
-    if (profileId == 'normal') userMode = AppUserMode.normal;
-    else if (profileId == 'coder') userMode = AppUserMode.coder;
+    if (profileId == 'normal') {
+      userMode = AppUserMode.normal;
+    } else if (profileId == 'coder') userMode = AppUserMode.coder;
     else if (profileId == 'student') userMode = AppUserMode.student;
     else if (profileId == 'researcher') userMode = AppUserMode.researcher;
 

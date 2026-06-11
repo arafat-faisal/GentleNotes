@@ -1,5 +1,5 @@
 /// Use case: Create a new folder.
-library create_folder_usecase;
+library;
 
 import 'package:uuid/uuid.dart';
 import '../../../../models/models.dart';

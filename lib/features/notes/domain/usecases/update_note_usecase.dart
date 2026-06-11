@@ -1,5 +1,5 @@
 /// Use case: Update an existing note.
-library update_note_usecase;
+library;
 
 import '../../../../models/models.dart';
 import '../repositories/i_notes_repository.dart';

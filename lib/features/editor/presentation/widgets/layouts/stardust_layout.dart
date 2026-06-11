@@ -65,7 +65,7 @@ class StardustLayout extends StatelessWidget {
                     fontFamily: 'Outfit',
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: starPrimary.withOpacity(0.4),
+                    color: starPrimary.withValues(alpha: 0.4),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
@@ -79,9 +79,9 @@ class StardustLayout extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: starPrimary.withOpacity(0.2)),
+                  border: Border.all(color: starPrimary.withValues(alpha: 0.2)),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),

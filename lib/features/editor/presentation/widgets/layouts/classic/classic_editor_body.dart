@@ -239,7 +239,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
         if (widget.previewOverlayOpacity > 0.0)
           Positioned.fill(
             child: ColoredBox(
-                color: widget.previewOverlayColor.withOpacity(widget.previewOverlayOpacity)),
+                color: widget.previewOverlayColor.withValues(alpha: widget.previewOverlayOpacity)),
           ),
         if (widget.previewStyle != PreviewStyle.plain)
           Positioned.fill(
@@ -292,7 +292,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
             if (widget.previewOverlayOpacity > 0.0)
               Positioned.fill(
                 child: ColoredBox(
-                    color: widget.previewOverlayColor.withOpacity(widget.previewOverlayOpacity)),
+                    color: widget.previewOverlayColor.withValues(alpha: widget.previewOverlayOpacity)),
               ),
             if (widget.previewStyle != PreviewStyle.plain)
               Positioned.fill(
@@ -354,7 +354,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                       widget.onPreviewModeChanged(!widget.isPreviewMode);
                     },
                     style: IconButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.85),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
                       padding: const EdgeInsets.all(6),
                     ),
                   ),
@@ -363,11 +363,11 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                     icon: Icon(Icons.palette_outlined, size: 20,
                         color: (widget.previewBgColor != null || widget.previewBgImagePath != null)
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface.withOpacity(0.5)),
+                            : theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                     tooltip: 'Background',
                     onPressed: () => setState(() => _showBgPicker = !_showBgPicker),
                     style: IconButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.85),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
                       padding: const EdgeInsets.all(6),
                     ),
                   ),
@@ -379,7 +379,7 @@ class _ClassicEditorBodyState extends ConsumerState<ClassicEditorBody> {
                       widget.onFullScreenChanged(false);
                     },
                     style: IconButton.styleFrom(
-                      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.85),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
                       foregroundColor: theme.colorScheme.primary,
                       padding: const EdgeInsets.all(6),
                     ),

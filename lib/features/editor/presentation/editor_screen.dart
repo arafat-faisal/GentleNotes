@@ -9,12 +9,10 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../models/models.dart';
-import '../../../../features/notes/data/models/floating_sticker_model.dart';
 import 'controllers/floating_stickers_controller.dart';
 import '../../../../features/notes/presentation/controllers/notes_controller.dart';
 import '../../../../features/templates/presentation/controllers/templates_controller.dart';
 import '../../../../features/settings/presentation/controllers/settings_controller.dart';
-import '../domain/entities/block_entity.dart';
 import '../domain/entities/block_type.dart';
 import '../domain/usecases/convert_blocks_to_delta.dart';
 import '../domain/usecases/convert_delta_to_blocks.dart';
@@ -442,7 +440,27 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           _quillController.replaceText(index, length, BlockEmbed('pdf', jsonEncode(pdfBlockData)), null);
           break;
         case BlockType.audio:
-          _quillController.replaceText(index, length, BlockEmbed('audio', content), null);
+          final id = const Uuid().v4();
+          final name = content.startsWith('data:') 
+              ? 'Voice Note.webm' 
+              : content.split('/').last.split('\\').last;
+          final newAttachment = AttachmentModel(
+            id: id,
+            noteId: _noteId,
+            type: AttachmentType.audio,
+            name: name,
+            pathOrUrl: content,
+            createdAt: DateTime.now(),
+          );
+          setState(() {
+            _attachments = [..._attachments, newAttachment];
+          });
+          
+          final blockData = {
+            'id': id,
+            'width': 'full',
+          };
+          _quillController.replaceText(index, length, BlockEmbed('audio', jsonEncode(blockData)), null);
           break;
         case BlockType.drawing:
           _openQuillDrawing();
@@ -460,6 +478,24 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       }
       _markDirty();
     } else {
+      if (type == BlockType.audio) {
+        final id = const Uuid().v4();
+        final name = content.startsWith('data:') 
+            ? 'Voice Note.webm' 
+            : content.split('/').last.split('\\').last;
+        final newAttachment = AttachmentModel(
+          id: id,
+          noteId: _noteId,
+          type: AttachmentType.audio,
+          name: name,
+          pathOrUrl: content,
+          createdAt: DateTime.now(),
+        );
+        setState(() {
+          _attachments = [..._attachments, newAttachment];
+        });
+      }
+
       final state = ref.read(editorBlockControllerProvider);
       final index = state.selectedIndex >= 0 ? state.selectedIndex : state.blocks.length - 1;
       ref.read(editorBlockControllerProvider.notifier).insertBlock(
@@ -505,27 +541,27 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     final layoutVariant = settings.editorLayout;
     debugPrint('EDITOR SCREEN BUILD - RESOLVED LAYOUT VARIANT: $layoutVariant');
 
-    final onFolderChanged = (String? val) => setState(() {
+    void onFolderChanged(String? val) => setState(() {
           _selectedFolderId = val;
           _markDirty();
         });
-    final onNoteTypeChanged = (NoteType val) => setState(() {
+    void onNoteTypeChanged(NoteType val) => setState(() {
           _noteType = val;
           _markDirty();
         });
-    final onPinChanged = (bool val) => setState(() {
+    void onPinChanged(bool val) => setState(() {
           _isPinned = val;
           _markDirty();
         });
-    final onFavoriteChanged = (bool val) => setState(() {
+    void onFavoriteChanged(bool val) => setState(() {
           _isFavorite = val;
           _markDirty();
         });
-    final onColorChanged = (String val) => setState(() {
+    void onColorChanged(String val) => setState(() {
           _colorHex = val;
           _markDirty();
         });
-    final onPrintPdf = () {
+    void onPrintPdf() {
       final content = settings.editorMode == EditorMode.gentleNote
           ? jsonEncode(_quillController.document.toDelta().toJson())
           : ConvertBlocksToDelta.execute(blocksState.blocks);
@@ -547,7 +583,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         stickers: stickers,
       );
       EditorRouteActions.exportToPdf(context, note);
-    };
+    }
 
     final canUndo = settings.editorMode == EditorMode.gentleNote
         ? _quillController.hasUndo
@@ -556,20 +592,20 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         ? _quillController.hasRedo
         : blocksState.redoStack.isNotEmpty;
 
-    final onUndo = () {
+    void onUndo() {
       if (settings.editorMode == EditorMode.gentleNote) {
         _quillController.undo();
       } else {
         ref.read(editorBlockControllerProvider.notifier).undo();
       }
-    };
-    final onRedo = () {
+    }
+    void onRedo() {
       if (settings.editorMode == EditorMode.gentleNote) {
         _quillController.redo();
       } else {
         ref.read(editorBlockControllerProvider.notifier).redo();
       }
-    };
+    }
 
     return EditorBody(
       layoutVariant: layoutVariant,

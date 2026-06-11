@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 // ÔöÇÔöÇÔöÇ Markdown Layout Mode Enum ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 enum MarkdownLayoutMode {
@@ -55,13 +55,13 @@ class PreviewStylePainter extends CustomPainter {
 
     // Red margin line
     final marginPaint = Paint()
-      ..color = const Color(0xFFEF9A9A).withOpacity(0.7)
+      ..color = const Color(0xFFEF9A9A).withValues(alpha: 0.7)
       ..strokeWidth = 1.5;
     canvas.drawLine(Offset(marginX, 0), Offset(marginX, size.height), marginPaint);
 
     // Blue ruled lines ÔÇö start at first line offset, repeat every _lineSpacing px
     final linePaint = Paint()
-      ..color = const Color(0xFF90CAF9).withOpacity(0.45)
+      ..color = const Color(0xFF90CAF9).withValues(alpha: 0.45)
       ..strokeWidth = 0.8;
 
     // First line sits 4px from top so text baseline lands on the line
@@ -72,7 +72,7 @@ class PreviewStylePainter extends CustomPainter {
 
   void _paintGridPaper(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF90CAF9).withOpacity(0.35)
+      ..color = const Color(0xFF90CAF9).withValues(alpha: 0.35)
       ..strokeWidth = 0.5;
 
     const spacing = 24.0;
@@ -85,7 +85,7 @@ class PreviewStylePainter extends CustomPainter {
 
     // Bold grid every 5 cells
     final boldPaint = Paint()
-      ..color = const Color(0xFF90CAF9).withOpacity(0.5)
+      ..color = const Color(0xFF90CAF9).withValues(alpha: 0.5)
       ..strokeWidth = 1.0;
     for (double x = 0; x < size.width; x += spacing * 5) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), boldPaint);
@@ -97,7 +97,7 @@ class PreviewStylePainter extends CustomPainter {
 
   void _paintAgedPaper(Canvas canvas, Size size) {
     // Warm aged paper gradient-like tint
-    final paint = Paint()..color = const Color(0xFFF5E6C8).withOpacity(0.18);
+    final paint = Paint()..color = const Color(0xFFF5E6C8).withValues(alpha: 0.18);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
 
     // Subtle vignette corners
@@ -105,7 +105,7 @@ class PreviewStylePainter extends CustomPainter {
       ..shader = RadialGradient(
         center: Alignment.center,
         radius: 1.2,
-        colors: [Colors.transparent, const Color(0xFF8B6914).withOpacity(0.08)],
+        colors: [Colors.transparent, const Color(0xFF8B6914).withValues(alpha: 0.08)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), vignette);
   }
@@ -116,15 +116,15 @@ class PreviewStylePainter extends CustomPainter {
     const bindingX = 28.0;
 
     final holePaint = Paint()
-      ..color = const Color(0xFFEEEEEE).withOpacity(0.95)
+      ..color = const Color(0xFFEEEEEE).withValues(alpha: 0.95)
       ..style = PaintingStyle.fill;
     final ringPaint = Paint()
-      ..color = const Color(0xFF9E9E9E).withOpacity(0.75)
+      ..color = const Color(0xFF9E9E9E).withValues(alpha: 0.75)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
     // Shadow behind ring
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.08)
+      ..color = Colors.black.withValues(alpha: 0.08)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
     for (double y = ringSpacing / 2; y < size.height; y += ringSpacing) {
@@ -135,17 +135,17 @@ class PreviewStylePainter extends CustomPainter {
 
     // Binding strip background
     final stripPaint = Paint()
-      ..color = const Color(0xFFBDBDBD).withOpacity(0.15);
+      ..color = const Color(0xFFBDBDBD).withValues(alpha: 0.15);
     canvas.drawRect(Rect.fromLTWH(0, 0, bindingX * 2 + 4, size.height), stripPaint);
   }
 
   void _paintDarkParchment(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF1A1209).withOpacity(0.15);
+    final paint = Paint()..color = const Color(0xFF1A1209).withValues(alpha: 0.15);
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
 
     // Light scan lines for parchment feel
     final scanPaint = Paint()
-      ..color = const Color(0xFFFFF8E1).withOpacity(0.03)
+      ..color = const Color(0xFFFFF8E1).withValues(alpha: 0.03)
       ..strokeWidth = 1;
     for (double y = 0; y < size.height; y += 3) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), scanPaint);

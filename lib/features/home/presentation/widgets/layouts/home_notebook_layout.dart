@@ -60,7 +60,7 @@ class _HomeNotebookLayoutState extends ConsumerState<HomeNotebookLayout> {
                 Text(
                   'Browse through your folders to discover your notes.',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -148,7 +148,7 @@ class _HomeNotebookLayoutState extends ConsumerState<HomeNotebookLayout> {
                     Icon(
                       Icons.folder_open_outlined,
                       size: 48,
-                      color: theme.colorScheme.onSurface.withOpacity(0.25),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -159,7 +159,7 @@ class _HomeNotebookLayoutState extends ConsumerState<HomeNotebookLayout> {
                     Text(
                       'No notes categorized under this folder shelf.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -201,11 +201,11 @@ class _HomeNotebookLayoutState extends ConsumerState<HomeNotebookLayout> {
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Material(
-        color: isSelected ? color.withOpacity(0.12) : theme.colorScheme.surface,
+        color: isSelected ? color.withValues(alpha: 0.12) : theme.colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: isSelected ? color : theme.colorScheme.outlineVariant.withOpacity(0.5),
+            color: isSelected ? color : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             width: isSelected ? 2.0 : 1.0,
           ),
         ),
@@ -216,14 +216,14 @@ class _HomeNotebookLayoutState extends ConsumerState<HomeNotebookLayout> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                Icon(icon, color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.5), size: 18),
+                Icon(icon, color: isSelected ? color : theme.colorScheme.onSurface.withValues(alpha: 0.5), size: 18),
                 const SizedBox(width: 8),
                 Text(
                   name,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    color: isSelected ? color : theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: isSelected ? color : theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
               ],

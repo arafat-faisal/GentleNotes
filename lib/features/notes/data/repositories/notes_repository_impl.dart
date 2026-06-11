@@ -8,7 +8,7 @@
 /// 2. Create a `SyncedNotesRepository` that composes local + cloud sources.
 /// 3. Update [notesRepositoryProvider] to inject the new implementation.
 /// 4. Zero changes needed in the domain or presentation layers.
-library notes_repository_impl;
+library;
 
 import '../../../../models/models.dart';
 import '../../domain/repositories/i_notes_repository.dart';

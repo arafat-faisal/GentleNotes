@@ -25,7 +25,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
     final templates = ref.watch(templatesProvider);
 
     // Get list of categories
-    final categories = ['All', ...templates.map((t) => t.category).toSet().toList()];
+    final categories = ['All', ...templates.map((t) => t.category).toSet()];
 
     // Filtered templates
     final filteredTemplates = _selectedCategory == 'All'
@@ -54,10 +54,10 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Card(
               elevation: 0,
-              color: theme.colorScheme.primary.withOpacity(0.05),
+              color: theme.colorScheme.primary.withValues(alpha: 0.05),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.1)),
+                side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -77,7 +77,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                           Text(
                             'Quickly boot up study notes, meeting notes, or hackathon plans using structured forms.',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.6),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -152,7 +152,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -168,7 +168,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.08),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -222,7 +222,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -240,7 +240,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                 label: const Text('Use Template', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
+                  backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.08),
                   foregroundColor: theme.colorScheme.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),

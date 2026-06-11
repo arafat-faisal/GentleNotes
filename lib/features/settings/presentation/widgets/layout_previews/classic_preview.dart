@@ -28,7 +28,7 @@ class LayoutPreviewClassic extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(child: Container(height: 6, decoration: BoxDecoration(color: textMain, borderRadius: BorderRadius.circular(3)))),
                 const SizedBox(width: 4),
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: accent.withOpacity(0.5), shape: BoxShape.circle)),
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: accent.withValues(alpha: 0.5), shape: BoxShape.circle)),
               ],
             ),
           ),
@@ -39,9 +39,9 @@ class LayoutPreviewClassic extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-                previewPill(accent.withOpacity(0.15), accent, 28),
+                previewPill(accent.withValues(alpha: 0.15), accent, 28),
                 const SizedBox(width: 4),
-                previewPill(accent.withOpacity(0.15), accent, 22),
+                previewPill(accent.withValues(alpha: 0.15), accent, 22),
                 const SizedBox(width: 4),
                 previewColorDots(),
               ],
@@ -83,7 +83,7 @@ class LayoutPreviewClassic extends StatelessWidget {
             color: bar,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(7, (i) => Icon(Icons.circle, size: 6, color: accent.withOpacity(0.5))),
+              children: List.generate(7, (i) => Icon(Icons.circle, size: 6, color: accent.withValues(alpha: 0.5))),
             ),
           ),
         ],

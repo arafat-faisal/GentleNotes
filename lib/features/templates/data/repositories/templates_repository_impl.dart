@@ -1,5 +1,5 @@
 /// Concrete implementation of the templates repository backed by local storage.
-library templates_repository_impl;
+library;
 
 import '../../../../core/services/storage/i_local_storage.dart';
 import '../../../../models/models.dart';

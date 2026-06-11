@@ -12,7 +12,7 @@ class StorageStatusCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       color: theme.cardColor,
       child: Padding(
@@ -37,7 +37,7 @@ class StorageStatusCard extends StatelessWidget {
             LinearProgressIndicator(
               value: 0.08,
               borderRadius: BorderRadius.circular(4),
-              backgroundColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
               color: theme.colorScheme.primary,
             ),
             const SizedBox(height: 8),
@@ -47,7 +47,7 @@ class StorageStatusCard extends StatelessWidget {
                 Text(
                   '4.2 MB used of 50 MB local cache',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 Text(

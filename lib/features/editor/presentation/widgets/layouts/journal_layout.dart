@@ -28,7 +28,7 @@ class JournalLayout extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: accent.withOpacity(isDark ? 0.18 : 0.09),
+              color: accent.withValues(alpha: isDark ? 0.18 : 0.09),
               border: Border(bottom: BorderSide(color: lineColor, width: 1)),
             ),
             child: Row(
@@ -49,7 +49,7 @@ class JournalLayout extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: accent.withOpacity(0.12),
+                    color: accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -99,7 +99,7 @@ class JournalLayout extends StatelessWidget {
                   fontFamily: 'Outfit',
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: lineColor.withOpacity(0.8),
+                  color: lineColor.withValues(alpha: 0.8),
                 ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
@@ -107,7 +107,7 @@ class JournalLayout extends StatelessWidget {
               ),
             ),
           ),
-          Divider(height: 1, indent: 20, endIndent: 20, color: accent.withOpacity(0.3)),
+          Divider(height: 1, indent: 20, endIndent: 20, color: accent.withValues(alpha: 0.3)),
 
           // ── Ruled-line editor ──
           Expanded(
@@ -138,7 +138,7 @@ class JournalLayout extends StatelessWidget {
                   bottom: 0,
                   child: Container(
                     width: 1.5,
-                    color: const Color(0xFFFFB3B3).withOpacity(isDark ? 0.3 : 0.7),
+                    color: const Color(0xFFFFB3B3).withValues(alpha: isDark ? 0.3 : 0.7),
                   ),
                 ),
                 // Editor padded to write on ruled paper, leaves 80px room at bottom for FloatingToolbar

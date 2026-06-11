@@ -29,7 +29,7 @@ class ThemeSettingsSection extends ConsumerWidget {
           child: Text(
             'Each theme is a full app skin — it sets colours for every element in both Light and Dark mode.',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -44,7 +44,7 @@ class ThemeSettingsSection extends ConsumerWidget {
           child: Text(
             'Choose the visual layout style for your home workspace',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -59,7 +59,7 @@ class ThemeSettingsSection extends ConsumerWidget {
           child: Text(
             'Choose the visual layout style for the note editor',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ),
@@ -73,9 +73,9 @@ class ThemeSettingsSection extends ConsumerWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+              side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
             ),
-            color: theme.colorScheme.primary.withOpacity(0.04),
+            color: theme.colorScheme.primary.withValues(alpha: 0.04),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -97,7 +97,7 @@ class ThemeSettingsSection extends ConsumerWidget {
                         Text(
                           'You are currently in Simple customization depth. Restricting selections to defaults. Enable Advanced Mode under Workspace Profile to unlock more layouts and themes.',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                             height: 1.3,
                           ),
                         ),

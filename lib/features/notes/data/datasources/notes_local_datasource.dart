@@ -7,7 +7,7 @@
 /// Responsibilities:
 /// - Read/write notes via the storage interface
 /// - No business logic lives here — filtering and validation belong in use cases
-library notes_local_datasource;
+library;
 
 import '../../../../core/services/storage/i_local_storage.dart';
 import '../../../../models/models.dart';

@@ -95,7 +95,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
           // Folder Info Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: folderColor.withOpacity(0.08),
+            color: folderColor.withValues(alpha: 0.08),
             child: Row(
               children: [
                 Icon(IconHelper.getIcon(folder.iconName), color: folderColor, size: 24),
@@ -151,7 +151,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               ),
             ),
           ),
@@ -168,7 +168,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                           Icon(
                             Icons.note_alt_outlined,
                             size: 64,
-                            color: folderColor.withOpacity(0.2),
+                            color: folderColor.withValues(alpha: 0.2),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -182,7 +182,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                                 : 'Create your first note in this folder using the button below!',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                             ),
                           ),
                         ],
@@ -303,7 +303,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                 Icon(
                   Icons.chevron_right,
                   size: 16,
-                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                 ),
             ],
           );
@@ -328,7 +328,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                 'Subfolders',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
               TextButton.icon(
@@ -355,7 +355,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
             child: Text(
               'No subfolders created yet.',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -378,8 +378,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                     onPressed: () {
                       context.push('/folders/${sub.id}');
                     },
-                    backgroundColor: subColor.withOpacity(0.08),
-                    side: BorderSide(color: subColor.withOpacity(0.2)),
+                    backgroundColor: subColor.withValues(alpha: 0.08),
+                    side: BorderSide(color: subColor.withValues(alpha: 0.2)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

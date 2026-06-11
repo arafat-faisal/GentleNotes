@@ -6,6 +6,7 @@ import '../../../../../models/models.dart';
 import '../../../../folders/presentation/controllers/folders_controller.dart';
 import '../../../../notes/presentation/controllers/notes_controller.dart';
 import '../../../../../core/services/export_import_service.dart';
+import '../panels/share_note_bottom_sheet.dart';
 import '../editor_body_widget.dart';
 import 'aesthetic_layouts.dart';
 
@@ -96,7 +97,15 @@ class CardsLayout extends ConsumerWidget {
                         if (val == 'share') {
                           layout.onSave();
                           final note = ref.read(notesProvider).firstWhere((n) => n.id == layout.noteId);
-                          ExportImportService().shareNote(note, folderName: folder?.name);
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => ShareNoteBottomSheet(
+                              note: note,
+                              folderName: folder?.name,
+                            ),
+                          );
                         }
                         if (val == 'md') {
                           layout.onSave();

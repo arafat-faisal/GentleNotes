@@ -20,7 +20,7 @@ class DrawingStroke {
 
 class DrawingController extends ChangeNotifier {
   List<DrawingStroke> _strokes = [];
-  List<DrawingStroke> _undoStack = [];
+  final List<DrawingStroke> _undoStack = [];
   DrawingStroke? _currentStroke;
 
   DrawingTool _activeTool = DrawingTool.pen;

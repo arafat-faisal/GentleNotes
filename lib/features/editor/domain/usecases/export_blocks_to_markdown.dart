@@ -28,7 +28,18 @@ class ExportBlocksToMarkdown {
           buffer.writeln('![drawing](${block.content})');
           break;
         case BlockType.audio:
-          buffer.writeln('[Audio Attachment](${block.content})');
+          final audios = block.data['audios'] as List?;
+          if (audios != null && audios.isNotEmpty) {
+            for (final item in audios) {
+              if (item is Map) {
+                final path = item['path']?.toString() ?? '';
+                final name = item['name']?.toString() ?? 'Audio';
+                buffer.writeln('[$name]($path)');
+              }
+            }
+          } else {
+            buffer.writeln('[Audio Attachment](${block.content})');
+          }
           break;
         case BlockType.pdf:
           final name = block.attributes['name'] ?? 'PDF Document';

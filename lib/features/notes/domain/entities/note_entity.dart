@@ -11,7 +11,7 @@
 /// Extension points:
 /// - Add [aiSummary] field when AI summarization is enabled.
 /// - Add [syncStatus] field when cloud sync is implemented.
-library note_entity;
+library;
 
 /// Represents the type/format of a note's content.
 enum NoteContentType {

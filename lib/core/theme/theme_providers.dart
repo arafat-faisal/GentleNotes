@@ -3,7 +3,7 @@
 /// These providers watch [settingsProvider] and reactively rebuild the
 /// [MaterialApp] whenever the user changes theme mode, accent color, or
 /// aesthetic theme preset.
-library theme_providers;
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

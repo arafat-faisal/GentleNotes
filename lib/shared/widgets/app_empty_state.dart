@@ -2,7 +2,7 @@
 ///
 /// Displays an icon, message, and optional call-to-action button when
 /// a list or collection is empty. Fully themeable.
-library app_empty_state;
+library;
 
 import 'package:flutter/material.dart';
 
@@ -48,8 +48,8 @@ class AppEmptyState extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    theme.colorScheme.primary.withOpacity(0.12),
-                    theme.colorScheme.secondary.withOpacity(0.08),
+                    theme.colorScheme.primary.withValues(alpha: 0.12),
+                    theme.colorScheme.secondary.withValues(alpha: 0.08),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -59,7 +59,7 @@ class AppEmptyState extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 36,
-                color: theme.colorScheme.primary.withOpacity(0.6),
+                color: theme.colorScheme.primary.withValues(alpha: 0.6),
               ),
             ),
 

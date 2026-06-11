@@ -26,10 +26,10 @@ class SettingsScreen extends ConsumerWidget {
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                 ),
               ),
               child: TabBar(
@@ -38,14 +38,14 @@ class SettingsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.25),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.25),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 labelColor: theme.colorScheme.onPrimary,
-                unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.65),
+                unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
                 labelStyle: const TextStyle(

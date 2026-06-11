@@ -34,7 +34,7 @@ class HomeCompactLayout extends ConsumerWidget {
                   prefixIcon: const Icon(Icons.search, size: 18),
                   contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -86,7 +86,7 @@ class HomeCompactLayout extends ConsumerWidget {
               searchVal.isNotEmpty ? 'Results (${filteredNotes.length})' : 'All Notes (${filteredNotes.length})',
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -99,7 +99,7 @@ class HomeCompactLayout extends ConsumerWidget {
             child: Center(
               child: Text(
                 'No notes found',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.4)),
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
               ),
             ),
           )
@@ -135,7 +135,7 @@ class HomeCompactLayout extends ConsumerWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
             width: 0.8,
           ),
         ),
@@ -146,7 +146,7 @@ class HomeCompactLayout extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
             children: [
-              Icon(note.noteType.icon, size: 16, color: theme.colorScheme.primary.withOpacity(0.7)),
+              Icon(note.noteType.icon, size: 16, color: theme.colorScheme.primary.withValues(alpha: 0.7)),
               const SizedBox(width: 10),
               if (folder != null) ...[
                 Container(
@@ -178,13 +178,13 @@ class HomeCompactLayout extends ConsumerWidget {
                 ),
               if (note.isFavorite)
                 const Padding(
-                  padding: const EdgeInsets.only(right: 6),
+                  padding: EdgeInsets.only(right: 6),
                   child: Icon(Icons.favorite, size: 12, color: Color(0xFFF43F5E)),
                 ),
               Text(
                 dateStr,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   fontSize: 11,
                 ),
               ),

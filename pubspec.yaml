@@ -69,7 +69,10 @@ dependencies:
   speech_to_text: ^7.4.0
   google_fonts: ^8.1.0
   pdfx: ^2.9.2
+  archive: ^4.0.9
 
+  path: any
+  http: ^1.6.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

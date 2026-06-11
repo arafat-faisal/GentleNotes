@@ -67,7 +67,7 @@ class DrawingBlock extends StatelessWidget {
                 style: BorderStyle.solid,
                 width: 1.5,
               ),
-              color: isDark ? const Color(0xFF1E1A30).withOpacity(0.4) : const Color(0xFFF3F0FA),
+              color: isDark ? const Color(0xFF1E1A30).withValues(alpha: 0.4) : const Color(0xFFF3F0FA),
             ),
             child: Column(
               children: [
@@ -204,7 +204,7 @@ class _BrokenDrawingPlaceholder extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: 180,
-      color: Colors.grey.withOpacity(0.1),
+      color: Colors.grey.withValues(alpha: 0.1),
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

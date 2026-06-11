@@ -138,7 +138,7 @@ class _StickerCreatorSheetState extends ConsumerState<StickerCreatorSheet> with 
       }
 
       if (kIsWeb) {
-        final base64String = base64Encode(pngBytes!);
+        final base64String = base64Encode(pngBytes);
         widget.onSelect('data:image/png;base64,$base64String');
         if (mounted) {
           Navigator.pop(context);
@@ -149,7 +149,7 @@ class _StickerCreatorSheetState extends ConsumerState<StickerCreatorSheet> with 
       final dir = await getApplicationDocumentsDirectory();
       final fileName = 'custom_sticker_${const Uuid().v4()}.png';
       final file = File('${dir.path}/$fileName');
-      await file.writeAsBytes(pngBytes!);
+      await file.writeAsBytes(pngBytes);
 
       widget.onSelect(file.path);
       if (mounted) {

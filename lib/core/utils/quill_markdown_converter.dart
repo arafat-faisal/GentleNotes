@@ -414,7 +414,7 @@ class QuillMarkdownConverter {
         buffer.write(_processLine(currentLineOps, null));
       }
       
-      return buffer.toString().trimRight() + '\n';
+      return '${buffer.toString().trimRight()}\n';
     } catch (e) {
       return deltaJsonStr;
     }
@@ -499,6 +499,23 @@ class QuillMarkdownConverter {
             attachmentId = audioData;
           }
           lineBuffer.write('[audio:$width](audio://$attachmentId)');
+        } else if (insert.containsKey('pdf')) {
+          final pdfData = insert['pdf'];
+          String path = '';
+          if (pdfData is Map) {
+            path = pdfData['path']?.toString() ?? '';
+          } else if (pdfData is String) {
+            try {
+              final parsed = jsonDecode(pdfData) as Map<String, dynamic>;
+              path = parsed['path']?.toString() ?? '';
+            } catch (_) {
+              path = pdfData;
+            }
+          }
+          final name = path.split('/').last.split('\\').last;
+          lineBuffer.write('![pdf:$name](pdf://$path)');
+        } else if (insert.containsKey('photo_frame') || insert.containsKey('photo-frame')) {
+          lineBuffer.write('![photo_frame](photo_frame://)');
         } else if (insert.containsKey('horizontal-rule') || insert.containsKey('divider')) {
           lineBuffer.write('***');
         }

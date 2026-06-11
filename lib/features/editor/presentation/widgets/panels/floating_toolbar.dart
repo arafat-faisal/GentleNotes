@@ -82,11 +82,11 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
     final allowedTools = settings.allowedTools;
 
     final barBg = isDark
-        ? const Color(0xFF13111C).withOpacity(0.85)
-        : Colors.white.withOpacity(0.85);
+        ? const Color(0xFF13111C).withValues(alpha: 0.85)
+        : Colors.white.withValues(alpha: 0.85);
     final borderCol = isDark
-        ? const Color(0xFF2E2845).withOpacity(0.5)
-        : const Color(0xFFE3DCF5).withOpacity(0.5);
+        ? const Color(0xFF2E2845).withValues(alpha: 0.5)
+        : const Color(0xFFE3DCF5).withValues(alpha: 0.5);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -217,8 +217,9 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                 if (d != null) {
                   activeSize = d;
                 } else {
-                  if (activeSizeAttr == 'small') activeSize = 12.0;
-                  else if (activeSizeAttr == 'large') activeSize = 20.0;
+                  if (activeSizeAttr == 'small') {
+                    activeSize = 12.0;
+                  } else if (activeSizeAttr == 'large') activeSize = 20.0;
                   else if (activeSizeAttr == 'huge') activeSize = 28.0;
                 }
               } else if (activeSizeAttr is int) {
@@ -349,8 +350,9 @@ class _FloatingToolbarState extends ConsumerState<FloatingToolbar> {
                       icon: const Icon(Icons.format_line_spacing_rounded, size: 15),
                       onPressed: () {
                         double nextHeight = 1.4;
-                        if (selectedHeight == 1.2) nextHeight = 1.4;
-                        else if (selectedHeight == 1.4) nextHeight = 1.6;
+                        if (selectedHeight == 1.2) {
+                          nextHeight = 1.4;
+                        } else if (selectedHeight == 1.4) nextHeight = 1.6;
                         else if (selectedHeight == 1.6) nextHeight = 1.8;
                         else if (selectedHeight == 1.8) nextHeight = 1.2;
                         ref.read(settingsProvider.notifier).updateEditorLineHeight(nextHeight);

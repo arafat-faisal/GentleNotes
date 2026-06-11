@@ -44,17 +44,15 @@ class PresetPalette {
       onError: Colors.white,
       surface: surface,
       onSurface: onSurface,
-      background: bg,
-      onBackground: onSurface,
       surfaceContainerHighest: bg,
       outline: outline,
-      outlineVariant: outline.withOpacity(0.5),
-      shadow: Colors.black.withOpacity(0.08),
+      outlineVariant: outline.withValues(alpha: 0.5),
+      shadow: Colors.black.withValues(alpha: 0.08),
       scrim: Colors.black,
       inverseSurface: onSurface,
       onInverseSurface: surface,
       inversePrimary: secondary,
-      surfaceTint: primary.withOpacity(0.05),
+      surfaceTint: primary.withValues(alpha: 0.05),
     );
   }
 }

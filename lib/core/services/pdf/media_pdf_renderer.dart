@@ -184,8 +184,9 @@ class MediaPdfRenderer {
           cleanAlt = parts[0].trim();
           for (var part in parts.skip(1)) {
             final t = part.trim();
-            if (t.startsWith('size=')) size = t.substring(5);
-            else if (t.startsWith('align=')) align = t.substring(6);
+            if (t.startsWith('size=')) {
+              size = t.substring(5);
+            } else if (t.startsWith('align=')) align = t.substring(6);
           }
         }
         final pw.Alignment alignment = align == 'left'

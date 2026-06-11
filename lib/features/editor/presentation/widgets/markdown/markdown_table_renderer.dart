@@ -34,7 +34,7 @@ class MarkdownTableRenderer extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
-          headingRowColor: WidgetStateProperty.all(theme.colorScheme.surfaceContainerHighest.withOpacity(0.3)),
+          headingRowColor: WidgetStateProperty.all(theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)),
           columns: headers.map((h) {
             return DataColumn(
               label: MarkdownStyleBuilder.renderInlineText(

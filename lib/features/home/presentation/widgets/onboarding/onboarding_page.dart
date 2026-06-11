@@ -30,7 +30,7 @@ class OnboardingPage extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: page.gradientColors.first.withOpacity(0.4),
+                  color: page.gradientColors.first.withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -48,7 +48,7 @@ class OnboardingPage extends StatelessWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onBackground,
+              color: theme.colorScheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -57,7 +57,7 @@ class OnboardingPage extends StatelessWidget {
             page.description,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onBackground.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 16,
               height: 1.5,
             ),

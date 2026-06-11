@@ -6,7 +6,7 @@
 /// - All Riverpod providers consumed by screens and widgets
 ///
 /// Controllers must NOT contain any UI code (no BuildContext, no widgets).
-library notes_controller;
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

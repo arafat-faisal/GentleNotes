@@ -5,7 +5,7 @@
 /// - Easy unit testing via mock implementations
 /// - Future migration to a different storage backend without touching UI code
 /// - Clear separation between "what we need" (domain) and "how we do it" (data)
-library i_local_storage;
+library;
 
 import '../../../models/models.dart';
 

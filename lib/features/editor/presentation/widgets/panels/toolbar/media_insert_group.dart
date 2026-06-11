@@ -39,6 +39,29 @@ class MediaInsertGroup extends StatelessWidget {
     required this.onSpeechToggle,
   });
 
+  Future<String> _getXFileUrl(XFile file) async {
+    if (kIsWeb) {
+      final bytes = await file.readAsBytes();
+      final base64Str = base64Encode(bytes);
+      final ext = file.name.split('.').last.toLowerCase();
+      final mime = _getMimeTypeForExt(ext);
+      return 'data:$mime;base64,$base64Str';
+    } else {
+      return 'file://${file.path}';
+    }
+  }
+
+  String _getMimeTypeForExt(String ext) {
+    switch (ext) {
+      case 'png': return 'image/png';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'gif': return 'image/gif';
+      case 'webp': return 'image/webp';
+      default: return 'image/png';
+    }
+  }
+
   Future<void> _pickImage(BuildContext context) async {
     final picker = ImagePicker();
     final action = await showModalBottomSheet<dynamic>(
@@ -89,7 +112,10 @@ class MediaInsertGroup extends StatelessWidget {
     if (action == 'photo_frame') {
       final files = await picker.pickMultiImage();
       if (files.isNotEmpty) {
-        final List<String> paths = files.map((f) => kIsWeb ? f.path : 'file://${f.path}').toList();
+        final List<String> paths = [];
+        for (final f in files) {
+          paths.add(await _getXFileUrl(f));
+        }
         onInsertBlock(
           BlockType.photoFrame,
           content: jsonEncode(paths),
@@ -99,7 +125,8 @@ class MediaInsertGroup extends StatelessWidget {
     } else if (action is ImageSource) {
       final file = await picker.pickImage(source: action);
       if (file != null) {
-        onInsertBlock(BlockType.image, content: kIsWeb ? file.path : 'file://${file.path}');
+        final url = await _getXFileUrl(file);
+        onInsertBlock(BlockType.image, content: url);
       }
     }
   }
@@ -108,7 +135,10 @@ class MediaInsertGroup extends StatelessWidget {
     final picker = ImagePicker();
     final files = await picker.pickMultiImage();
     if (files.isNotEmpty) {
-      final List<String> paths = files.map((f) => kIsWeb ? f.path : 'file://${f.path}').toList();
+      final List<String> paths = [];
+      for (final f in files) {
+        paths.add(await _getXFileUrl(f));
+      }
       onInsertBlock(
         BlockType.photoFrame,
         content: jsonEncode(paths),
@@ -121,16 +151,35 @@ class MediaInsertGroup extends StatelessWidget {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: kIsWeb,
     );
-    if (result != null && result.files.single.path != null) {
-      final path = result.files.single.path!.replaceAll(r'\', '/');
-      onInsertBlock(
-        BlockType.pdf,
-        content: path,
-        attributes: {
-          'name': result.files.single.name,
-        },
-      );
+    if (result != null && result.files.isNotEmpty) {
+      final singleFile = result.files.single;
+      if (kIsWeb) {
+        final bytes = singleFile.bytes;
+        if (bytes != null) {
+          final base64Str = base64Encode(bytes);
+          final dataUrl = 'data:application/pdf;base64,$base64Str';
+          onInsertBlock(
+            BlockType.pdf,
+            content: dataUrl,
+            attributes: {
+              'name': singleFile.name,
+            },
+          );
+        }
+      } else {
+        if (singleFile.path != null) {
+          final path = singleFile.path!.replaceAll(r'\', '/');
+          onInsertBlock(
+            BlockType.pdf,
+            content: path,
+            attributes: {
+              'name': singleFile.name,
+            },
+          );
+        }
+      }
     }
   }
 

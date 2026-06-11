@@ -21,7 +21,7 @@ class FolderCard extends ConsumerWidget {
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.2), width: 1.5),
+        side: BorderSide(color: color.withValues(alpha: 0.2), width: 1.5),
       ),
       child: InkWell(
         onTap: () => context.go('/folders/${folder.id}'),
@@ -39,7 +39,7 @@ class FolderCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
+                      color: color.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -77,7 +77,7 @@ class FolderCard extends ConsumerWidget {
                       return Text(
                         '$notesCount ${notesCount == 1 ? "note" : "notes"}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       );
                     },

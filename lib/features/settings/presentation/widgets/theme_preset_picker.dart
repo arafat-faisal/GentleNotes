@@ -39,15 +39,15 @@ class ThemePresetPicker extends ConsumerWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? accentSwatch : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                  color: isSelected ? accentSwatch : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                   width: isSelected ? 2.5 : 1,
                 ),
                 boxShadow: isSelected
-                    ? [BoxShadow(color: accentSwatch.withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))]
+                    ? [BoxShadow(color: accentSwatch.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, 4))]
                     : null,
                 color: isDark
-                    ? (isSelected ? accentSwatch.withOpacity(0.1) : const Color(0xFF1C1829))
-                    : (isSelected ? accentSwatch.withOpacity(0.06) : Colors.white),
+                    ? (isSelected ? accentSwatch.withValues(alpha: 0.1) : const Color(0xFF1C1829))
+                    : (isSelected ? accentSwatch.withValues(alpha: 0.06) : Colors.white),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -63,7 +63,7 @@ class ThemePresetPicker extends ConsumerWidget {
                                 color: c,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                    color: Colors.white.withOpacity(0.3), width: 1),
+                                    color: Colors.white.withValues(alpha: 0.3), width: 1),
                               ),
                             ))
                         .toList(),
@@ -81,7 +81,7 @@ class ThemePresetPicker extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? accentSwatch : theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: isSelected ? accentSwatch : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ),

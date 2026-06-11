@@ -7,7 +7,7 @@
 /// ```dart
 /// import 'package:gentle_notes/core/models/models.dart';
 /// ```
-library models;
+library;
 
 export '../../../models/models.dart'; // Enums
 export '../../features/folders/data/models/folder_model.dart';

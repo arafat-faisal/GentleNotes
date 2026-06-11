@@ -22,7 +22,7 @@ class ThemeModeToggle extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -40,9 +40,9 @@ class ThemeModeToggle extends ConsumerWidget {
             Container(
               height: 44,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
               ),
               child: Row(
                 children: modes.asMap().entries.map((entry) {
@@ -62,7 +62,7 @@ class ThemeModeToggle extends ConsumerWidget {
                           color: isSelected ? primary : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                           boxShadow: isSelected
-                              ? [BoxShadow(color: primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
+                              ? [BoxShadow(color: primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))]
                               : null,
                         ),
                         child: Row(
@@ -73,7 +73,7 @@ class ThemeModeToggle extends ConsumerWidget {
                               size: 14,
                               color: isSelected
                                   ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)
-                                  : theme.colorScheme.onSurface.withOpacity(0.55),
+                                  : theme.colorScheme.onSurface.withValues(alpha: 0.55),
                             ),
                             const SizedBox(width: 5),
                             Text(
@@ -84,7 +84,7 @@ class ThemeModeToggle extends ConsumerWidget {
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 color: isSelected
                                     ? (theme.brightness == Brightness.dark ? Colors.black : Colors.white)
-                                    : theme.colorScheme.onSurface.withOpacity(0.55),
+                                    : theme.colorScheme.onSurface.withValues(alpha: 0.55),
                               ),
                             ),
                           ],

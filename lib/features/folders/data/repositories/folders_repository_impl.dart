@@ -1,5 +1,5 @@
 /// Concrete implementation of [IFoldersRepository] backed by local storage.
-library folders_repository_impl;
+library;
 
 import '../../../../core/services/storage/i_local_storage.dart';
 import '../../../../models/models.dart';

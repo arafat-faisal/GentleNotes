@@ -26,42 +26,86 @@ class PdfExportService {
     bool includeMetadata = true,
     bool includeTags = true,
   }) async {
+    final pdfBytes = await generatePdfBytes(
+      note,
+      folderName: folderName,
+      pageFormat: pageFormat,
+      includeMetadata: includeMetadata,
+      includeTags: includeTags,
+    );
+
+    try {
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat fmt) async => pdfBytes,
+        name: '${note.title.isEmpty ? "Note" : note.title}.pdf',
+      );
+    } catch (e, st) {
+      debugPrint('Printing layout failed: $e\n$st');
+      rethrow;
+    }
+  }
+
+  static pw.Font? _fontBold;
+  static pw.Font? _fontSemiBold;
+  static pw.Font? _fontRegular;
+  static pw.Font? _fontMono;
+  static pw.Font? _fontMonoBold;
+  static List<pw.Font>? _fallbacks;
+
+  Future<Uint8List> generatePdfBytes(
+    NoteModel note, {
+    String? folderName,
+    PdfPageFormat pageFormat = PdfPageFormat.a4,
+    bool includeMetadata = true,
+    bool includeTags = true,
+    bool includeImages = true,
+    bool includePdfs = true,
+    bool includeAudio = true,
+  }) async {
     final doc = pw.Document();
 
-    pw.Font fontBold;
-    pw.Font fontSemiBold;
-    pw.Font fontRegular;
-    pw.Font fontMono;
-    pw.Font fontMonoBold;
-
     try {
-      fontBold     = await PdfGoogleFonts.robotoBold();
-      fontSemiBold = await PdfGoogleFonts.robotoMedium();
-      fontRegular  = await PdfGoogleFonts.robotoRegular();
-      fontMono     = await PdfGoogleFonts.robotoMonoRegular();
-      fontMonoBold = await PdfGoogleFonts.robotoMonoMedium();
+      if (_fontBold == null) {
+        _fontBold     = await PdfGoogleFonts.robotoBold();
+        _fontSemiBold = await PdfGoogleFonts.robotoMedium();
+        _fontRegular  = await PdfGoogleFonts.robotoRegular();
+        _fontMono     = await PdfGoogleFonts.robotoMonoRegular();
+        _fontMonoBold = await PdfGoogleFonts.robotoMonoMedium();
+      }
     } catch (e) {
       debugPrint('PDF: Google Font fetch failed, using default: $e');
-      fontBold     = pw.Font.helveticaBold();
-      fontSemiBold = pw.Font.helveticaBold();
-      fontRegular  = pw.Font.helvetica();
-      fontMono     = pw.Font.courier();
-      fontMonoBold = pw.Font.courierBold();
+      _fontBold     ??= pw.Font.helveticaBold();
+      _fontSemiBold ??= pw.Font.helveticaBold();
+      _fontRegular  ??= pw.Font.helvetica();
+      _fontMono     ??= pw.Font.courier();
+      _fontMonoBold ??= pw.Font.courierBold();
     }
 
-    final fallbacks = <pw.Font>[];
-    try {
-      fallbacks.add(await PdfGoogleFonts.notoSansSCRegular());
-      fallbacks.add(await PdfGoogleFonts.notoSansJPRegular());
-      fallbacks.add(await PdfGoogleFonts.notoSansKRRegular());
-      fallbacks.add(await PdfGoogleFonts.notoSansArabicRegular());
-      fallbacks.add(await PdfGoogleFonts.notoSansDevanagariRegular());
-      fallbacks.add(await PdfGoogleFonts.notoSansHebrewRegular());
-      fallbacks.add(await PdfGoogleFonts.notoSansThaiRegular());
-      fallbacks.add(await PdfGoogleFonts.notoColorEmoji());
-    } catch (e) {
-      debugPrint('PDF: Fallback Google Fonts fetch failed: $e');
+    if (_fallbacks == null) {
+      _fallbacks = [];
+      try {
+        final fonts = await Future.wait([
+          PdfGoogleFonts.notoSansSCRegular(),
+          PdfGoogleFonts.notoSansJPRegular(),
+          PdfGoogleFonts.notoSansKRRegular(),
+          PdfGoogleFonts.notoSansArabicRegular(),
+          PdfGoogleFonts.notoSansDevanagariRegular(),
+          PdfGoogleFonts.notoSansHebrewRegular(),
+          PdfGoogleFonts.notoSansThaiRegular(),
+          PdfGoogleFonts.notoColorEmoji(),
+        ]);
+        _fallbacks!.addAll(fonts);
+      } catch (e) {
+        debugPrint('PDF: Fallback Google Fonts fetch failed: $e');
+      }
     }
+
+    final pw.Font fontBold = _fontBold!;
+    final pw.Font fontSemiBold = _fontSemiBold!;
+    final pw.Font fontRegular = _fontRegular!;
+    final pw.Font fontMono = _fontMono!;
+    final pw.Font fontMonoBold = _fontMonoBold!;
+    final fallbacks = _fallbacks!;
 
     final resolvedImages = <String, pw.ImageProvider>{};
     final cleanTitle = PdfDeltaParser.cleanText(note.title.isEmpty ? 'Untitled Note' : note.title);
@@ -69,7 +113,13 @@ class PdfExportService {
     final cleanTags = note.tags.map((t) => PdfDeltaParser.cleanText(t)).toList();
 
     final markdown = QuillMarkdownConverter.deltaToMarkdown(note.content);
+    debugPrint('MARKDOWN DUMP:\n$markdown\n-----');
+    
     final rawBlocks = PdfDeltaParser.parseNoteContent(markdown);
+    debugPrint('PARSED BLOCKS: ${rawBlocks.length}');
+    for (var b in rawBlocks) {
+      debugPrint('Block: ${b.type} -> ${b.text}');
+    }
     final contentBlocks = rawBlocks.map((b) {
       if (b.type == PdfBlockType.image) return b;
       if (b.type == PdfBlockType.table) {
@@ -100,6 +150,18 @@ class PdfExportService {
     for (var block in contentBlocks) {
       if (block.type == PdfBlockType.image) {
         var path = block.text;
+
+        // Skip parsing if user disabled media
+        if (!includeImages && (path.startsWith('photo_frame://') || (!path.startsWith('pdf://') && !path.startsWith('audio://')))) {
+          continue;
+        }
+        if (!includePdfs && path.startsWith('pdf://')) {
+          continue;
+        }
+        if (!includeAudio && path.startsWith('audio://')) {
+          continue;
+        }
+
         if (path.startsWith('attachment://')) {
           final id = path.replaceFirst('attachment://', '');
           final att = note.attachments.cast<AttachmentModel?>()
@@ -108,7 +170,16 @@ class PdfExportService {
         }
         if (resolvedImages.containsKey(block.text)) continue;
         try {
-          if (path.startsWith('sticker://')) {
+          if (path.startsWith('audio://')) {
+            // we can render a placeholder for audio in pdf rendering later
+            continue;
+          } else if (path.startsWith('pdf://')) {
+            // we can render a placeholder for pdf in pdf rendering later
+            continue;
+          } else if (path.startsWith('photo_frame://')) {
+            // skip for now, could render a placeholder
+            continue;
+          } else if (path.startsWith('sticker://')) {
             final stickerName = path.replaceFirst('sticker://', '');
             final byteData = await rootBundle.load('assets/images/stickers/$stickerName.png');
             final bytes = byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
@@ -230,13 +301,13 @@ class PdfExportService {
               }).toList(),
             );
           },
-        ),
-        theme: pw.ThemeData.withFont(
-          base: fontRegular,
-          bold: fontBold,
-          italic: fontRegular,
-          boldItalic: fontBold,
-          fontFallback: fallbacks,
+          theme: pw.ThemeData.withFont(
+            base: fontRegular,
+            bold: fontBold,
+            italic: fontRegular,
+            boldItalic: fontBold,
+            fontFallback: fallbacks,
+          ),
         ),
         header: (ctx) => PdfDocumentBuilder.buildHeader(fontSemiBold, fontRegular, cleanTitle),
         footer: (ctx) => PdfDocumentBuilder.buildFooter(ctx, fontSemiBold, fontRegular),
@@ -301,15 +372,71 @@ class PdfExportService {
             pw.Divider(thickness: 1, color: PdfDocumentColors.violet),
             pw.SizedBox(height: 16),
 
-            ...contentBlocks.map((block) => PdfBlockRenderer.renderBlock(
-              block,
-              fontBold: fontBold,
-              fontSemiBold: fontSemiBold,
-              fontRegular: fontRegular,
-              fontMono: fontMono,
-              fontMonoBold: fontMonoBold,
-              resolvedImages: resolvedImages,
-            )),
+            ...contentBlocks.map((block) {
+              if (block.type == PdfBlockType.image) {
+                var path = block.text;
+                if (!includeImages && (path.startsWith('photo_frame://') || (!path.startsWith('pdf://') && !path.startsWith('audio://')))) {
+                   return pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                     padding: const pw.EdgeInsets.all(12),
+                     color: PdfColors.grey200,
+                     child: pw.Center(child: pw.Text('[Image removed by export setting]', style: pw.TextStyle(color: PdfColors.grey700, fontStyle: pw.FontStyle.italic))),
+                   );
+                }
+                if (!includePdfs && path.startsWith('pdf://')) {
+                   return pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                     padding: const pw.EdgeInsets.all(12),
+                     color: PdfColors.grey200,
+                     child: pw.Center(child: pw.Text('[PDF removed by export setting]', style: pw.TextStyle(color: PdfColors.grey700, fontStyle: pw.FontStyle.italic))),
+                   );
+                }
+                if (!includeAudio && path.startsWith('audio://')) {
+                   return pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                     padding: const pw.EdgeInsets.all(12),
+                     color: PdfColors.grey200,
+                     child: pw.Center(child: pw.Text('[Voice Note removed by export setting]', style: pw.TextStyle(color: PdfColors.grey700, fontStyle: pw.FontStyle.italic))),
+                   );
+                }
+
+                if (path.startsWith('pdf://')) {
+                   final name = block.altText ?? 'Document';
+                   return pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                     padding: const pw.EdgeInsets.all(12),
+                     decoration: pw.BoxDecoration(color: PdfColors.blue50, border: pw.Border.all(color: PdfColors.blue200)),
+                     child: pw.Center(child: pw.Text('Attached PDF: $name', style: pw.TextStyle(color: PdfColors.blue800))),
+                   );
+                }
+                if (path.startsWith('audio://')) {
+                   return pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                     padding: const pw.EdgeInsets.all(12),
+                     decoration: pw.BoxDecoration(color: PdfColors.green50, border: pw.Border.all(color: PdfColors.green200)),
+                     child: pw.Center(child: pw.Text('Attached Voice Note', style: pw.TextStyle(color: PdfColors.green800))),
+                   );
+                }
+                if (path.startsWith('photo_frame://')) {
+                   return pw.Container(
+                     margin: const pw.EdgeInsets.symmetric(vertical: 8),
+                     padding: const pw.EdgeInsets.all(12),
+                     decoration: pw.BoxDecoration(color: PdfColors.amber50, border: pw.Border.all(color: PdfColors.amber200)),
+                     child: pw.Center(child: pw.Text('Attached Photo Collection', style: pw.TextStyle(color: PdfColors.amber800))),
+                   );
+                }
+              }
+
+              return PdfBlockRenderer.renderBlock(
+                block,
+                fontBold: fontBold,
+                fontSemiBold: fontSemiBold,
+                fontRegular: fontRegular,
+                fontMono: fontMono,
+                fontMonoBold: fontMonoBold,
+                resolvedImages: resolvedImages,
+              );
+            }),
           ];
         },
       ),
@@ -323,14 +450,6 @@ class PdfExportService {
       rethrow;
     }
 
-    try {
-      await Printing.layoutPdf(
-        onLayout: (PdfPageFormat fmt) async => pdfBytes,
-        name: '${note.title.isEmpty ? "Note" : note.title}.pdf',
-      );
-    } catch (e, st) {
-      debugPrint('Printing layout failed: $e\n$st');
-      rethrow;
-    }
+    return pdfBytes;
   }
 }

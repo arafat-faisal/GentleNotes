@@ -1,5 +1,5 @@
 /// Riverpod controllers and providers for the Templates feature.
-library templates_controller;
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

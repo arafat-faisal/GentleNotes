@@ -29,7 +29,7 @@ Widget previewPill(Color bg, Color border, double width) {
     decoration: BoxDecoration(
       color: bg,
       borderRadius: BorderRadius.circular(5),
-      border: Border.all(color: border.withOpacity(0.3)),
+      border: Border.all(color: border.withValues(alpha: 0.3)),
     ),
   );
 }

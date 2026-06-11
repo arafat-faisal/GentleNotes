@@ -76,7 +76,7 @@ class DrawingPainter extends CustomPainter {
     if (stroke.points.length < 2) return;
 
     final paint = Paint()
-      ..color = stroke.color.withOpacity(stroke.opacity)
+      ..color = stroke.color.withValues(alpha: stroke.opacity)
       ..strokeWidth = stroke.strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round

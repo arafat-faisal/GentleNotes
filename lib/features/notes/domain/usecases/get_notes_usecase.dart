@@ -2,7 +2,7 @@
 ///
 /// Encapsulates all filtering logic so it lives in the domain layer,
 /// not scattered across UI controllers.
-library get_notes_usecase;
+library;
 
 import '../../../../models/models.dart';
 import '../repositories/i_notes_repository.dart';

@@ -21,7 +21,12 @@ class ConvertBlocksToDelta {
         ops.add({'insert': '\n'});
       } else if (block.type == BlockType.audio) {
         ops.add({
-          'insert': {'audio': block.content},
+          'insert': {
+            'audio': {
+              'audios': block.data['audios'] ?? <Map<String, dynamic>>[],
+              'layout': block.attributes['layout'] ?? 'classic',
+            }
+          },
         });
         ops.add({'insert': '\n'});
       } else if (block.type == BlockType.sticker) {

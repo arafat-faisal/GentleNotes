@@ -1,4 +1,4 @@
-library theme_presets;
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -114,11 +114,11 @@ class ThemePresets {
 
       chipTheme: ChipThemeData(
         backgroundColor: p.chipBg,
-        selectedColor: s.primary.withOpacity(0.18),
+        selectedColor: s.primary.withValues(alpha: 0.18),
         labelStyle: TextStyle(
             fontFamily: 'Inter',
             fontSize: 13,
-            color: s.onSurface.withOpacity(0.85)),
+            color: s.onSurface.withValues(alpha: 0.85)),
         shape: StadiumBorder(side: BorderSide(color: p.borderColor)),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       ),
@@ -137,7 +137,7 @@ class ThemePresets {
             borderSide: BorderSide(color: s.primary, width: 2)),
         hintStyle: TextStyle(
             fontFamily: 'Inter',
-            color: s.onSurface.withOpacity(0.4),
+            color: s.onSurface.withValues(alpha: 0.4),
             fontSize: 14),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -147,14 +147,14 @@ class ThemePresets {
         backgroundColor: p.cardColor,
         elevation: 0,
         selectedItemColor: s.primary,
-        unselectedItemColor: s.onSurface.withOpacity(0.4),
+        unselectedItemColor: s.onSurface.withValues(alpha: 0.4),
         type: BottomNavigationBarType.fixed,
       ),
 
       dialogTheme: DialogThemeData(
         backgroundColor: p.cardColor,
         elevation: 16,
-        shadowColor: s.primary.withOpacity(0.15),
+        shadowColor: s.primary.withValues(alpha: 0.15),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: p.borderColor)),
@@ -163,7 +163,7 @@ class ThemePresets {
       popupMenuTheme: PopupMenuThemeData(
         color: p.cardColor,
         elevation: 8,
-        shadowColor: s.primary.withOpacity(0.15),
+        shadowColor: s.primary.withValues(alpha: 0.15),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
             side: BorderSide(color: p.borderColor)),
@@ -186,7 +186,7 @@ class ThemePresets {
             s.contains(WidgetState.selected) ? p.scheme.primary : null),
         trackColor: WidgetStateProperty.resolveWith((st) =>
             st.contains(WidgetState.selected)
-                ? p.scheme.primary.withOpacity(0.4)
+                ? p.scheme.primary.withValues(alpha: 0.4)
                 : null),
       ),
 
@@ -205,27 +205,27 @@ class ThemePresets {
             color: s.onSurface),
         titleMedium: TextStyle(
             fontFamily: 'Inter', fontWeight: FontWeight.w600,
-            color: s.onSurface.withOpacity(0.85)),
+            color: s.onSurface.withValues(alpha: 0.85)),
         titleSmall: TextStyle(
             fontFamily: 'Inter', fontWeight: FontWeight.w500,
-            color: s.onSurface.withOpacity(0.65)),
+            color: s.onSurface.withValues(alpha: 0.65)),
         bodyLarge: TextStyle(
             fontFamily: 'Inter',
-            color: s.onSurface.withOpacity(0.85), height: 1.6),
+            color: s.onSurface.withValues(alpha: 0.85), height: 1.6),
         bodyMedium: TextStyle(
             fontFamily: 'Inter',
-            color: s.onSurface.withOpacity(0.65), height: 1.6),
+            color: s.onSurface.withValues(alpha: 0.65), height: 1.6),
         bodySmall: TextStyle(
             fontFamily: 'Inter',
-            color: s.onSurface.withOpacity(0.5), height: 1.5),
+            color: s.onSurface.withValues(alpha: 0.5), height: 1.5),
         labelLarge: TextStyle(
             fontFamily: 'Inter', fontWeight: FontWeight.w600,
-            color: s.onSurface.withOpacity(0.85)),
+            color: s.onSurface.withValues(alpha: 0.85)),
         labelMedium: TextStyle(
             fontFamily: 'Inter', fontWeight: FontWeight.w500,
-            color: s.onSurface.withOpacity(0.65)),
+            color: s.onSurface.withValues(alpha: 0.65)),
         labelSmall: TextStyle(
-            fontFamily: 'Inter', color: s.onSurface.withOpacity(0.5)),
+            fontFamily: 'Inter', color: s.onSurface.withValues(alpha: 0.5)),
       ),
     );
   }

@@ -2,7 +2,7 @@
 ///
 /// Provides breakpoint checks used throughout the app to switch between
 /// mobile and desktop/tablet layouts.
-library responsive_helper;
+library;
 
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';

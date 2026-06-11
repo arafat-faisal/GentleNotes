@@ -25,19 +25,19 @@ class CustomModeSelectorGrid extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: !isAdvanced 
-                    ? theme.colorScheme.primary.withOpacity(0.06) 
+                    ? theme.colorScheme.primary.withValues(alpha: 0.06) 
                     : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: !isAdvanced 
                       ? theme.colorScheme.primary 
-                      : theme.colorScheme.outlineVariant.withOpacity(0.3),
+                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                   width: !isAdvanced ? 2 : 1,
                 ),
                 boxShadow: !isAdvanced
                     ? [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         )
@@ -51,7 +51,7 @@ class CustomModeSelectorGrid extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.spa_rounded, 
-                        color: !isAdvanced ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.4),
+                        color: !isAdvanced ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         size: 22,
                       ),
                       const SizedBox(height: 10),
@@ -68,7 +68,7 @@ class CustomModeSelectorGrid extends StatelessWidget {
                         'Keep layouts minimal (Classic, Minimal) and use 5 standard themes.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 10,
-                          color: theme.colorScheme.onSurface.withOpacity(0.55),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                           height: 1.3,
                         ),
                       ),
@@ -99,19 +99,19 @@ class CustomModeSelectorGrid extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isAdvanced 
-                    ? theme.colorScheme.primary.withOpacity(0.06) 
+                    ? theme.colorScheme.primary.withValues(alpha: 0.06) 
                     : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isAdvanced 
                       ? theme.colorScheme.primary 
-                      : theme.colorScheme.outlineVariant.withOpacity(0.3),
+                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                   width: isAdvanced ? 2 : 1,
                 ),
                 boxShadow: isAdvanced
                     ? [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         )
@@ -125,7 +125,7 @@ class CustomModeSelectorGrid extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.tune_rounded, 
-                        color: isAdvanced ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.4),
+                        color: isAdvanced ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         size: 22,
                       ),
                       const SizedBox(height: 10),
@@ -142,7 +142,7 @@ class CustomModeSelectorGrid extends StatelessWidget {
                         'Unlock all layout variations, cover designs, themes, and fine-tune permissions.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 10,
-                          color: theme.colorScheme.onSurface.withOpacity(0.55),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
                           height: 1.3,
                         ),
                       ),

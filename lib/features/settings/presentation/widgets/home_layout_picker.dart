@@ -70,21 +70,21 @@ class HomeLayoutPicker extends ConsumerWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? accentColor : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                  color: isSelected ? accentColor : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                   width: isSelected ? 2.5 : 1,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: accentColor.withOpacity(0.18),
+                          color: accentColor.withValues(alpha: 0.18),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
                       ]
                     : null,
                 color: isDark
-                    ? (isSelected ? accentColor.withOpacity(0.08) : const Color(0xFF1C1829))
-                    : (isSelected ? accentColor.withOpacity(0.05) : Colors.white),
+                    ? (isSelected ? accentColor.withValues(alpha: 0.08) : const Color(0xFF1C1829))
+                    : (isSelected ? accentColor.withValues(alpha: 0.05) : Colors.white),
               ),
               child: Column(
                 children: [
@@ -107,8 +107,8 @@ class HomeLayoutPicker extends ConsumerWidget {
                       border: Border(
                         top: BorderSide(
                           color: isSelected
-                              ? accentColor.withOpacity(0.3)
-                              : theme.colorScheme.outlineVariant.withOpacity(0.2),
+                              ? accentColor.withValues(alpha: 0.3)
+                              : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
                         ),
                       ),
                     ),
@@ -133,7 +133,7 @@ class HomeLayoutPicker extends ConsumerWidget {
                           Icon(
                             Icons.circle_outlined,
                             size: 16,
-                            color: theme.colorScheme.onSurface.withOpacity(0.3),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                           ),
                       ],
                     ),

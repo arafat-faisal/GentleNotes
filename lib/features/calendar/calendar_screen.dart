@@ -229,7 +229,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface.withOpacity(0.5))),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                     ),
                   ))
               .toList(),
@@ -266,7 +266,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   color: isSelected
                       ? const Color(0xFF8B5CF6)
                       : isToday
-                          ? const Color(0xFF8B5CF6).withOpacity(0.15)
+                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.15)
                           : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                   border: isToday && !isSelected
@@ -331,11 +331,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.alarm_off_rounded,
-                      size: 48, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+                      size: 48, color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
                   const SizedBox(height: 8),
                   Text('No reminders for this day',
                       style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.4))),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
                 ],
               ),
             ),
@@ -414,7 +414,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 children: [
                   // Note selector
                   DropdownButtonFormField<NoteModel>(
-                    value: selectedNote,
+                    initialValue: selectedNote,
                     decoration: const InputDecoration(
                       labelText: 'Select Note',
                       border: OutlineInputBorder(),

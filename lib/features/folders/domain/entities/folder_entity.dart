@@ -2,7 +2,7 @@
 ///
 /// Represents the business concept of a folder independent of persistence
 /// or presentation concerns. No Flutter or Hive dependencies.
-library folder_entity;
+library;
 
 /// Core domain entity representing a folder that contains notes.
 class FolderEntity {

@@ -106,7 +106,7 @@ class MetadataPanel extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: theme.dividerColor,
@@ -165,7 +165,7 @@ class MetadataPanel extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: theme.dividerColor,
@@ -229,7 +229,7 @@ class MetadataPanel extends ConsumerWidget {
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: theme.colorScheme.primary.withOpacity(0.3),
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 )
@@ -256,7 +256,7 @@ class MetadataPanel extends ConsumerWidget {
             decoration: InputDecoration(
               hintText: 'e.g. work, ideas, urgent',
               hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.hintColor.withOpacity(0.5),
+                color: theme.hintColor.withValues(alpha: 0.5),
               ),
               prefixIcon: const Icon(Icons.local_offer_outlined, size: 16),
               isDense: true,

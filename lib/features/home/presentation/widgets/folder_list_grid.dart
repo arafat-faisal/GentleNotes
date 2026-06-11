@@ -99,7 +99,7 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
       child: Center(
         child: Column(
           children: [
-            Icon(icon, size: 48, color: theme.colorScheme.primary.withOpacity(0.3)),
+            Icon(icon, size: 48, color: theme.colorScheme.primary.withValues(alpha: 0.3)),
             const SizedBox(height: 12),
             Text(
               title,
@@ -109,7 +109,7 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.5)),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
             ),
           ],
         ),
