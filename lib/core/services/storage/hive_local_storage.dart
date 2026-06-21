@@ -12,7 +12,10 @@ import 'note_storage.dart';
 import 'folder_storage.dart';
 import 'settings_storage.dart';
 import 'planner_storage.dart';
+import 'pdf_annotation_storage.dart';
 import '../../../features/planner/domain/entities/planner_item_entity.dart';
+import '../../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
+import '../../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
 
 class HiveLocalStorage implements ILocalStorage {
   late Box _foldersBox;
@@ -20,12 +23,15 @@ class HiveLocalStorage implements ILocalStorage {
   late Box _templatesBox;
   late Box _settingsBox;
   late Box _plannerBox;
+  late Box _pdfAnnotationsBox;
+  late Box _pdfBookmarksBox;
   late SharedPreferences _sharedPrefs;
 
   late NoteStorage _noteStorage;
   late FolderStorage _folderStorage;
   late SettingsStorage _settingsStorage;
   late PlannerStorage _plannerStorage;
+  late PdfAnnotationStorage _pdfAnnotationStorage;
 
   // ── Singleton ───────────────────────────────────────────────────────────────
   static final HiveLocalStorage _instance = HiveLocalStorage._internal();
@@ -43,12 +49,18 @@ class HiveLocalStorage implements ILocalStorage {
     _templatesBox = await Hive.openBox(AppConstants.templatesBox);
     _settingsBox = await Hive.openBox(AppConstants.settingsBox);
     _plannerBox = await Hive.openBox(AppConstants.plannerBox);
+    _pdfAnnotationsBox = await Hive.openBox(AppConstants.pdfAnnotationsBox);
+    _pdfBookmarksBox = await Hive.openBox(AppConstants.pdfBookmarksBox);
     _sharedPrefs = await SharedPreferences.getInstance();
 
     _noteStorage = NoteStorage(notesBox: _notesBox);
     _folderStorage = FolderStorage(foldersBox: _foldersBox, notesBox: _notesBox);
     _settingsStorage = SettingsStorage(sharedPrefs: _sharedPrefs);
     _plannerStorage = PlannerStorage(plannerBox: _plannerBox);
+    _pdfAnnotationStorage = PdfAnnotationStorage(
+      annotationsBox: _pdfAnnotationsBox,
+      bookmarksBox: _pdfBookmarksBox,
+    );
 
     await _seedInitialDataIfNeeded();
   }
@@ -338,4 +350,30 @@ greet("Faisal");
       NoteTemplateModel(id: 't-code', name: 'Code Snippet Note', description: 'Document and explain reusable blocks of code for software engineering.', category: 'Development', defaultTitle: 'Snippet - [Functionality]', defaultContent: '# Snippet Title\n\n# Language\n\n# Use Case\n\n```\n// Code goes here\n```\n\n# Explanation\n\n# Related Links', defaultTags: ['Code', 'Snippet', 'Reference'], createdAt: DateTime.now(), updatedAt: DateTime.now(), isBuiltIn: true),
     ];
   }
+
+  // ── PDF Viewer Annotations & Bookmarks ──────────────────────────────────────
+
+  @override
+  List<PdfAnnotationModel> getPdfAnnotations(String pdfPath) =>
+      _pdfAnnotationStorage.getPdfAnnotations(pdfPath);
+
+  @override
+  Future<void> savePdfAnnotation(PdfAnnotationModel annotation) =>
+      _pdfAnnotationStorage.savePdfAnnotation(annotation);
+
+  @override
+  Future<void> deletePdfAnnotation(String id) =>
+      _pdfAnnotationStorage.deletePdfAnnotation(id);
+
+  @override
+  List<PdfBookmarkModel> getPdfBookmarks(String pdfPath) =>
+      _pdfAnnotationStorage.getPdfBookmarks(pdfPath);
+
+  @override
+  Future<void> savePdfBookmark(PdfBookmarkModel bookmark) =>
+      _pdfAnnotationStorage.savePdfBookmark(bookmark);
+
+  @override
+  Future<void> deletePdfBookmark(String id) =>
+      _pdfAnnotationStorage.deletePdfBookmark(id);
 }

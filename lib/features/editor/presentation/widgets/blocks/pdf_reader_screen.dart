@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdfx/pdfx.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import '../../../../../models/models.dart';
@@ -17,11 +20,12 @@ class PdfReaderScreen extends ConsumerStatefulWidget {
 }
 
 class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
-  PdfControllerPinch? _pdfController;
+  PdfViewerController? _pdfController;
   int _currentPage = 1;
   int _totalPages = 0;
   bool _isLoading = true;
   String? _errorMessage;
+  Uint8List? _pdfBytes;
   
   bool _showUI = true;
   bool _nightMode = false;
@@ -49,23 +53,35 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
 
   Future<void> _loadPdf() async {
     try {
-      final file = File(widget.pdfPath);
+      final path = widget.pdfPath;
+      if (path.startsWith('data:')) {
+        final base64Str = path.split(',').last;
+        final bytes = base64Decode(base64Str);
+        final controller = PdfViewerController();
+        if (mounted) {
+          setState(() {
+            _pdfBytes = bytes;
+            _pdfController = controller;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      if (kIsWeb) {
+        throw Exception('Local file paths are not supported on Web.');
+      }
+
+      final file = File(path);
       if (!await file.exists()) {
-        throw Exception('PDF file not found at:\n${widget.pdfPath}');
+        throw Exception('PDF file not found at:\n$path');
       }
       
-      final document = await PdfDocument.openFile(widget.pdfPath);
-      final pageCount = document.pagesCount;
-      await document.close();
-
-      final controller = PdfControllerPinch(
-        document: PdfDocument.openFile(widget.pdfPath),
-      );
-
+      final controller = PdfViewerController();
+      
       if (mounted) {
         setState(() {
           _pdfController = controller;
-          _totalPages = pageCount;
           _isLoading = false;
         });
       }
@@ -81,11 +97,13 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
 
   @override
   void dispose() {
-    _pdfController?.dispose();
     super.dispose();
   }
 
   String get _pdfName {
+    if (widget.pdfPath.startsWith('data:')) {
+      return 'Imported PDF';
+    }
     final parts = widget.pdfPath.replaceAll('\\', '/').split('/');
     return parts.isNotEmpty ? parts.last : 'PDF Document';
   }
@@ -170,7 +188,7 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
   void _jump(String value) {
     final page = int.tryParse(value);
     if (page != null && page >= 1 && page <= _totalPages) {
-      _pdfController?.jumpToPage(page);
+      _pdfController?.goToPage(pageNumber: page);
     }
   }
 
@@ -327,9 +345,9 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
               child: Slider(
                 min: 1,
                 max: _totalPages.toDouble(),
-                value: _currentPage.toDouble().clamp(1.0, _totalPages.toDouble()),
+                value: _currentPage.toDouble().clamp(1.0, _totalPages > 0 ? _totalPages.toDouble() : 1.0),
                 onChanged: (val) {
-                  _pdfController?.jumpToPage(val.toInt());
+                  _pdfController?.goToPage(pageNumber: val.toInt());
                 },
               ),
             ),
@@ -404,30 +422,36 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
     final controller = _pdfController;
     if (controller == null) return const SizedBox.shrink();
 
-    Widget pdfView = PdfViewPinch(
-      controller: controller,
+    final params = PdfViewerParams(
+      onViewerReady: (doc, controller) {
+        if (mounted) {
+          setState(() {
+            _totalPages = doc.pages.length;
+          });
+        }
+      },
       onPageChanged: (page) {
-        setState(() => _currentPage = page);
+        if (page != null && mounted) {
+          setState(() => _currentPage = page);
+        }
       },
-      onDocumentError: (error) {
-        setState(() => _errorMessage = error.toString());
-      },
-      builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
-        options: const DefaultBuilderOptions(),
-        documentLoaderBuilder: (_) => Center(
-          child: CircularProgressIndicator(color: theme.colorScheme.primary),
-        ),
-        pageLoaderBuilder: (_) => Container(
-          color: isDark ? const Color(0xFF2A2A3E) : Colors.white,
-          child: Center(
-            child: CircularProgressIndicator(color: theme.colorScheme.primary, strokeWidth: 2),
-          ),
-        ),
-        errorBuilder: (_, error) => Center(
-          child: Text('Error: $error', style: const TextStyle(color: Colors.red)),
-        ),
+      errorBannerBuilder: (context, error, stackTrace, documentRef) => Center(
+        child: Text('Error: $error', style: const TextStyle(color: Colors.red)),
       ),
     );
+
+    Widget pdfView = _pdfBytes != null
+        ? PdfViewer.data(
+            _pdfBytes!,
+            sourceName: 'pdf_document.pdf',
+            controller: controller,
+            params: params,
+          )
+        : PdfViewer.file(
+            widget.pdfPath,
+            controller: controller,
+            params: params,
+          );
 
     // Always maintain the same widget tree depth so the controller doesn't get detached.
     pdfView = RotatedBox(

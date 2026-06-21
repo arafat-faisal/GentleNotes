@@ -5,6 +5,8 @@ import 'package:gentle_notes/features/planner/data/repositories/planner_reposito
 import 'package:gentle_notes/features/planner/domain/entities/planner_enums.dart';
 import 'package:gentle_notes/features/planner/domain/entities/planner_item_entity.dart';
 import 'package:gentle_notes/models/models.dart';
+import 'package:gentle_notes/features/pdf_viewer/data/models/pdf_annotation_model.dart';
+import 'package:gentle_notes/features/pdf_viewer/data/models/pdf_bookmark_model.dart';
 
 class FakeLocalStorage implements ILocalStorage {
   final Map<String, PlannerItemEntity> _plannerItems = {};
@@ -61,6 +63,20 @@ class FakeLocalStorage implements ILocalStorage {
   Future<void> saveTemplate(NoteTemplateModel template) async {}
   @override
   Future<void> deleteTemplate(String id) async {}
+
+  @override
+  List<PdfAnnotationModel> getPdfAnnotations(String pdfPath) => [];
+  @override
+  Future<void> savePdfAnnotation(PdfAnnotationModel annotation) async {}
+  @override
+  Future<void> deletePdfAnnotation(String id) async {}
+
+  @override
+  List<PdfBookmarkModel> getPdfBookmarks(String pdfPath) => [];
+  @override
+  Future<void> savePdfBookmark(PdfBookmarkModel bookmark) async {}
+  @override
+  Future<void> deletePdfBookmark(String id) async {}
 }
 
 void main() {

@@ -109,7 +109,10 @@ class _PdfRasterPageWidgetState extends State<PdfRasterPageWidget> {
           ),
           child: AspectRatio(
             aspectRatio: aspect,
-            child: CustomPaint(painter: _CropPainter(img, cropRect)),
+            child: ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(sigmaX: 1.5, sigmaY: 1.5),
+              child: CustomPaint(painter: _CropPainter(img, cropRect)),
+            ),
           ),
         );
       },

@@ -5,13 +5,16 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdfx/pdfx.dart';
+import 'dart:ui' as ui;
+import 'package:pdfrx/pdfrx.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../domain/entities/block_entity.dart';
+import '../../../domain/entities/block_type.dart';
 import '../../controllers/editor_block_controller.dart';
 import 'pdf_pages_manager_dialog.dart';
 import 'pdf_raster_page_widget.dart';
-import 'pdf_reader_screen.dart';
+import '../../../../pdf_viewer/presentation/screens/pdf_reader_workspace_screen.dart';
 
 /// Data model for one rendered PDF page (indexed, with image bytes).
 class PdfPageModel {
@@ -33,6 +36,7 @@ class PdfBlock extends ConsumerStatefulWidget {
   final VoidCallback onRemoved;
   final bool readOnly;
   final void Function(List<int> pages, Map<String, dynamic> crops, String layout)? onUpdate;
+  final void Function(BlockType type, String content, Map<String, dynamic> attributes)? onInsertBlock;
 
   const PdfBlock({
     super.key,
@@ -40,6 +44,7 @@ class PdfBlock extends ConsumerStatefulWidget {
     required this.onRemoved,
     required this.readOnly,
     this.onUpdate,
+    this.onInsertBlock,
   });
 
   @override
@@ -77,12 +82,33 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
         !listEquals(oldPages, newPages) ||
         !mapEquals(oldCrops, newCrops) ||
         oldWidget.block.attributes['layout'] != widget.block.attributes['layout'];
-    if (changed) _loadPdf();
+    if (changed) {
+      _clearThumbnailCache().then((_) {
+        if (mounted) _loadPdf();
+      });
+    }
+  }
+
+  Future<void> _clearThumbnailCache() async {
+    if (kIsWeb) return;
+    try {
+      final docDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory('${docDir.path}/pdf_thumbnails');
+      if (await cacheDir.exists()) {
+        final oldFiles = cacheDir.listSync().whereType<File>().where((f) {
+          final name = f.path.split(Platform.pathSeparator).last;
+          return name.startsWith('pdf_thumb_${widget.block.id}_');
+        });
+        for (final f in oldFiles) {
+          await f.delete();
+        }
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _document?.close();
+    _document?.dispose();
     super.dispose();
   }
 
@@ -106,12 +132,70 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
     });
 
     try {
-      await _document?.close();
-      if (currentLoadId != _loadId) return;
-      _document = null;
-
       final path = _normalizedPath;
       if (path.isEmpty) throw Exception('PDF file path is empty.');
+
+      // --- CHECK PER-BLOCK IMAGE CACHE ---
+      if (!kIsWeb) {
+        final docDir = await getApplicationDocumentsDirectory();
+        final cacheDir = Directory('${docDir.path}/pdf_thumbnails');
+        if (!await cacheDir.exists()) {
+          await cacheDir.create(recursive: true);
+        }
+
+        final List<dynamic> rawPages = widget.block.data['pages'] ?? [];
+        final List<int> selectedPages = List<int>.from(rawPages);
+        const maxPagesToPreview = 3;
+        final pagesToRender = selectedPages.isEmpty ? [0] : selectedPages.take(maxPagesToPreview).toList();
+
+        final List<PdfPageModel> cachedPages = [];
+        bool allCached = true;
+
+        for (final pageIdx in pagesToRender) {
+          final List<FileSystemEntity> files = cacheDir.listSync().where((f) {
+            final name = f.path.split(Platform.pathSeparator).last;
+            return name.startsWith('pdf_thumb_${widget.block.id}_${pageIdx}_') && name.endsWith('.png');
+          }).toList();
+
+          if (files.isNotEmpty) {
+            final file = files.first as File;
+            final name = file.path.split(Platform.pathSeparator).last;
+            final parts = name.replaceAll('.png', '').split('_');
+            if (parts.length >= 6) {
+              final width = double.tryParse(parts[4]) ?? 100.0;
+              final height = double.tryParse(parts[5]) ?? 140.0;
+              final bytes = await file.readAsBytes();
+              cachedPages.add(PdfPageModel(
+                index: pageIdx,
+                bytes: bytes,
+                width: width,
+                height: height,
+              ));
+            } else {
+              allCached = false;
+              break;
+            }
+          } else {
+            allCached = false;
+            break;
+          }
+        }
+
+        if (allCached && cachedPages.isNotEmpty) {
+          if (mounted && currentLoadId == _loadId) {
+            setState(() {
+              _rasterPages = cachedPages;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+      }
+      // ------------------------------------
+
+      await _document?.dispose();
+      if (currentLoadId != _loadId) return;
+      _document = null;
 
       final Uint8List pdfBytes;
       if (path.startsWith('data:')) {
@@ -126,49 +210,72 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
 
       final doc = await PdfDocument.openData(pdfBytes);
       if (currentLoadId != _loadId) {
-        await doc.close();
+        await doc.dispose();
         return;
       }
       _document = doc;
-      _totalPages = doc.pagesCount;
+      _totalPages = doc.pages.length;
 
       final List<dynamic> rawPages = widget.block.data['pages'] ?? [];
       final List<int> selectedPages = List<int>.from(rawPages);
 
+      // Limit to max 3 pages to render inside the note preview, default to 1 page if empty
+      const maxPagesToPreview = 3;
       final pagesToRender = selectedPages.isEmpty
-          ? List<int>.generate(math.min(4, doc.pagesCount), (i) => i)
-          : selectedPages;
+          ? List<int>.generate(math.min(1, doc.pages.length), (i) => i)
+          : selectedPages.take(maxPagesToPreview).toList();
 
       for (final pageIdx in pagesToRender) {
         if (!mounted || currentLoadId != _loadId) break;
         final pageNum = pageIdx + 1; // pdfx is 1-based
-        if (pageNum < 1 || pageNum > doc.pagesCount) continue;
+        if (pageNum < 1 || pageNum > doc.pages.length) continue;
 
-        final page = await doc.getPage(pageNum);
-        final renderWidth = page.width.clamp(100.0, 1200.0);
+        final page = doc.pages[pageNum - 1]; // pdfrx pages are 0-indexed in the array, but the length is correct.
+        
+        // Render at a very low resolution (blurry thumbnail preview) to speed up loading
+        final renderWidth = (page.width * 0.15).clamp(60.0, 120.0);
         final renderHeight = page.height * (renderWidth / page.width);
 
         final img = await page.render(
-          width: renderWidth,
-          height: renderHeight,
-          format: PdfPageImageFormat.png,
-          backgroundColor: '#FFFFFF',
+          fullWidth: renderWidth,
+          fullHeight: renderHeight,
+          backgroundColor: 0xFFFFFFFF,
         );
-        await page.close();
-
+        
         if (img == null || !mounted || currentLoadId != _loadId) continue;
+        
+        final uiImage = await img.createImage();
+        final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+        img.dispose();
+        
+        if (byteData == null || !mounted || currentLoadId != _loadId) continue;
+        final bytes = byteData.buffer.asUint8List();
 
         setState(() {
           _rasterPages = [
             ..._rasterPages,
             PdfPageModel(
               index: pageIdx,
-              bytes: img.bytes,
+              bytes: bytes,
               width: renderWidth,
               height: renderHeight,
             ),
           ];
         });
+      }
+
+      // Save all rendered thumbnails to file system cache
+      if (!kIsWeb) {
+        try {
+          final docDir = await getApplicationDocumentsDirectory();
+          final cacheDir = Directory('${docDir.path}/pdf_thumbnails');
+          if (await cacheDir.exists()) {
+            for (final rPage in _rasterPages) {
+              final cacheFile = File('${cacheDir.path}/pdf_thumb_${widget.block.id}_${rPage.index}_${rPage.width.toInt()}_${rPage.height.toInt()}.png');
+              await cacheFile.writeAsBytes(rPage.bytes);
+            }
+          }
+        } catch (_) {}
       }
 
       if (mounted && currentLoadId == _loadId) {
@@ -209,7 +316,7 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
       context: context,
       builder: (ctx) => PdfPagesManagerDialog(
         pdfPath: _normalizedPath,
-        totalPages: doc.pagesCount,
+        totalPages: doc.pages.length,
         block: widget.block,
         ref: ref,
         onUpdate: widget.onUpdate,
@@ -223,7 +330,10 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PdfReaderScreen(pdfPath: _normalizedPath),
+        builder: (_) => PdfReaderWorkspaceScreen(
+          pdfPath: _normalizedPath,
+          onInsertBlock: widget.onInsertBlock,
+        ),
       ),
     );
   }

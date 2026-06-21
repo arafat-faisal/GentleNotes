@@ -12,6 +12,8 @@ import '../utils/quill_markdown_converter.dart';
 import '../utils/archive_helper.dart';
 import 'pdf_export_service.dart';
 import 'storage/hive_local_storage.dart';
+import '../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
+import '../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
 
 class ExportImportService {
   static final ExportImportService _instance = ExportImportService._internal();
@@ -20,15 +22,84 @@ class ExportImportService {
 
   final HiveLocalStorage _storage = HiveLocalStorage();
 
+  // --- EXPORT HELPERS ---
+
+  List<String> _extractPdfPathsFromNote(NoteModel note) {
+    final pdfPaths = <String>[];
+    for (final attachment in note.attachments) {
+      if (attachment.type.name == 'pdf' || attachment.pathOrUrl.toLowerCase().endsWith('.pdf')) {
+        pdfPaths.add(attachment.pathOrUrl);
+      }
+    }
+    try {
+      final List<dynamic> delta = jsonDecode(note.content);
+      for (final op in delta) {
+        if (op is Map<String, dynamic> && op['insert'] is Map<String, dynamic>) {
+          final insert = op['insert'] as Map<String, dynamic>;
+          if (insert.containsKey('pdf')) {
+            final pdfVal = insert['pdf'];
+            String? path;
+            if (pdfVal is Map<String, dynamic>) {
+              path = pdfVal['path']?.toString();
+            } else if (pdfVal is String) {
+              try {
+                final parsed = jsonDecode(pdfVal);
+                if (parsed is Map<String, dynamic>) {
+                  path = parsed['path']?.toString();
+                }
+              } catch (_) {}
+            }
+            if (path != null && path.isNotEmpty) {
+              pdfPaths.add(path);
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return pdfPaths;
+  }
+
+  List<Map<String, dynamic>> _getFolderStructureForNote(String? folderId) {
+    final structure = <Map<String, dynamic>>[];
+    if (folderId == null) return structure;
+
+    final folders = _storage.getFolders();
+    final folderMap = {for (final f in folders) f.id: f};
+
+    String? currentId = folderId;
+    while (currentId != null) {
+      final f = folderMap[currentId];
+      if (f == null) break;
+      structure.insert(0, f.toMap()); // root folder first
+      currentId = f.parentFolderId;
+    }
+    return structure;
+  }
+
   // --- EXPORT TO STRING (JSON) ---
 
   String exportNoteAsJson(NoteModel note) {
+    final pdfPaths = _extractPdfPathsFromNote(note);
+    final List<Map<String, dynamic>> annotations = [];
+    final List<Map<String, dynamic>> bookmarks = [];
+    for (final path in pdfPaths) {
+      final anns = _storage.getPdfAnnotations(path);
+      final bms = _storage.getPdfBookmarks(path);
+      annotations.addAll(anns.map((a) => a.toMap()));
+      bookmarks.addAll(bms.map((b) => b.toMap()));
+    }
+
+    final folderStructure = _getFolderStructureForNote(note.folderId);
+
     final payload = {
       'appName': 'Gentle Notes',
       'exportVersion': '1.0',
       'exportedAt': DateTime.now().toIso8601String(),
       'exportType': 'note',
       'data': note.toMap(),
+      'pdfAnnotations': annotations,
+      'pdfBookmarks': bookmarks,
+      'folderStructure': folderStructure,
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
   }
@@ -231,6 +302,27 @@ class ExportImportService {
           }
         }
       } catch (_) {}
+
+      // 3. Extract from PDF annotations (snapshots and flashcards)
+      final pdfPaths = _extractPdfPathsFromNote(note);
+      for (final path in pdfPaths) {
+        final anns = _storage.getPdfAnnotations(path);
+        for (final ann in anns) {
+          if ((ann.type == 'snapshot' || ann.type == 'flashcard') && ann.snapshotPath != null) {
+            final snapPath = ann.snapshotPath!;
+            if (snapPath.isNotEmpty && !addedPaths.contains(snapPath)) {
+              if (snapPath.startsWith('/') || snapPath.contains(r':\') || snapPath.startsWith('file://') || snapPath.startsWith('data:')) {
+                final filename = _suggestFilename(snapPath, 'image', assets.length);
+                final bytes = await _readAssetBytes(snapPath);
+                if (bytes != null) {
+                  assets.add(AssetData(originalPathOrUrl: snapPath, filename: filename, bytes: bytes));
+                  addedPaths.add(snapPath);
+                }
+              }
+            }
+          }
+        }
+      }
     }
     return assets;
   }
@@ -342,6 +434,74 @@ class ExportImportService {
     await Share.shareXFiles([xFile], text: 'Sharing note: ${note.title}');
   }
 
+  void _collectSubtree(
+    String folderId,
+    List<FolderModel> allFolders,
+    List<NoteModel> allNotes,
+    List<FolderModel> collectedFolders,
+    List<NoteModel> collectedNotes,
+  ) {
+    final subfolders = allFolders.where((f) => f.parentFolderId == folderId).toList();
+    for (var sf in subfolders) {
+      collectedFolders.add(sf);
+      _collectSubtree(sf.id, allFolders, allNotes, collectedFolders, collectedNotes);
+    }
+    final notes = allNotes.where((n) => n.folderId == folderId).toList();
+    collectedNotes.addAll(notes);
+  }
+
+  Future<void> shareFolder(FolderModel folder) async {
+    final allFolders = _storage.getFolders();
+    final allNotes = _storage.getNotes();
+
+    final collectedFolders = <FolderModel>[folder];
+    final collectedNotes = <NoteModel>[];
+
+    _collectSubtree(folder.id, allFolders, allNotes, collectedFolders, collectedNotes);
+    collectedNotes.addAll(allNotes.where((n) => n.folderId == folder.id).toList());
+
+    final uniqueNotesMap = {for (var n in collectedNotes) n.id: n};
+    final uniqueNotes = uniqueNotesMap.values.toList();
+
+    final List<Map<String, dynamic>> annotations = [];
+    final List<Map<String, dynamic>> bookmarks = [];
+    for (final note in uniqueNotes) {
+      final pdfPaths = _extractPdfPathsFromNote(note);
+      for (final path in pdfPaths) {
+        final anns = _storage.getPdfAnnotations(path);
+        final bms = _storage.getPdfBookmarks(path);
+        annotations.addAll(anns.map((a) => a.toMap()));
+        bookmarks.addAll(bms.map((b) => b.toMap()));
+      }
+    }
+
+    final parentFolderStructure = _getFolderStructureForNote(folder.parentFolderId);
+
+    final payload = {
+      'appName': 'Gentle Notes',
+      'exportVersion': '1.0',
+      'exportedAt': DateTime.now().toIso8601String(),
+      'exportType': 'folder_tree',
+      'folders': collectedFolders.map((f) => f.toMap()).toList(),
+      'notes': uniqueNotes.map((n) => n.toMap()).toList(),
+      'pdfAnnotations': annotations,
+      'pdfBookmarks': bookmarks,
+      'parentFolderStructure': parentFolderStructure,
+    };
+
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
+    final assets = await _extractAssets(uniqueNotes);
+    final title = folder.name.replaceAll(RegExp(r'[^\w\s]+'), '_');
+    final filename = '${title.isEmpty ? "folder" : title}.gentlefolder';
+
+    final zipBytes = ArchiveHelper.createGentleArchiveInMemory(
+      jsonContent: jsonStr,
+      assets: assets,
+    );
+
+    await saveFileBytes(zipBytes, filename);
+  }
+
   Future<void> shareTemplate(NoteTemplateModel template) async {
     final jsonStr = exportTemplateAsJson(template);
     await Share.share(jsonStr, subject: 'Gentle Notes Template: ${template.name}');
@@ -372,8 +532,67 @@ class ExportImportService {
       final type = payload['exportType'];
       if (type == 'note') {
         final noteMap = Map<String, dynamic>.from(payload['data']);
-        final note = NoteModel.fromMap(noteMap);
+        var note = NoteModel.fromMap(noteMap);
+
+        // Recreate folder structure if it exists in the payload
+        String? newFolderId;
+        if (payload.containsKey('folderStructure')) {
+          final foldersList = payload['folderStructure'] as List;
+          String? parentId; // root folder parent is null
+          for (var fObj in foldersList) {
+            final fMap = Map<String, dynamic>.from(fObj);
+            final existingFolders = _storage.getFolders();
+            FolderModel? match;
+            for (var extF in existingFolders) {
+              if (extF.name.toLowerCase() == fMap['name'].toString().toLowerCase() &&
+                  extF.parentFolderId == parentId) {
+                match = extF;
+                break;
+              }
+            }
+
+            if (match != null) {
+              parentId = match.id;
+            } else {
+              final newId = const Uuid().v4();
+              final newFolder = FolderModel(
+                id: newId,
+                name: fMap['name'],
+                parentFolderId: parentId,
+                colorHex: fMap['colorHex'] ?? '#2196F3',
+                iconName: fMap['iconName'] ?? 'folder',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                sortOrder: fMap['sortOrder'] ?? 0,
+              );
+              await _storage.saveFolder(newFolder);
+              parentId = newId;
+            }
+          }
+          newFolderId = parentId;
+        }
+
+        if (newFolderId != null) {
+          note = note.copyWith(folderId: newFolderId);
+        }
+
         await _storage.saveNote(note);
+
+        // Save PDF annotations & bookmarks
+        if (payload.containsKey('pdfAnnotations')) {
+          final annList = payload['pdfAnnotations'] as List;
+          for (var annMap in annList) {
+            final ann = PdfAnnotationModel.fromMap(Map<String, dynamic>.from(annMap));
+            await _storage.savePdfAnnotation(ann);
+          }
+        }
+        if (payload.containsKey('pdfBookmarks')) {
+          final bmList = payload['pdfBookmarks'] as List;
+          for (var bmMap in bmList) {
+            final bm = PdfBookmarkModel.fromMap(Map<String, dynamic>.from(bmMap));
+            await _storage.savePdfBookmark(bm);
+          }
+        }
         return true;
       } else if (type == 'folder') {
         final folderMap = Map<String, dynamic>.from(payload['folder']);
@@ -384,6 +603,128 @@ class ExportImportService {
         for (var nMap in notesList) {
           final note = NoteModel.fromMap(Map<String, dynamic>.from(nMap));
           await _storage.saveNote(note);
+        }
+        return true;
+      } else if (type == 'folder_tree') {
+        // Recreate the parent folder structure if it exists
+        String? currentParentId;
+        if (payload.containsKey('parentFolderStructure')) {
+          final parentStructure = payload['parentFolderStructure'] as List;
+          for (var fObj in parentStructure) {
+            final fMap = Map<String, dynamic>.from(fObj);
+            final existingFolders = _storage.getFolders();
+            FolderModel? match;
+            for (var extF in existingFolders) {
+              if (extF.name.toLowerCase() == fMap['name'].toString().toLowerCase() &&
+                  extF.parentFolderId == currentParentId) {
+                match = extF;
+                break;
+              }
+            }
+
+            if (match != null) {
+              currentParentId = match.id;
+            } else {
+              final newId = const Uuid().v4();
+              final newFolder = FolderModel(
+                id: newId,
+                name: fMap['name'],
+                parentFolderId: currentParentId,
+                colorHex: fMap['colorHex'] ?? '#2196F3',
+                iconName: fMap['iconName'] ?? 'folder',
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                sortOrder: fMap['sortOrder'] ?? 0,
+              );
+              await _storage.saveFolder(newFolder);
+              currentParentId = newId;
+            }
+          }
+        }
+
+        // Now import folders recursively, adjusting parentFolderId mapping
+        final foldersList = payload['folders'] as List;
+        final folderIdMapping = <String, String>{}; // maps old folder ID to new folder ID
+
+        final unresolvedFolders = foldersList.map((f) => Map<String, dynamic>.from(f)).toList();
+        
+        int iterations = 0;
+        while (unresolvedFolders.isNotEmpty && iterations < 100) {
+          iterations++;
+          final toRemove = <Map<String, dynamic>>[];
+          for (var fMap in unresolvedFolders) {
+            final oldId = fMap['id'] as String;
+            final oldParentId = fMap['parentFolderId'] as String?;
+            
+            final bool canResolve = oldParentId == null ||
+                foldersList.every((other) => other['id'] != oldParentId) ||
+                folderIdMapping.containsKey(oldParentId);
+
+            if (canResolve) {
+              final resolvedParentId = (oldParentId == null || foldersList.every((other) => other['id'] != oldParentId))
+                  ? currentParentId
+                  : folderIdMapping[oldParentId];
+
+              final existingFolders = _storage.getFolders();
+              FolderModel? match;
+              for (var extF in existingFolders) {
+                if (extF.name.toLowerCase() == fMap['name'].toString().toLowerCase() &&
+                    extF.parentFolderId == resolvedParentId) {
+                  match = extF;
+                  break;
+                }
+              }
+
+              if (match != null) {
+                folderIdMapping[oldId] = match.id;
+              } else {
+                final newId = const Uuid().v4();
+                final newFolder = FolderModel(
+                  id: newId,
+                  name: fMap['name'],
+                  parentFolderId: resolvedParentId,
+                  colorHex: fMap['colorHex'] ?? '#2196F3',
+                  iconName: fMap['iconName'] ?? 'folder',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  sortOrder: fMap['sortOrder'] ?? 0,
+                );
+                await _storage.saveFolder(newFolder);
+                folderIdMapping[oldId] = newId;
+              }
+              toRemove.add(fMap);
+            }
+          }
+          unresolvedFolders.removeWhere((item) => toRemove.contains(item));
+        }
+
+        // Now import notes, mapping their folderId to the new folderId
+        final notesList = payload['notes'] as List;
+        for (var nMap in notesList) {
+          var note = NoteModel.fromMap(Map<String, dynamic>.from(nMap));
+          final oldFolderId = note.folderId;
+          if (oldFolderId != null && folderIdMapping.containsKey(oldFolderId)) {
+            note = note.copyWith(folderId: folderIdMapping[oldFolderId]);
+          } else {
+            note = note.copyWith(folderId: currentParentId);
+          }
+          await _storage.saveNote(note);
+        }
+
+        // Save PDF annotations & bookmarks
+        if (payload.containsKey('pdfAnnotations')) {
+          final annList = payload['pdfAnnotations'] as List;
+          for (var annMap in annList) {
+            final ann = PdfAnnotationModel.fromMap(Map<String, dynamic>.from(annMap));
+            await _storage.savePdfAnnotation(ann);
+          }
+        }
+        if (payload.containsKey('pdfBookmarks')) {
+          final bmList = payload['pdfBookmarks'] as List;
+          for (var bmMap in bmList) {
+            final bm = PdfBookmarkModel.fromMap(Map<String, dynamic>.from(bmMap));
+            await _storage.savePdfBookmark(bm);
+          }
         }
         return true;
       } else if (type == 'template') {
@@ -429,14 +770,14 @@ class ExportImportService {
       final singleFile = result.files.single;
       final extension = singleFile.extension?.toLowerCase() ?? singleFile.name.split('.').last.toLowerCase();
 
-      final allowed = ['json', 'md', 'txt', 'gentlenote', 'gentlebackup'];
+      final allowed = ['json', 'md', 'txt', 'gentlenote', 'gentlebackup', 'gentlefolder'];
       if (!allowed.contains(extension)) return false;
 
       if (kIsWeb) {
         final bytes = singleFile.bytes;
         if (bytes == null) return false;
 
-        if (extension == 'gentlenote' || extension == 'gentlebackup') {
+        if (extension == 'gentlenote' || extension == 'gentlebackup' || extension == 'gentlefolder') {
           final extraction = await ArchiveHelper.extractGentleArchiveBytes(zipBytes: bytes);
           String? jsonContent = extraction['json'] as String?;
           final Map<String, String>? extractedAssets = (extraction['assets'] as Map?)?.cast<String, String>();
@@ -485,7 +826,7 @@ class ExportImportService {
         if (singleFile.path == null) return false;
         final file = File(singleFile.path!);
 
-        if (extension == 'gentlenote' || extension == 'gentlebackup') {
+        if (extension == 'gentlenote' || extension == 'gentlebackup' || extension == 'gentlefolder') {
           final zipBytes = await file.readAsBytes();
           final appDocDir = await getApplicationDocumentsDirectory();
           final targetAssetsDir = '${appDocDir.path}/imported_assets';

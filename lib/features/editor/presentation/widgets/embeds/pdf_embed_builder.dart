@@ -68,6 +68,24 @@ class PdfEmbedBuilder extends EmbedBuilder {
           TextSelection.collapsed(offset: offset + 1),
         );
       },
+      onInsertBlock: (type, content, attrs) {
+        final offset = getDocOffset();
+        if (type == BlockType.image) {
+          embedContext.controller.replaceText(
+            offset + 1,
+            0,
+            BlockEmbed.image(content),
+            TextSelection.collapsed(offset: offset + 2),
+          );
+        } else if (type == BlockType.text) {
+          embedContext.controller.replaceText(
+            offset + 1,
+            0,
+            '\n$content\n',
+            TextSelection.collapsed(offset: offset + content.length + 2),
+          );
+        }
+      },
     );
   }
 }

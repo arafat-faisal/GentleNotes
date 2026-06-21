@@ -9,6 +9,8 @@ library;
 
 import '../../../models/models.dart';
 import '../../../features/planner/domain/entities/planner_item_entity.dart';
+import '../../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
+import '../../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
 
 abstract class ILocalStorage {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
@@ -49,5 +51,14 @@ abstract class ILocalStorage {
   List<PlannerItemEntity> getPlannerItems();
   Future<void> savePlannerItem(PlannerItemEntity item);
   Future<void> deletePlannerItem(String id);
+
+  // ── PDF Viewer Annotations & Bookmarks ──────────────────────────────────────
+  List<PdfAnnotationModel> getPdfAnnotations(String pdfPath);
+  Future<void> savePdfAnnotation(PdfAnnotationModel annotation);
+  Future<void> deletePdfAnnotation(String id);
+
+  List<PdfBookmarkModel> getPdfBookmarks(String pdfPath);
+  Future<void> savePdfBookmark(PdfBookmarkModel bookmark);
+  Future<void> deletePdfBookmark(String id);
 }
 

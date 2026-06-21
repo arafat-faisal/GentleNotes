@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdfx/pdfx.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 import '../../../domain/entities/block_entity.dart';
 import '../../controllers/editor_block_controller.dart';
@@ -47,7 +47,7 @@ class _PdfPagesManagerDialogState extends State<PdfPagesManagerDialog> {
 
   @override
   void dispose() {
-    _document?.close();
+    _document?.dispose();
     super.dispose();
   }
 
@@ -56,29 +56,33 @@ class _PdfPagesManagerDialogState extends State<PdfPagesManagerDialog> {
       final doc = await PdfDocument.openData(await File(widget.pdfPath).readAsBytes());
       _document = doc;
 
-      for (int i = 0; i < doc.pagesCount; i++) {
+      for (int i = 0; i < doc.pages.length; i++) {
         if (!mounted) return;
-        final pageNum = i + 1; // pdfx is 1-based
-        final page = await doc.getPage(pageNum);
+        final page = doc.pages[i];
 
         // Render at low resolution for thumbnails
         final thumbWidth = (page.width * 0.25).clamp(80.0, 300.0);
         final thumbHeight = page.height * (thumbWidth / page.width);
 
         final img = await page.render(
-          width: thumbWidth,
-          height: thumbHeight,
-          format: PdfPageImageFormat.png,
-          backgroundColor: '#FFFFFF',
+          fullWidth: thumbWidth,
+          fullHeight: thumbHeight,
+          backgroundColor: 0xFFFFFFFF,
         );
-        await page.close();
-
+        
         if (img == null || !mounted) continue;
+        
+        final uiImage = await img.createImage();
+        final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+        img.dispose();
+        
+        if (byteData == null || !mounted) continue;
+        final bytes = byteData.buffer.asUint8List();
 
         setState(() {
           _thumbnails.add(PdfPageModel(
             index: i,
-            bytes: img.bytes,
+            bytes: bytes,
             width: thumbWidth,
             height: thumbHeight,
           ));
@@ -117,27 +121,23 @@ class _PdfPagesManagerDialogState extends State<PdfPagesManagerDialog> {
     try {
       final doc = _document;
       if (doc == null) return;
-      final page = await doc.getPage(thumb.index + 1);
+      final page = doc.pages[thumb.index];
       final hiWidth = (page.width * 0.8).clamp(300.0, 900.0);
       final hiHeight = page.height * (hiWidth / page.width);
 
       final hiImg = await page.render(
-        width: hiWidth,
-        height: hiHeight,
-        format: PdfPageImageFormat.png,
-        backgroundColor: '#FFFFFF',
+        fullWidth: hiWidth,
+        fullHeight: hiHeight,
+        backgroundColor: 0xFFFFFFFF,
       );
-      await page.close();
-
+      
       if (!ctx.mounted) return;
       Navigator.pop(ctx); // Dismiss spinner
 
       if (hiImg == null) return;
 
-      // Decode to ui.Image for the cropper widget
-      final codec = await ui.instantiateImageCodec(hiImg.bytes);
-      final frame = await codec.getNextFrame();
-      final uiImage = frame.image;
+      final uiImage = await hiImg.createImage();
+      hiImg.dispose();
 
       if (!ctx.mounted) return;
 

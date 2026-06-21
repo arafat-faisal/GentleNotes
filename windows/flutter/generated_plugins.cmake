@@ -5,7 +5,6 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   file_selector_windows
-  pdfx
   permission_handler_windows
   printing
   record_windows
@@ -16,6 +15,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   jni
+  pdfium_flutter
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

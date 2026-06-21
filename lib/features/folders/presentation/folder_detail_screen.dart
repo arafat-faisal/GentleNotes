@@ -10,6 +10,7 @@ import '../../notes/data/notes_repository.dart';
 import '../../settings/data/settings_repository.dart';
 import '../../home/presentation/widgets/folder_form_dialog.dart';
 import 'widgets/folder_note_card.dart';
+import '../../../core/services/export_import_service.dart';
 
 class FolderDetailScreen extends ConsumerStatefulWidget {
   final String folderId;
@@ -83,6 +84,33 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
         foregroundColor: Colors.white,
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.share_outlined),
+          tooltip: 'Export Folder',
+          onPressed: () async {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(child: CircularProgressIndicator()),
+            );
+            try {
+              await ExportImportService().shareFolder(folder);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Folder exported successfully!')),
+                );
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Export failed: $e')),
+                );
+              }
+            } finally {
+              if (context.mounted) Navigator.pop(context);
+            }
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.edit_outlined),
           tooltip: 'Rename Folder',

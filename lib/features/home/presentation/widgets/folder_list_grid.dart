@@ -8,6 +8,7 @@ import '../../../settings/presentation/controllers/settings_controller.dart';
 import 'folder_card.dart';
 import 'folder_form_dialog.dart';
 import 'folder_list_item.dart';
+import '../../../../core/services/export_import_service.dart';
 
 class FolderListGrid extends ConsumerStatefulWidget {
   const FolderListGrid({super.key});
@@ -43,6 +44,34 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
                 onTap: () {
                   Navigator.pop(context);
                   FolderFormDialog.show(context, existingFolder: folder);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: const Text('Export Folder'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(child: CircularProgressIndicator()),
+                  );
+                  try {
+                    await ExportImportService().shareFolder(folder);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Folder exported successfully!')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Export failed: $e')),
+                      );
+                    }
+                  } finally {
+                    if (context.mounted) Navigator.pop(context);
+                  }
                 },
               ),
               ListTile(
@@ -147,7 +176,7 @@ class _FolderListGridState extends ConsumerState<FolderListGrid> {
           crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : (MediaQuery.of(context).size.width > 600 ? 3 : 2),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.4,
+          childAspectRatio: MediaQuery.of(context).size.width > 600 ? 1.35 : 1.2,
         ),
         itemCount: displayFolders.length,
         itemBuilder: (context, index) => FolderCard(

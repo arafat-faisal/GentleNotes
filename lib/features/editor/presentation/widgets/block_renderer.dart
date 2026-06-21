@@ -98,6 +98,9 @@ class BlockRenderer extends ConsumerWidget {
           block: block,
           onRemoved: () => controller.removeBlock(block.id),
           readOnly: readOnly,
+          onInsertBlock: (type, content, attrs) {
+            controller.insertBlock(index, type, content: content, attributes: attrs);
+          },
         );
       case BlockType.audio:
         return AudioBlock(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 import 'app/app.dart';
 // Uses the new HiveLocalStorage from core/services — the ILocalStorage interface
@@ -10,6 +11,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Initialize Hive and seed default data before launching the app.
   await HiveLocalStorage().init();
+  // Initialize pdfrx
+  await pdfrxFlutterInitialize();
   runApp(
     const ProviderScope(
       child: GentleNotesApp(),

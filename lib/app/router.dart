@@ -11,6 +11,7 @@ import '../features/templates/presentation/templates_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/about_screen.dart';
 import '../features/calendar/calendar_screen.dart';
+import '../features/pdf_viewer/presentation/screens/pdf_reader_workspace_screen.dart';
 import '../features/editor/presentation/widgets/blocks/pdf_reader_screen.dart';
 import '../features/planner/presentation/screens/planner_screen.dart';
 import '../features/planner/presentation/screens/planner_item_detail_screen.dart';
@@ -69,7 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/pdf-reader',
         builder: (context, state) {
           final path = state.uri.queryParameters['path'] ?? '';
-          return PdfReaderScreen(pdfPath: path);
+          return PdfReaderWorkspaceScreen(pdfPath: path);
         },
       ),
       GoRoute(
