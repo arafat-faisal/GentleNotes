@@ -14,6 +14,8 @@ import 'pdf_export_service.dart';
 import 'storage/hive_local_storage.dart';
 import '../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
 import '../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
+import '../../features/goals/data/models/goal_model.dart';
+import '../../features/planner/data/models/planner_item_model.dart';
 
 class ExportImportService {
   static final ExportImportService _instance = ExportImportService._internal();
@@ -131,6 +133,8 @@ class ExportImportService {
     final folders = _storage.getFolders();
     final notes = _storage.getNotes();
     final templates = _storage.getTemplates().where((t) => !t.isBuiltIn).toList();
+    final goals = _storage.getGoals();
+    final plannerItems = _storage.getPlannerItems();
 
     final payload = {
       'appName': 'Gentle Notes',
@@ -140,6 +144,8 @@ class ExportImportService {
       'folders': folders.map((f) => f.toMap()).toList(),
       'notes': notes.map((n) => n.toMap()).toList(),
       'templates': templates.map((t) => t.toMap()).toList(),
+      'goals': goals.map((g) => GoalModel.fromEntity(g).toMap()).toList(),
+      'plannerItems': plannerItems.map((p) => PlannerItemModel.fromEntity(p).toMap()).toList(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
   }
@@ -522,6 +528,35 @@ class ExportImportService {
     await saveFileBytes(zipBytes, filename);
   }
 
+  Future<void> exportDataAsJsonFile() async {
+    final jsonStr = exportBackupAsJson();
+    final dateStr = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+    final filename = 'GentleNotes_DataExport_$dateStr.json';
+    
+    // Save raw JSON for data analysis
+    await saveFileBytes(utf8.encode(jsonStr), filename);
+  }
+
+  Future<void> exportGoalsAndPlansAsJsonFile() async {
+    final goals = _storage.getGoals();
+    final plannerItems = _storage.getPlannerItems();
+
+    final payload = {
+      'appName': 'Gentle Notes',
+      'exportVersion': '1.0',
+      'exportedAt': DateTime.now().toIso8601String(),
+      'exportType': 'goals_and_plans',
+      'goals': goals.map((g) => GoalModel.fromEntity(g).toMap()).toList(),
+      'plannerItems': plannerItems.map((p) => PlannerItemModel.fromEntity(p).toMap()).toList(),
+    };
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
+    
+    final dateStr = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+    final filename = 'GentleNotes_Goals_Plans_$dateStr.json';
+    
+    await saveFileBytes(utf8.encode(jsonStr), filename);
+  }
+
   // --- IMPORT ACTIONS ---
 
   Future<bool> importFromJsonString(String jsonStr) async {
@@ -750,6 +785,19 @@ class ExportImportService {
           final template = NoteTemplateModel.fromMap(Map<String, dynamic>.from(tMap));
           await _storage.saveTemplate(template);
         }
+
+        final goalsList = payload['goals'] as List? ?? [];
+        for (var gMap in goalsList) {
+          final goal = GoalModel.fromMap(Map<String, dynamic>.from(gMap));
+          await _storage.saveGoal(goal.toEntity());
+        }
+
+        final plannerItemsList = payload['plannerItems'] as List? ?? [];
+        for (var pMap in plannerItemsList) {
+          final plannerItem = PlannerItemModel.fromMap(Map<String, dynamic>.from(pMap));
+          await _storage.savePlannerItem(plannerItem.toEntity());
+        }
+
         return true;
       }
       return false;

@@ -20,6 +20,7 @@ class PlannerItemModel {
     this.reminderMinutesBefore,
     required this.recurrenceFrequency,
     this.linkedNoteId,
+    this.linkedGoalId,
     required this.locationOrLink,
     required this.colorHex,
     required this.priority,
@@ -40,6 +41,7 @@ class PlannerItemModel {
   final int? reminderMinutesBefore;
   final RecurrenceFrequency recurrenceFrequency;
   final String? linkedNoteId;
+  final String? linkedGoalId;
   final String locationOrLink;
   final String colorHex;
   final PlannerPriority priority;
@@ -63,6 +65,7 @@ class PlannerItemModel {
       'reminderMinutesBefore': reminderMinutesBefore,
       'recurrenceFrequency': recurrenceFrequency.name,
       'linkedNoteId': linkedNoteId,
+      'linkedGoalId': linkedGoalId,
       'locationOrLink': locationOrLink,
       'colorHex': colorHex,
       'priority': priority.name,
@@ -92,6 +95,7 @@ class PlannerItemModel {
         orElse: () => RecurrenceFrequency.none,
       ),
       linkedNoteId: map['linkedNoteId'] as String?,
+      linkedGoalId: map['linkedGoalId'] as String?,
       locationOrLink: map['locationOrLink'] as String? ?? '',
       colorHex: map['colorHex'] as String? ?? '#8B5CF6',
       priority: PlannerPriority.values.firstWhere(
@@ -123,6 +127,7 @@ class PlannerItemModel {
       reminderMinutesBefore: reminderMinutesBefore,
       recurrenceFrequency: recurrenceFrequency,
       linkedNoteId: linkedNoteId,
+      linkedGoalId: linkedGoalId,
       locationOrLink: locationOrLink,
       colorHex: colorHex,
       priority: priority,
@@ -146,6 +151,7 @@ class PlannerItemModel {
       reminderMinutesBefore: entity.reminderMinutesBefore,
       recurrenceFrequency: entity.recurrenceFrequency,
       linkedNoteId: entity.linkedNoteId,
+      linkedGoalId: entity.linkedGoalId,
       locationOrLink: entity.locationOrLink,
       colorHex: entity.colorHex,
       priority: entity.priority,

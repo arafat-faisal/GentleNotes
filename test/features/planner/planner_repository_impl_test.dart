@@ -7,6 +7,7 @@ import 'package:gentle_notes/features/planner/domain/entities/planner_item_entit
 import 'package:gentle_notes/models/models.dart';
 import 'package:gentle_notes/features/pdf_viewer/data/models/pdf_annotation_model.dart';
 import 'package:gentle_notes/features/pdf_viewer/data/models/pdf_bookmark_model.dart';
+import 'package:gentle_notes/features/goals/domain/entities/goal_entity.dart';
 
 class FakeLocalStorage implements ILocalStorage {
   final Map<String, PlannerItemEntity> _plannerItems = {};
@@ -77,6 +78,13 @@ class FakeLocalStorage implements ILocalStorage {
   Future<void> savePdfBookmark(PdfBookmarkModel bookmark) async {}
   @override
   Future<void> deletePdfBookmark(String id) async {}
+
+  @override
+  List<GoalEntity> getGoals() => [];
+  @override
+  Future<void> saveGoal(GoalEntity goal) async {}
+  @override
+  Future<void> deleteGoal(String id) async {}
 }
 
 void main() {

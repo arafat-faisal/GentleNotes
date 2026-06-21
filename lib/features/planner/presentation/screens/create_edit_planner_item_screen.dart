@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import '../controllers/planner_controller.dart';
 import '../widgets/planner_color_picker.dart';
 import '../widgets/planner_note_link_picker.dart';
+import '../widgets/planner_goal_link_picker.dart';
 import '../widgets/planner_priority_selector.dart';
 import '../widgets/planner_recurrence_picker.dart';
 import '../widgets/planner_reminder_picker.dart';
@@ -42,6 +43,7 @@ class _CreateEditPlannerItemScreenState
   int? _reminderMinutes;
   late RecurrenceFrequency _recurrence;
   String? _linkedNoteId;
+  String? _linkedGoalId;
   late String _colorHex;
   late PlannerPriority _priority;
   bool _isSaving = false;
@@ -66,6 +68,7 @@ class _CreateEditPlannerItemScreenState
     _reminderMinutes = item?.reminderMinutesBefore;
     _recurrence = item?.recurrenceFrequency ?? RecurrenceFrequency.none;
     _linkedNoteId = item?.linkedNoteId;
+    _linkedGoalId = item?.linkedGoalId;
     _colorHex = item?.colorHex ?? '#8B5CF6';
     _priority = item?.priority ?? PlannerPriority.medium;
   }
@@ -97,6 +100,8 @@ class _CreateEditPlannerItemScreenState
           recurrenceFrequency: _recurrence,
           linkedNoteId: _linkedNoteId,
           clearLinkedNote: _linkedNoteId == null,
+          linkedGoalId: _linkedGoalId,
+          clearLinkedGoal: _linkedGoalId == null,
           locationOrLink: _locationCtrl.text.trim(),
           colorHex: _colorHex,
           priority: _priority,
@@ -115,6 +120,7 @@ class _CreateEditPlannerItemScreenState
           reminderMinutesBefore: _reminderMinutes,
           recurrenceFrequency: _recurrence,
           linkedNoteId: _linkedNoteId,
+          linkedGoalId: _linkedGoalId,
           locationOrLink: _locationCtrl.text.trim(),
           colorHex: _colorHex,
           priority: _priority,
@@ -182,6 +188,8 @@ class _CreateEditPlannerItemScreenState
             _buildLocationField(theme),
             const SizedBox(height: 16),
             _buildNoteLinkRow(context, theme),
+            const SizedBox(height: 16),
+            _buildGoalLinkRow(context, theme),
             const SizedBox(height: 40),
           ],
         ),
@@ -350,6 +358,26 @@ class _CreateEditPlannerItemScreenState
         context: context,
         currentNoteId: _linkedNoteId,
         onChanged: (id) => setState(() => _linkedNoteId = id),
+      ),
+    );
+  }
+
+  Widget _buildGoalLinkRow(BuildContext context, ThemeData theme) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(Icons.flag_outlined, color: theme.colorScheme.primary),
+      title: const Text('Linked Goal'),
+      subtitle: Text(_linkedGoalId != null ? 'Goal linked' : 'No goal linked'),
+      trailing: _linkedGoalId != null
+          ? IconButton(
+              icon: const Icon(Icons.close_rounded),
+              onPressed: () => setState(() => _linkedGoalId = null),
+            )
+          : const Icon(Icons.chevron_right_rounded),
+      onTap: () => PlannerGoalLinkPicker.show(
+        context: context,
+        currentGoalId: _linkedGoalId,
+        onChanged: (id) => setState(() => _linkedGoalId = id),
       ),
     );
   }

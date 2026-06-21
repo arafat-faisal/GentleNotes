@@ -11,6 +11,7 @@ import '../controllers/planner_controller.dart';
 import '../screens/create_edit_planner_item_screen.dart';
 import '../widgets/planner_type_chip.dart';
 import '../widgets/planner_reschedule_sheet.dart';
+import '../../../../features/goals/presentation/controllers/goals_controller.dart';
 import '../../data/services/ics_export_service.dart';
 import '../../data/services/planner_share_service.dart';
 import '../../domain/entities/planner_item_entity.dart';
@@ -37,6 +38,11 @@ class PlannerItemDetailScreen extends ConsumerWidget {
 
     final theme = Theme.of(context);
     final accentColor = _hexToColor(item.colorHex);
+
+    final goals = ref.watch(goalsProvider);
+    final linkedGoal = item.linkedGoalId != null 
+        ? goals.where((g) => g.id == item.linkedGoalId).firstOrNull 
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,6 +126,11 @@ class PlannerItemDetailScreen extends ConsumerWidget {
             _InfoRow(icon: Icons.place_outlined, label: item.locationOrLink),
           if (item.linkedNoteId != null)
             _InfoRow(icon: Icons.link_rounded, label: 'Note linked'),
+          if (linkedGoal != null)
+            _GoalLinkBadge(
+              goalTitle: linkedGoal.title,
+              onTap: () => context.push('/goals/edit/${linkedGoal.id}'),
+            ),
 
           // ── Description ──
           if (item.description.isNotEmpty) ...[
@@ -324,6 +335,52 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         status,
         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+      ),
+    );
+  }
+}
+
+class _GoalLinkBadge extends StatelessWidget {
+  const _GoalLinkBadge({required this.goalTitle, required this.onTap});
+  final String goalTitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.flag_outlined, size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  'Goal: $goalTitle',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, size: 16, color: theme.colorScheme.primary),
+            ],
+          ),
+        ),
       ),
     );
   }

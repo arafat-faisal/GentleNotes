@@ -19,6 +19,14 @@ class _BackupSyncPanelState extends ConsumerState<BackupSyncPanel> {
     await ExportImportService().backupToGentleArchive();
   }
 
+  Future<void> _handleExportDataJson(BuildContext context) async {
+    await ExportImportService().exportDataAsJsonFile();
+  }
+
+  Future<void> _handleExportGoalsJson(BuildContext context) async {
+    await ExportImportService().exportGoalsAndPlansAsJsonFile();
+  }
+
   Future<void> _handleImportBackup(BuildContext context, WidgetRef ref) async {
     final success = await ExportImportService().pickAndImportFile();
     if (!mounted) return;
@@ -83,6 +91,20 @@ class _BackupSyncPanelState extends ConsumerState<BackupSyncPanel> {
             title: const Text('Export Backup File'),
             subtitle: const Text('Save entire folders, templates, notes, and media as .gentlebackup (ZIP)'),
             onTap: () => _handleExportBackup(context),
+          ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.data_object_rounded, color: Colors.indigo),
+            title: const Text('Export All Data (JSON)'),
+            subtitle: const Text('Save raw JSON file of all data for personal analysis'),
+            onTap: () => _handleExportDataJson(context),
+          ),
+          const Divider(indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.flag_outlined, color: Colors.indigo),
+            title: const Text('Export Goals & Plans (JSON)'),
+            subtitle: const Text('Only export your goals and daily planner tasks'),
+            onTap: () => _handleExportGoalsJson(context),
           ),
         ],
       ),

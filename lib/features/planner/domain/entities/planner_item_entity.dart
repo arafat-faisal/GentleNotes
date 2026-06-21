@@ -19,6 +19,7 @@ class PlannerItemEntity {
     this.reminderMinutesBefore,
     this.recurrenceFrequency = RecurrenceFrequency.none,
     this.linkedNoteId,
+    this.linkedGoalId,
     this.locationOrLink = '',
     this.colorHex = '#8B5CF6',
     this.priority = PlannerPriority.medium,
@@ -53,6 +54,9 @@ class PlannerItemEntity {
   /// ID of a [NoteModel] linked to this planner item.
   final String? linkedNoteId;
 
+  /// ID of a [GoalEntity] linked to this planner item.
+  final String? linkedGoalId;
+
   final String locationOrLink;
   final String colorHex;
   final PlannerPriority priority;
@@ -79,6 +83,8 @@ class PlannerItemEntity {
     RecurrenceFrequency? recurrenceFrequency,
     String? linkedNoteId,
     bool clearLinkedNote = false,
+    String? linkedGoalId,
+    bool clearLinkedGoal = false,
     String? locationOrLink,
     String? colorHex,
     PlannerPriority? priority,
@@ -99,6 +105,7 @@ class PlannerItemEntity {
           clearReminder ? null : (reminderMinutesBefore ?? this.reminderMinutesBefore),
       recurrenceFrequency: recurrenceFrequency ?? this.recurrenceFrequency,
       linkedNoteId: clearLinkedNote ? null : (linkedNoteId ?? this.linkedNoteId),
+      linkedGoalId: clearLinkedGoal ? null : (linkedGoalId ?? this.linkedGoalId),
       locationOrLink: locationOrLink ?? this.locationOrLink,
       colorHex: colorHex ?? this.colorHex,
       priority: priority ?? this.priority,

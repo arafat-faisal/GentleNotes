@@ -16,6 +16,8 @@ import 'pdf_annotation_storage.dart';
 import '../../../features/planner/domain/entities/planner_item_entity.dart';
 import '../../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
 import '../../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
+import '../../../features/goals/domain/entities/goal_entity.dart';
+import 'goals_storage.dart';
 
 class HiveLocalStorage implements ILocalStorage {
   late Box _foldersBox;
@@ -25,6 +27,7 @@ class HiveLocalStorage implements ILocalStorage {
   late Box _plannerBox;
   late Box _pdfAnnotationsBox;
   late Box _pdfBookmarksBox;
+  late Box _goalsBox;
   late SharedPreferences _sharedPrefs;
 
   late NoteStorage _noteStorage;
@@ -32,6 +35,7 @@ class HiveLocalStorage implements ILocalStorage {
   late SettingsStorage _settingsStorage;
   late PlannerStorage _plannerStorage;
   late PdfAnnotationStorage _pdfAnnotationStorage;
+  late GoalsStorage _goalsStorage;
 
   // ── Singleton ───────────────────────────────────────────────────────────────
   static final HiveLocalStorage _instance = HiveLocalStorage._internal();
@@ -51,6 +55,7 @@ class HiveLocalStorage implements ILocalStorage {
     _plannerBox = await Hive.openBox(AppConstants.plannerBox);
     _pdfAnnotationsBox = await Hive.openBox(AppConstants.pdfAnnotationsBox);
     _pdfBookmarksBox = await Hive.openBox(AppConstants.pdfBookmarksBox);
+    _goalsBox = await Hive.openBox(AppConstants.goalsBox);
     _sharedPrefs = await SharedPreferences.getInstance();
 
     _noteStorage = NoteStorage(notesBox: _notesBox);
@@ -61,6 +66,7 @@ class HiveLocalStorage implements ILocalStorage {
       annotationsBox: _pdfAnnotationsBox,
       bookmarksBox: _pdfBookmarksBox,
     );
+    _goalsStorage = GoalsStorage(goalsBox: _goalsBox);
 
     await _seedInitialDataIfNeeded();
   }
@@ -376,4 +382,15 @@ greet("Faisal");
   @override
   Future<void> deletePdfBookmark(String id) =>
       _pdfAnnotationStorage.deletePdfBookmark(id);
+
+  // ── Goals ────────────────────────────────────────────────────────────────────
+
+  @override
+  List<GoalEntity> getGoals() => _goalsStorage.getGoals();
+
+  @override
+  Future<void> saveGoal(GoalEntity goal) => _goalsStorage.saveGoal(goal);
+
+  @override
+  Future<void> deleteGoal(String id) => _goalsStorage.deleteGoal(id);
 }

@@ -16,7 +16,10 @@ import '../features/editor/presentation/widgets/blocks/pdf_reader_screen.dart';
 import '../features/planner/presentation/screens/planner_screen.dart';
 import '../features/planner/presentation/screens/planner_item_detail_screen.dart';
 import '../features/planner/presentation/screens/create_edit_planner_item_screen.dart';
- 
+import '../features/goals/presentation/goals_dashboard_screen.dart';
+import '../features/goals/presentation/goal_detail_screen.dart';
+import '../features/goals/presentation/create_edit_goal_screen.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/',
@@ -111,6 +114,28 @@ final routerProvider = Provider<GoRouter>((ref) {
           // This route exists for notification tap deep links.
           final itemId = state.pathParameters['id']!;
           return PlannerItemDetailScreen(itemId: itemId);
+        },
+      ),
+      GoRoute(
+        path: '/goals',
+        builder: (context, state) => const GoalsDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/goals/create',
+        builder: (context, state) => const CreateEditGoalScreen(),
+      ),
+      GoRoute(
+        path: '/goals/edit/:id',
+        builder: (context, state) {
+          final goalId = state.pathParameters['id']!;
+          return GoalDetailScreen(goalId: goalId);
+        },
+      ),
+      GoRoute(
+        path: '/goals/edit_form/:id',
+        builder: (context, state) {
+          final goalId = state.pathParameters['id']!;
+          return CreateEditGoalScreen(goalId: goalId);
         },
       ),
     ],

@@ -9,6 +9,7 @@ library;
 
 import '../../../models/models.dart';
 import '../../../features/planner/domain/entities/planner_item_entity.dart';
+import '../../../features/goals/domain/entities/goal_entity.dart';
 import '../../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
 import '../../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
 
@@ -60,5 +61,10 @@ abstract class ILocalStorage {
   List<PdfBookmarkModel> getPdfBookmarks(String pdfPath);
   Future<void> savePdfBookmark(PdfBookmarkModel bookmark);
   Future<void> deletePdfBookmark(String id);
+
+  // ── Goals ────────────────────────────────────────────────────────────────────
+  List<GoalEntity> getGoals();
+  Future<void> saveGoal(GoalEntity goal);
+  Future<void> deleteGoal(String id);
 }
 

@@ -21,6 +21,7 @@ class AppConstants {
   static const String plannerBox = 'gentle_planner_box_v1';
   static const String pdfAnnotationsBox = 'gentle_pdf_annotations_box_v1';
   static const String pdfBookmarksBox = 'gentle_pdf_bookmarks_box_v1';
+  static const String goalsBox = 'gentle_goals_box_v1';
 
   // ── SharedPreferences Keys ──────────────────────────────────────────────────
   static const String prefThemeMode = 'themeMode';
