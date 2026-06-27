@@ -20,7 +20,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/utils/responsive_helper.dart';
 import '../../features/folders/presentation/controllers/folders_controller.dart';
+import '../../features/notes/presentation/controllers/notes_controller.dart';
 import '../../features/settings/presentation/controllers/settings_controller.dart';
+import '../../models/models.dart';
 
 class GentleScaffold extends ConsumerWidget {
   const GentleScaffold({
@@ -50,10 +52,13 @@ class GentleScaffold extends ConsumerWidget {
     final theme = Theme.of(context);
     final currentRoute = GoRouterState.of(context).uri.path;
 
+    final selectedIds = ref.watch(selectedNoteIdsProvider);
+    final isBatchActive = selectedIds.isNotEmpty;
+
     if (isMobile) {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
-        appBar: appBar ?? _buildAppBar(context, theme),
+        appBar: appBar ?? (isBatchActive ? _buildBatchAppBar(context, ref, theme, selectedIds) : _buildAppBar(context, theme)),
         body: body,
         floatingActionButton: floatingActionButton,
         bottomNavigationBar: showBottomNav
@@ -118,7 +123,7 @@ class GentleScaffold extends ConsumerWidget {
           Expanded(
             child: Scaffold(
               backgroundColor: theme.scaffoldBackgroundColor,
-              appBar: appBar ?? _buildAppBar(context, theme),
+              appBar: appBar ?? (isBatchActive ? _buildBatchAppBar(context, ref, theme, selectedIds) : _buildAppBar(context, theme)),
               body: body,
               floatingActionButton: floatingActionButton,
             ),
@@ -496,7 +501,7 @@ class GentleScaffold extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.end,
-                            children: actions!,
+                            children: actions ?? [],
                           ),
                         ),
                       )
@@ -506,6 +511,119 @@ class GentleScaffold extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+
+  PreferredSizeWidget _buildBatchAppBar(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    List<String> selectedIds,
+  ) {
+    final folders = ref.watch(foldersProvider);
+
+    return AppBar(
+      backgroundColor: theme.colorScheme.primaryContainer,
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () {
+          ref.read(selectedNoteIdsProvider.notifier).state = [];
+        },
+        tooltip: 'Cancel Selection',
+      ),
+      title: Text(
+        '${selectedIds.length} Selected',
+        style: theme.textTheme.titleMedium?.copyWith(
+          color: theme.colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.select_all),
+          tooltip: 'Select All Visible',
+          onPressed: () {
+            final visibleNotes = ref.read(filteredNotesProvider);
+            ref.read(selectedNoteIdsProvider.notifier).state =
+                visibleNotes.map((n) => n.id).toList();
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.folder_open_outlined),
+          tooltip: 'Move Selected to Folder',
+          onPressed: () async {
+            final targetFolderId = await showDialog<String?>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Move Notes to Folder'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.folder_off_outlined),
+                        title: const Text('No Folder (General)'),
+                        onTap: () => Navigator.pop(context, ''),
+                      ),
+                      const Divider(),
+                      ...folders.map((f) {
+                            final parent = folders.cast<FolderModel?>().firstWhere(
+                                  (x) => x?.id == f.parentFolderId,
+                                  orElse: () => null,
+                                );
+                            return ListTile(
+                              leading: Icon(Icons.folder, color: f.color),
+                              title: Text(f.name),
+                              subtitle: parent != null 
+                                  ? Text('Subfolder of: ${parent.name}', style: const TextStyle(fontSize: 11)) 
+                                  : null,
+                              onTap: () => Navigator.pop(context, f.id),
+                            );
+                          }),
+                    ],
+                  ),
+                ),
+              ),
+            );
+            if (targetFolderId != null) {
+              final folderId = targetFolderId.isEmpty ? null : targetFolderId;
+              await ref.read(notesProvider.notifier).moveNotesToFolder(selectedIds, folderId);
+              ref.read(selectedNoteIdsProvider.notifier).state = [];
+            }
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          tooltip: 'Delete Selected',
+          onPressed: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Delete Notes?'),
+                content: Text(
+                  'Are you sure you want to permanently delete these ${selectedIds.length} notes?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true) {
+              await ref.read(notesProvider.notifier).deleteMultipleNotes(selectedIds);
+              ref.read(selectedNoteIdsProvider.notifier).state = [];
+            }
+          },
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 }

@@ -125,7 +125,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CreateEditGoalScreen(),
       ),
       GoRoute(
-        path: '/goals/edit/:id',
+        path: '/goals/detail/:id',
         builder: (context, state) {
           final goalId = state.pathParameters['id']!;
           return GoalDetailScreen(goalId: goalId);

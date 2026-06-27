@@ -73,20 +73,34 @@ class ClassicMetadataBar extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    ...folders.map((f) => DropdownMenuItem<String?>(
-                          value: f.id,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(color: f.color, shape: BoxShape.circle),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(f.name, style: const TextStyle(fontSize: 12)),
-                            ],
-                          ),
-                        )),
+                    ...folders.map((f) {
+                          final parent = folders.cast<FolderModel?>().firstWhere(
+                                (x) => x?.id == f.parentFolderId,
+                                orElse: () => null,
+                              );
+                          final nameText = parent != null ? '${parent.name} > ${f.name}' : f.name;
+                          return DropdownMenuItem<String?>(
+                            value: f.id,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(color: f.color, shape: BoxShape.circle),
+                                ),
+                                const SizedBox(width: 8),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 120),
+                                  child: Text(
+                                    nameText, 
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                   ],
                   onChanged: readOnly ? null : onFolderChanged,
                 ),

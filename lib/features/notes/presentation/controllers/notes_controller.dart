@@ -83,6 +83,31 @@ class NotesController extends StateNotifier<List<NoteModel>> {
     await _repository.toggleFavorite(id);
     loadNotes();
   }
+
+  /// Deletes multiple notes in batch.
+  Future<void> deleteMultipleNotes(List<String> ids) async {
+    for (final id in ids) {
+      await _repository.deleteNote(id);
+    }
+    loadNotes();
+  }
+
+  /// Updates folder for multiple notes in batch.
+  Future<void> moveNotesToFolder(List<String> ids, String? folderId) async {
+    for (final id in ids) {
+      final note = state.cast<NoteModel?>().firstWhere(
+            (n) => n?.id == id,
+            orElse: () => null,
+          );
+      if (note != null) {
+        await _repository.updateNote(note.copyWith(
+          folderId: folderId,
+          clearFolder: folderId == null,
+        ));
+      }
+    }
+    loadNotes();
+  }
 }
 
 /// Main provider for the complete list of notes.
@@ -100,6 +125,9 @@ final selectedTagFilterProvider = StateProvider<String?>((ref) => null);
 final selectedTypeFilterProvider = StateProvider<NoteType?>((ref) => null);
 final filterFavoriteProvider = StateProvider<bool>((ref) => false);
 final filterPinnedProvider = StateProvider<bool>((ref) => false);
+
+/// State provider to track selected note IDs for batch editing.
+final selectedNoteIdsProvider = StateProvider<List<String>>((ref) => []);
 
 // ── Derived Providers ─────────────────────────────────────────────────────────
 
@@ -136,38 +164,94 @@ bool _folderOrAncestorMatches(String folderId, String search, List<FolderModel> 
   return false;
 }
 
-/// Returns a filtered + sorted list of notes based on active filter state.
-final filteredNotesProvider = Provider<List<NoteModel>>((ref) {
-  final notes = ref.watch(notesProvider);
+/// 1. Raw Notes Provider: Alias for the base notes state list.
+final rawNotesProvider = Provider<List<NoteModel>>((ref) {
+  return ref.watch(notesProvider);
+});
+
+/// 2. Folder Filtered Provider: Filters notes based on selected folder (including nested descendant folders).
+final folderFilteredProvider = Provider<List<NoteModel>>((ref) {
+  final notes = ref.watch(rawNotesProvider);
   final folders = ref.watch(foldersProvider);
-  final search = ref.watch(searchQueryProvider).toLowerCase();
   final folderId = ref.watch(selectedFolderFilterProvider);
+
+  if (folderId == null) return notes;
+
+  final eligibleFolderIds = <String>{};
+  eligibleFolderIds.add(folderId);
+  eligibleFolderIds.addAll(_getDescendantFolderIds(folderId, folders));
+
+  return notes.where((note) => note.folderId != null && eligibleFolderIds.contains(note.folderId)).toList();
+});
+
+/// 3. Metadata Filtered Provider: Filters notes by tags, note type, favorites, and pinned states.
+final metadataFilteredProvider = Provider<List<NoteModel>>((ref) {
+  final notes = ref.watch(folderFilteredProvider);
   final tag = ref.watch(selectedTagFilterProvider);
   final type = ref.watch(selectedTypeFilterProvider);
   final favoriteOnly = ref.watch(filterFavoriteProvider);
   final pinnedOnly = ref.watch(filterPinnedProvider);
 
-  final eligibleFolderIds = <String>{};
-  if (folderId != null) {
-    eligibleFolderIds.add(folderId);
-    eligibleFolderIds.addAll(_getDescendantFolderIds(folderId, folders));
-  }
+  if (tag == null && type == null && !favoriteOnly && !pinnedOnly) return notes;
 
   return notes.where((note) {
-    if (search.isNotEmpty) {
-      final titleMatch = note.title.toLowerCase().contains(search);
-      final contentMatch = note.plainText.toLowerCase().contains(search);
-      final tagMatch = note.tags.any((t) => t.toLowerCase().contains(search));
-      final folderMatch = note.folderId != null && _folderOrAncestorMatches(note.folderId!, search, folders);
-      if (!titleMatch && !contentMatch && !tagMatch && !folderMatch) return false;
-    }
-    if (folderId != null && (note.folderId == null || !eligibleFolderIds.contains(note.folderId))) return false;
     if (tag != null && !note.tags.contains(tag)) return false;
     if (type != null && note.noteType != type) return false;
     if (favoriteOnly && !note.isFavorite) return false;
     if (pinnedOnly && !note.isPinned) return false;
     return true;
   }).toList();
+});
+
+/// 4. Search Filtered Provider: Implements a tokenized relevance search index scoring algorithm.
+final searchFilteredProvider = Provider<List<NoteModel>>((ref) {
+  final notes = ref.watch(metadataFilteredProvider);
+  final query = ref.watch(searchQueryProvider).trim().toLowerCase();
+  final folders = ref.watch(foldersProvider);
+
+  if (query.isEmpty) return notes;
+
+  // Split query by whitespace to support multi-token search queries
+  final tokens = query.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+  if (tokens.isEmpty) return notes;
+
+  final scoredNotes = <MapEntry<NoteModel, int>>[];
+
+  for (final note in notes) {
+    int score = 0;
+    for (final token in tokens) {
+      // Title match: +10 points
+      if (note.title.toLowerCase().contains(token)) {
+        score += 10;
+      }
+      // Tag match: +5 points
+      if (note.tags.any((t) => t.toLowerCase().contains(token))) {
+        score += 5;
+      }
+      // Folder or Ancestor name match: +3 points
+      if (note.folderId != null && _folderOrAncestorMatches(note.folderId!, token, folders)) {
+        score += 3;
+      }
+      // Content PlainText match: +2 points
+      if (note.plainText.toLowerCase().contains(token)) {
+        score += 2;
+      }
+    }
+
+    if (score > 0) {
+      scoredNotes.add(MapEntry(note, score));
+    }
+  }
+
+  // Sort notes by relevance score descending
+  scoredNotes.sort((a, b) => b.value.compareTo(a.value));
+  return scoredNotes.map((e) => e.key).toList();
+});
+
+/// Final centralized filtered provider pointing to the end of the pipeline.
+/// Replaces the old monolithic filteredNotesProvider so that existing visual templates compile cleanly.
+final filteredNotesProvider = Provider<List<NoteModel>>((ref) {
+  return ref.watch(searchFilteredProvider);
 });
 
 /// Returns only pinned notes.

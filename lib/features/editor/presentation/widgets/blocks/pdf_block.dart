@@ -359,7 +359,8 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
       );
     }
 
-    if (_errorMessage != null) {
+    final errorMessage = _errorMessage;
+    if (errorMessage != null) {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -370,7 +371,7 @@ class _PdfBlockState extends ConsumerState<PdfBlock> {
                 style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text(
-              _errorMessage!,
+              errorMessage,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
             ),

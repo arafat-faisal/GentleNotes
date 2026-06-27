@@ -201,7 +201,8 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
   }
 
   Future<void> _togglePlayback() async {
-    if (_recordingPath == null) return;
+    final path = _recordingPath;
+    if (path == null) return;
 
     if (_isPlaying) {
       await _audioPlayer.pause();
@@ -209,7 +210,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
         _isPlaying = false;
       });
     } else {
-      await _audioPlayer.play(_getAudioSource(_recordingPath!));
+      await _audioPlayer.play(_getAudioSource(path));
       setState(() {
         _isPlaying = true;
       });
@@ -224,8 +225,9 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
     await _audioPlayer.stop();
 
     // Delete temp file if exists
-    if (!kIsWeb && _recordingPath != null) {
-      final file = io.File(_recordingPath!);
+    final path = _recordingPath;
+    if (!kIsWeb && path != null) {
+      final file = io.File(path);
       if (await file.exists()) {
         try {
           await file.delete();
@@ -239,7 +241,8 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
   }
 
   Future<void> _attachToNote() async {
-    if (_recordingPath == null) return;
+    final path = _recordingPath;
+    if (path == null) return;
 
     try {
       if (kIsWeb) {
@@ -252,7 +255,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
           ),
         );
 
-        final response = await http.get(Uri.parse(_recordingPath!));
+        final response = await http.get(Uri.parse(path));
         if (response.statusCode == 200) {
           final bytes = response.bodyBytes;
           final base64Str = base64Encode(bytes);
@@ -267,7 +270,7 @@ class _VoiceRecorderBottomSheetState extends State<VoiceRecorderBottomSheet> wit
           throw Exception('Failed to load recorded audio blob: ${response.statusCode}');
         }
       } else {
-        widget.onAttach(_recordingPath!);
+        widget.onAttach(path);
         if (mounted) {
           Navigator.pop(context);
         }

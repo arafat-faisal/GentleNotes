@@ -220,14 +220,21 @@ class NotebookLayout extends ConsumerWidget {
                                 Flexible(child: Text('No Folder', overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11))),
                               ]),
                             ),
-                            ...folders.map((f) => DropdownMenuItem<String?>(
-                                  value: f.id,
-                                  child: Row(children: [
-                                    Container(width: 7, height: 7, decoration: BoxDecoration(color: f.color, shape: BoxShape.circle)),
-                                    const SizedBox(width: 6),
-                                    Flexible(child: Text(f.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11))),
-                                  ]),
-                                )),
+                            ...folders.map((f) {
+                                  final parent = folders.cast<FolderModel?>().firstWhere(
+                                        (x) => x?.id == f.parentFolderId,
+                                        orElse: () => null,
+                                      );
+                                  final nameText = parent != null ? '${parent.name} > ${f.name}' : f.name;
+                                  return DropdownMenuItem<String?>(
+                                    value: f.id,
+                                    child: Row(children: [
+                                      Container(width: 7, height: 7, decoration: BoxDecoration(color: f.color, shape: BoxShape.circle)),
+                                      const SizedBox(width: 6),
+                                      Flexible(child: Text(nameText, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11))),
+                                    ]),
+                                  );
+                                }),
                           ],
                           onChanged: onFolderChanged,
                         ),

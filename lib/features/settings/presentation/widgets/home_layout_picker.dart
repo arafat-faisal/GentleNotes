@@ -5,6 +5,7 @@ import '../../../../models/models.dart';
 import '../controllers/settings_controller.dart';
 import 'home_layout_previews.dart';
 
+/// Layout selector slider widget inside global Settings screen.
 class HomeLayoutPicker extends ConsumerWidget {
   final AppSettingsModel settings;
   const HomeLayoutPicker({super.key, required this.settings});
@@ -14,34 +15,15 @@ class HomeLayoutPicker extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    // Define the list of active layout presets (binary choices)
     final layoutsList = [
       (
-        preset: HomeLayoutPreset.dashboard,
-        previewBuilder: (bool dark) => HomePreviewDashboard(isDark: dark),
-      ),
-      (
-        preset: HomeLayoutPreset.minimalFeed,
+        preset: HomeLayoutPreset.minimal,
         previewBuilder: (bool dark) => HomePreviewMinimalFeed(isDark: dark),
       ),
       (
-        preset: HomeLayoutPreset.focus,
-        previewBuilder: (bool dark) => HomePreviewFocus(isDark: dark),
-      ),
-      (
-        preset: HomeLayoutPreset.magazine,
-        previewBuilder: (bool dark) => HomePreviewMagazine(isDark: dark),
-      ),
-      (
-        preset: HomeLayoutPreset.notebook,
-        previewBuilder: (bool dark) => HomePreviewNotebook(isDark: dark),
-      ),
-      (
-        preset: HomeLayoutPreset.calendar,
-        previewBuilder: (bool dark) => HomePreviewCalendar(isDark: dark),
-      ),
-      (
-        preset: HomeLayoutPreset.compact,
-        previewBuilder: (bool dark) => HomePreviewCompact(isDark: dark),
+        preset: HomeLayoutPreset.bentoGrid,
+        previewBuilder: (bool dark) => HomePreviewDashboard(isDark: dark),
       ),
     ];
 
@@ -62,7 +44,7 @@ class HomeLayoutPicker extends ConsumerWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeOut,
-              width: 130,
+              width: 140,
               margin: EdgeInsets.only(
                 left: index == 0 ? 8 : 6,
                 right: index == layoutsList.length - 1 ? 8 : 6,
@@ -94,7 +76,7 @@ class HomeLayoutPicker extends ConsumerWidget {
                       child: FittedBox(
                         fit: BoxFit.cover,
                         child: SizedBox(
-                          width: 130,
+                          width: 140,
                           height: 130,
                           child: item.previewBuilder(isDark),
                         ),

@@ -115,8 +115,24 @@ class RetryGoalUseCase {
       retryOfGoalId: failedGoal.id,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      targetDate: failedGoal.targetDate, // maybe shift this if needed, but keeping same for now
+      targetDate: _calculateNewTargetDate(failedGoal.horizon),
     );
     await repository.saveGoal(newGoal);
+  }
+
+  DateTime? _calculateNewTargetDate(GoalHorizon horizon) {
+    final now = DateTime.now();
+    switch (horizon) {
+      case GoalHorizon.daily:
+        return now.add(const Duration(days: 1));
+      case GoalHorizon.weekly:
+        return now.add(const Duration(days: 7));
+      case GoalHorizon.monthly:
+        return DateTime(now.year, now.month + 1, now.day);
+      case GoalHorizon.yearly:
+        return DateTime(now.year + 1, now.month, now.day);
+      case GoalHorizon.lifetime:
+        return null;
+    }
   }
 }

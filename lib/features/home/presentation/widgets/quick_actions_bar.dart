@@ -1,39 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/services/export_import_service.dart';
-import '../../../folders/presentation/controllers/folders_controller.dart';
-import '../../../notes/presentation/controllers/notes_controller.dart';
-import 'folder_form_dialog.dart';
+import 'home_action_delegate.dart';
 
 class QuickActionsBar extends ConsumerWidget {
   const QuickActionsBar({super.key});
-
-  Future<void> _handleImport(BuildContext context, WidgetRef ref) async {
-    final success = await ExportImportService().pickAndImportFile();
-    if (success) {
-      ref.read(foldersProvider.notifier).loadFolders();
-      ref.read(notesProvider.notifier).loadNotes();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Import completed successfully!'),
-            backgroundColor: Color(0xFF10B981),
-          ),
-        );
-      }
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to import file or cancelled.'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
-    }
-  }
 
   Widget _buildQuickAction(BuildContext context, String label, IconData icon, VoidCallback onTap) {
     final theme = Theme.of(context);
@@ -63,6 +34,7 @@ class QuickActionsBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final delegate = ref.watch(homeActionDelegateProvider);
 
     return Card(
       elevation: 0,
@@ -82,35 +54,35 @@ class QuickActionsBar extends ConsumerWidget {
                 context,
                 'Add Folder',
                 Icons.create_new_folder_outlined,
-                () => FolderFormDialog.show(context),
+                () => delegate.onFolderCreate(context),
               ),
               const SizedBox(width: 8),
               _buildQuickAction(
                 context,
                 'Import JSON',
                 Icons.file_present_outlined,
-                () => _handleImport(context, ref),
+                () => delegate.onImportBackup(context, ref),
               ),
               const SizedBox(width: 8),
               _buildQuickAction(
                 context,
                 'Templates',
                 Icons.copy_all_outlined,
-                () => context.go('/templates'),
+                () => delegate.onTemplatesTap(context),
               ),
               const SizedBox(width: 8),
               _buildQuickAction(
                 context,
                 'Calendar',
                 Icons.calendar_month_outlined,
-                () => context.go('/calendar'),
+                () => delegate.onCalendarTap(context),
               ),
               const SizedBox(width: 8),
               _buildQuickAction(
                 context,
                 'Settings',
                 Icons.tune,
-                () => context.go('/settings'),
+                () => delegate.onSettingsTap(context),
               ),
             ],
           ),

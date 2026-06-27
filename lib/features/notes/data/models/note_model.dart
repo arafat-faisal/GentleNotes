@@ -56,6 +56,7 @@ class NoteModel {
 
   NoteModel copyWith({
     String? folderId,
+    bool clearFolder = false,
     String? title,
     String? content,
     NoteType? noteType,
@@ -70,7 +71,7 @@ class NoteModel {
   }) {
     return NoteModel(
       id: id,
-      folderId: folderId ?? this.folderId,
+      folderId: clearFolder ? null : (folderId ?? this.folderId),
       title: title ?? this.title,
       content: content ?? this.content,
       noteType: noteType ?? this.noteType,

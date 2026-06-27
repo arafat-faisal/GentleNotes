@@ -1,12 +1,14 @@
-import 'package:hive_flutter/hive_flutter.dart';
-import '../../../features/goals/data/models/goal_model.dart';
-import '../../../features/goals/domain/entities/goal_entity.dart';
+import 'package:hive/hive.dart';
+import '../../domain/entities/goal_entity.dart';
+import '../models/goal_model.dart';
+import 'i_goals_storage.dart';
 
-class GoalsStorage {
-  const GoalsStorage({required Box goalsBox}) : _box = goalsBox;
-
+class GoalsStorageImpl implements IGoalsStorage {
   final Box _box;
 
+  GoalsStorageImpl(this._box);
+
+  @override
   List<GoalEntity> getGoals() {
     final items = <GoalEntity>[];
     for (final key in _box.keys) {
@@ -25,12 +27,19 @@ class GoalsStorage {
     return items;
   }
 
+  @override
   Future<void> saveGoal(GoalEntity goal) async {
     final model = GoalModel.fromEntity(goal);
     await _box.put(goal.id, model.toMap());
   }
 
+  @override
   Future<void> deleteGoal(String id) async {
     await _box.delete(id);
+  }
+
+  @override
+  Future<void> updateGoal(GoalEntity goal) async {
+    await saveGoal(goal);
   }
 }

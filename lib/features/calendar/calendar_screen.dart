@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../models/models.dart';
 import '../../core/services/notification_service.dart';
 import '../notes/data/notes_repository.dart';
+import '../../shared/widgets/gentle_scaffold.dart';
 
 // ─── Reminder Model ────────────────────────────────────────────────────────────
 class ReminderModel {
@@ -130,76 +131,76 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final today = DateTime.now();
     _selectedDay ??= today;
 
+    final selectedDay = _selectedDay;
     final dayReminders = reminders.where((r) {
+      if (selectedDay == null) return false;
       final d = r.scheduledAt;
-      return d.year == _selectedDay!.year &&
-          d.month == _selectedDay!.month &&
-          d.day == _selectedDay!.day;
+      return d.year == selectedDay.year &&
+          d.month == selectedDay.month &&
+          d.day == selectedDay.day;
     }).toList();
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0D0B18) : const Color(0xFFF5F3FF),
-      appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF13111C) : const Color(0xFFF5F3FF),
-        elevation: 0,
-        title: const Text('Calendar & Reminders',
-            style: TextStyle(fontFamily: 'Outfit', fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.today_rounded),
-            tooltip: 'Go to today',
-            onPressed: () => setState(() {
-              _selectedMonth = DateTime.now();
-              _selectedDay = DateTime.now();
-            }),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ── Month Navigator ──────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: isDark ? const Color(0xFF13111C) : Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left_rounded),
-                  onPressed: () => setState(() {
-                    _selectedMonth = DateTime(
-                        _selectedMonth.year, _selectedMonth.month - 1);
-                  }),
-                ),
-                Text(
-                  DateFormat('MMMM yyyy').format(_selectedMonth),
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right_rounded),
-                  onPressed: () => setState(() {
-                    _selectedMonth = DateTime(
-                        _selectedMonth.year, _selectedMonth.month + 1);
-                  }),
-                ),
-              ],
+    return GentleScaffold(
+      title: 'Calendar & Reminders',
+      showBackButton: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.today_rounded),
+          tooltip: 'Go to today',
+          onPressed: () => setState(() {
+            _selectedMonth = DateTime.now();
+            _selectedDay = DateTime.now();
+          }),
+        ),
+      ],
+      body: Container(
+        color: isDark ? const Color(0xFF0D0B18) : const Color(0xFFF5F3FF),
+        child: Column(
+          children: [
+            // ── Month Navigator ──────────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: isDark ? const Color(0xFF13111C) : Colors.white,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    onPressed: () => setState(() {
+                      _selectedMonth = DateTime(
+                          _selectedMonth.year, _selectedMonth.month - 1);
+                    }),
+                  ),
+                  Text(
+                    DateFormat('MMMM yyyy').format(_selectedMonth),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    onPressed: () => setState(() {
+                      _selectedMonth = DateTime(
+                          _selectedMonth.year, _selectedMonth.month + 1);
+                    }),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // ── Calendar Grid ────────────────────────────────────────────────────
-          Container(
-            color: isDark ? const Color(0xFF13111C) : Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: _buildCalendarGrid(reminders, isDark, theme),
-          ),
+            // ── Calendar Grid ────────────────────────────────────────────────────
+            Container(
+              color: isDark ? const Color(0xFF13111C) : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: _buildCalendarGrid(reminders, isDark, theme),
+            ),
 
-          const Divider(height: 1),
+            const Divider(height: 1),
 
-          // ── Selected Day Reminders ───────────────────────────────────────────
-          Expanded(
-            child: _buildDayView(dayReminders, isDark, theme),
-          ),
-        ],
+            // ── Selected Day Reminders ───────────────────────────────────────────
+            Expanded(
+              child: _buildDayView(dayReminders, isDark, theme),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddReminderDialog(context),
@@ -310,8 +311,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
   Widget _buildDayView(
       List<ReminderModel> dayReminders, bool isDark, ThemeData theme) {
-    final dateStr = _selectedDay != null
-        ? DateFormat('EEEE, MMMM d').format(_selectedDay!)
+    final selectedDay = _selectedDay;
+    final dateStr = selectedDay != null
+        ? DateFormat('EEEE, MMMM d').format(selectedDay)
         : 'Select a day';
 
     return Column(

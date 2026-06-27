@@ -81,8 +81,10 @@ class PdfExportService {
       _fontMonoBold ??= pw.Font.courierBold();
     }
 
-    if (_fallbacks == null) {
-      _fallbacks = [];
+    var fallbacksList = _fallbacks;
+    if (fallbacksList == null) {
+      fallbacksList = [];
+      _fallbacks = fallbacksList;
       try {
         final fonts = await Future.wait([
           PdfGoogleFonts.notoSansSCRegular(),
@@ -94,18 +96,18 @@ class PdfExportService {
           PdfGoogleFonts.notoSansThaiRegular(),
           PdfGoogleFonts.notoColorEmoji(),
         ]);
-        _fallbacks!.addAll(fonts);
+        fallbacksList.addAll(fonts);
       } catch (e) {
         debugPrint('PDF: Fallback Google Fonts fetch failed: $e');
       }
     }
 
-    final pw.Font fontBold = _fontBold!;
-    final pw.Font fontSemiBold = _fontSemiBold!;
-    final pw.Font fontRegular = _fontRegular!;
-    final pw.Font fontMono = _fontMono!;
-    final pw.Font fontMonoBold = _fontMonoBold!;
-    final fallbacks = _fallbacks!;
+    final pw.Font fontBold = _fontBold ?? pw.Font.helveticaBold();
+    final pw.Font fontSemiBold = _fontSemiBold ?? pw.Font.helveticaBold();
+    final pw.Font fontRegular = _fontRegular ?? pw.Font.helvetica();
+    final pw.Font fontMono = _fontMono ?? pw.Font.courier();
+    final pw.Font fontMonoBold = _fontMonoBold ?? pw.Font.courierBold();
+    final fallbacks = _fallbacks ?? [];
 
     final resolvedImages = <String, pw.ImageProvider>{};
     final cleanTitle = PdfDeltaParser.cleanText(note.title.isEmpty ? 'Untitled Note' : note.title);

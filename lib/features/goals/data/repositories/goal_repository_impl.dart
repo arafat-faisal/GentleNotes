@@ -1,11 +1,9 @@
-library;
-
-import '../../../../core/services/storage/i_local_storage.dart';
+import '../datasources/i_goals_storage.dart';
 import '../../domain/entities/goal_entity.dart';
 import '../../domain/repositories/goal_repository.dart';
 
 class GoalRepositoryImpl implements GoalRepository {
-  final ILocalStorage storage;
+  final IGoalsStorage storage;
 
   GoalRepositoryImpl({required this.storage});
 

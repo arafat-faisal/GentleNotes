@@ -34,13 +34,14 @@ class _CreateEditGoalScreenState extends ConsumerState<CreateEditGoalScreen> {
       if (widget.goalId != null) {
         final goals = ref.read(goalsProvider);
         try {
-          _existingGoal = goals.firstWhere((g) => g.id == widget.goalId);
+          final goal = goals.firstWhere((g) => g.id == widget.goalId);
+          _existingGoal = goal;
           setState(() {
-            _titleController.text = _existingGoal!.title;
-            _descController.text = _existingGoal!.description;
-            _horizon = _existingGoal!.horizon;
-            _priority = _existingGoal!.priority;
-            _steps.addAll(_existingGoal!.steps);
+            _titleController.text = goal.title;
+            _descController.text = goal.description;
+            _horizon = goal.horizon;
+            _priority = goal.priority;
+            _steps.addAll(goal.steps);
           });
         } catch (_) {
           context.pop();
@@ -71,7 +72,8 @@ class _CreateEditGoalScreenState extends ConsumerState<CreateEditGoalScreen> {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
-    if (_existingGoal == null) {
+    final existingGoal = _existingGoal;
+    if (existingGoal == null) {
       await ref.read(goalsProvider.notifier).createGoal(
         title: title,
         description: _descController.text.trim(),
@@ -81,7 +83,7 @@ class _CreateEditGoalScreenState extends ConsumerState<CreateEditGoalScreen> {
       );
     } else {
       await ref.read(goalsProvider.notifier).updateGoal(
-        _existingGoal!.copyWith(
+        existingGoal.copyWith(
           title: title,
           description: _descController.text.trim(),
           horizon: _horizon,

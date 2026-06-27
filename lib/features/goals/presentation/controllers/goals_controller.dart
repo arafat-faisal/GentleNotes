@@ -1,17 +1,26 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
 
-import '../../../../core/services/storage/hive_local_storage.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../data/datasources/goals_storage_impl.dart';
+import '../../data/datasources/i_goals_storage.dart';
 import '../../data/repositories/goal_repository_impl.dart';
 import '../../domain/entities/goal_entity.dart';
 import '../../domain/entities/goal_enums.dart';
+import '../../domain/repositories/goal_repository.dart';
 import '../../domain/usecases/goal_usecases.dart';
 
 // ── Providers ───────────────────────────────────────────────────────────────
 
-final goalRepositoryProvider = Provider((ref) {
-  final storage = HiveLocalStorage();
+final goalsStorageProvider = Provider<IGoalsStorage>((ref) {
+  final box = Hive.box(AppConstants.goalsBox);
+  return GoalsStorageImpl(box);
+});
+
+final goalRepositoryProvider = Provider<GoalRepository>((ref) {
+  final storage = ref.watch(goalsStorageProvider);
   return GoalRepositoryImpl(storage: storage);
 });
 
@@ -27,7 +36,7 @@ final goalsProvider = StateNotifierProvider<GoalsController, List<GoalEntity>>((
 class GoalsController extends StateNotifier<List<GoalEntity>> {
   GoalsController({required this.repository}) : super([]);
 
-  final GoalRepositoryImpl repository;
+  final GoalRepository repository;
 
   void loadGoals() {
     state = repository.getGoals();

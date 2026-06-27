@@ -266,7 +266,7 @@ JSON Structure:
               if (_errorMessage != null) ...[
                 const SizedBox(height: 10),
                 Text(
-                  _errorMessage!,
+                  _errorMessage ?? '',
                   style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500),
                 ),
               ],

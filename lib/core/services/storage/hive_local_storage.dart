@@ -17,7 +17,7 @@ import '../../../features/planner/domain/entities/planner_item_entity.dart';
 import '../../../features/pdf_viewer/data/models/pdf_annotation_model.dart';
 import '../../../features/pdf_viewer/data/models/pdf_bookmark_model.dart';
 import '../../../features/goals/domain/entities/goal_entity.dart';
-import 'goals_storage.dart';
+import '../../../features/goals/data/datasources/goals_storage_impl.dart';
 
 class HiveLocalStorage implements ILocalStorage {
   late Box _foldersBox;
@@ -35,7 +35,7 @@ class HiveLocalStorage implements ILocalStorage {
   late SettingsStorage _settingsStorage;
   late PlannerStorage _plannerStorage;
   late PdfAnnotationStorage _pdfAnnotationStorage;
-  late GoalsStorage _goalsStorage;
+  late GoalsStorageImpl _goalsStorage;
 
   // ── Singleton ───────────────────────────────────────────────────────────────
   static final HiveLocalStorage _instance = HiveLocalStorage._internal();
@@ -66,7 +66,7 @@ class HiveLocalStorage implements ILocalStorage {
       annotationsBox: _pdfAnnotationsBox,
       bookmarksBox: _pdfBookmarksBox,
     );
-    _goalsStorage = GoalsStorage(goalsBox: _goalsBox);
+    _goalsStorage = GoalsStorageImpl(_goalsBox);
 
     await _seedInitialDataIfNeeded();
   }

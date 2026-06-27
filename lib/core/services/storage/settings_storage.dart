@@ -31,7 +31,7 @@ class SettingsStorage {
     if (lineHeight != 1.2 && lineHeight != 1.4 && lineHeight != 1.6 && lineHeight != 1.8) {
       lineHeight = 1.4;
     }
-    final homeLayoutStr = sharedPrefs.getString(AppConstants.prefHomeLayout) ?? 'dashboard';
+    final homeLayoutStr = sharedPrefs.getString(AppConstants.prefHomeLayout) ?? 'minimal';
 
     return AppSettingsModel(
       themeMode: ThemeModeSetting.values.firstWhere((e) => e.name == theme, orElse: () => ThemeModeSetting.system),
@@ -50,7 +50,7 @@ class SettingsStorage {
       customEnabledTools: customTools,
       editorFontFamily: fontFamily,
       editorFontSize: fontSize,
-      homeLayout: HomeLayoutPreset.values.firstWhere((e) => e.name == homeLayoutStr, orElse: () => HomeLayoutPreset.dashboard),
+      homeLayout: HomeLayoutPreset.values.firstWhere((e) => e.name == homeLayoutStr, orElse: () => HomeLayoutPreset.minimal),
     );
   }
 

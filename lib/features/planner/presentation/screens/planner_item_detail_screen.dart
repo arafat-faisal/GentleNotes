@@ -129,7 +129,7 @@ class PlannerItemDetailScreen extends ConsumerWidget {
           if (linkedGoal != null)
             _GoalLinkBadge(
               goalTitle: linkedGoal.title,
-              onTap: () => context.push('/goals/edit/${linkedGoal.id}'),
+              onTap: () => context.push('/goals/detail/${linkedGoal.id}'),
             ),
 
           // ── Description ──

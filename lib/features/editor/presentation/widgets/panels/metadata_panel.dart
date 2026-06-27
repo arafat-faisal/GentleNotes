@@ -134,20 +134,33 @@ class MetadataPanel extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  ...folders.map((f) => DropdownMenuItem<String?>(
-                        value: f.id,
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(color: f.color, shape: BoxShape.circle),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(f.name, style: const TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      )),
+                  ...folders.map((f) {
+                        final parent = folders.cast<FolderModel?>().firstWhere(
+                              (x) => x?.id == f.parentFolderId,
+                              orElse: () => null,
+                            );
+                        final nameText = parent != null ? '${parent.name} > ${f.name}' : f.name;
+                        return DropdownMenuItem<String?>(
+                          value: f.id,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(color: f.color, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  nameText, 
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                 ],
                 onChanged: onFolderChanged,
               ),

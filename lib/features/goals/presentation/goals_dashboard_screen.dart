@@ -43,7 +43,7 @@ class GoalsDashboardScreen extends ConsumerWidget {
                       final goal = horizonGoals[index];
                       return GoalCard(
                         goal: goal,
-                        onTap: () => context.push('/goals/edit/${goal.id}'),
+                        onTap: () => context.push('/goals/detail/${goal.id}'),
                       );
                     },
                   );

@@ -108,7 +108,11 @@ class EditorBodyWidget extends ConsumerWidget {
         ),
       );
 
-      quillController!.readOnly = readOnly;
+      // Guard readOnly assignment: setting it unconditionally inside build() fires
+      // the controller's listeners every frame, creating an infinite setState loop.
+      if (quillController!.readOnly != readOnly) {
+        quillController!.readOnly = readOnly;
+      }
       final quillConfig = QuillEditorConfig(
         placeholder: noteType == NoteType.mixed ? 'Write something beautiful...' : 'Start writing...',
         autoFocus: false,
@@ -239,9 +243,10 @@ class EditorBodyWidget extends ConsumerWidget {
 
 
     return Stack(
+      fit: StackFit.expand,
       clipBehavior: Clip.none,
       children: [
-        Positioned.fill(child: editorContent),
+        editorContent,
         if (floatingStickers.isNotEmpty)
           Positioned.fill(
             child: FloatingStickersOverlay(

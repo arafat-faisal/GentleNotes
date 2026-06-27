@@ -34,6 +34,8 @@ class AppEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sub = subtitle;
+    final actLabel = actionLabel;
 
     return Center(
       child: Padding(
@@ -73,22 +75,22 @@ class AppEmptyState extends StatelessWidget {
             ),
 
             // ── Subtitle ──
-            if (subtitle != null) ...[
+            if (sub != null) ...[
               const SizedBox(height: 8),
               Text(
-                subtitle!,
+                sub,
                 style: theme.textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
             ],
 
             // ── CTA Button ──
-            if (actionLabel != null && onAction != null) ...[
+            if (actLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text(actionLabel!),
+                label: Text(actLabel),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -394,10 +394,11 @@ class _CreateEditPlannerItemScreenState
   }
 
   String _reminderLabel() {
-    if (_reminderMinutes == null) return 'No reminder';
-    if (_reminderMinutes! < 60) return '$_reminderMinutes min before';
-    if (_reminderMinutes == 60) return '1 hour before';
-    if (_reminderMinutes! < 1440) return '${_reminderMinutes! ~/ 60} hours before';
+    final minutes = _reminderMinutes;
+    if (minutes == null) return 'No reminder';
+    if (minutes < 60) return '$minutes min before';
+    if (minutes == 60) return '1 hour before';
+    if (minutes < 1440) return '${minutes ~/ 60} hours before';
     return '1 day before';
   }
 }

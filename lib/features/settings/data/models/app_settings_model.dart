@@ -73,7 +73,7 @@ class AppSettingsModel {
     this.editorFontFamily = 'Inter',
     this.editorFontSize = 16.0,
     this.editorLineHeight = 1.4,
-    this.homeLayout = HomeLayoutPreset.dashboard,
+    this.homeLayout = HomeLayoutPreset.minimal,
   });
 
   CustomWorkspaceProfile? get activeCustomProfile {
@@ -365,7 +365,7 @@ class AppSettingsModel {
       })(),
       homeLayout: HomeLayoutPreset.values.firstWhere(
         (e) => e.name == map['homeLayout'],
-        orElse: () => HomeLayoutPreset.dashboard,
+        orElse: () => HomeLayoutPreset.minimal,
       ),
     );
   }

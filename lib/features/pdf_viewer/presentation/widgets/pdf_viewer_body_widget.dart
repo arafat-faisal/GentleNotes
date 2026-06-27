@@ -1301,9 +1301,10 @@ class _PdfViewerBodyWidgetState extends ConsumerState<PdfViewerBodyWidget> {
           ],
         );
 
-        if (_pdfBytes != null) {
+        final pdfBytes = _pdfBytes;
+        if (pdfBytes != null) {
           return PdfViewer.data(
-            _pdfBytes!,
+            pdfBytes,
             sourceName: 'pdf_document.pdf',
             key: widget.pdfViewerKey,
             controller: widget.pdfViewerController,
@@ -1311,12 +1312,17 @@ class _PdfViewerBodyWidgetState extends ConsumerState<PdfViewerBodyWidget> {
           );
         }
 
-        return PdfViewer.file(
-          _pdfFile!.path,
-          key: widget.pdfViewerKey,
-          controller: widget.pdfViewerController,
-          params: params,
-        );
+        final pdfFile = _pdfFile;
+        if (pdfFile != null) {
+          return PdfViewer.file(
+            pdfFile.path,
+            key: widget.pdfViewerKey,
+            controller: widget.pdfViewerController,
+            params: params,
+          );
+        }
+
+        return const Center(child: CircularProgressIndicator());
       },
     );
   }

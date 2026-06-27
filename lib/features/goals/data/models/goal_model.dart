@@ -83,23 +83,82 @@ class GoalModel {
   final String? retryOfGoalId;
 
   factory GoalModel.fromMap(Map<String, dynamic> map) {
-    final stepsList = (map['steps'] as List?) ?? [];
+    final stepsRaw = map['steps'];
+    final List<GoalStepModel> parsedSteps = [];
+    if (stepsRaw is List) {
+      for (final element in stepsRaw) {
+        if (element is Map) {
+          try {
+            final stepMap = Map<String, dynamic>.from(element);
+            parsedSteps.add(GoalStepModel.fromMap(stepMap));
+          } catch (_) {
+            // Silently filter out malformed steps
+          }
+        }
+      }
+    }
+
+    final rawNoteIds = map['relatedNoteIds'];
+    final List<String> relatedNoteIds = [];
+    if (rawNoteIds is List) {
+      for (final id in rawNoteIds) {
+        if (id != null) {
+          relatedNoteIds.add(id.toString());
+        }
+      }
+    }
+
+    final rawPlannerIds = map['relatedPlannerItemIds'];
+    final List<String> relatedPlannerItemIds = [];
+    if (rawPlannerIds is List) {
+      for (final id in rawPlannerIds) {
+        if (id != null) {
+          relatedPlannerItemIds.add(id.toString());
+        }
+      }
+    }
+
+    DateTime createdAt;
+    try {
+      createdAt = map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'].toString())
+          : DateTime.now();
+    } catch (_) {
+      createdAt = DateTime.now();
+    }
+
+    DateTime updatedAt;
+    try {
+      updatedAt = map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'].toString())
+          : DateTime.now();
+    } catch (_) {
+      updatedAt = DateTime.now();
+    }
+
+    DateTime? targetDate;
+    if (map['targetDate'] != null) {
+      try {
+        targetDate = DateTime.parse(map['targetDate'].toString());
+      } catch (_) {}
+    }
+
     return GoalModel(
-      id: map['id'] ?? '',
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      horizon: map['horizon'] ?? GoalHorizon.weekly.name,
-      status: map['status'] ?? GoalStatus.active.name,
-      priority: map['priority'] ?? GoalPriority.medium.name,
-      steps: stepsList.map((e) => GoalStepModel.fromMap(Map<String, dynamic>.from(e))).toList(),
-      failureReason: map['failureReason'] ?? '',
-      lessonsLearned: map['lessonsLearned'] ?? '',
-      relatedNoteIds: List<String>.from(map['relatedNoteIds'] ?? []),
-      relatedPlannerItemIds: List<String>.from(map['relatedPlannerItemIds'] ?? []),
-      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updatedAt'] ?? DateTime.now().toIso8601String()),
-      targetDate: map['targetDate'] != null ? DateTime.parse(map['targetDate']) : null,
-      retryOfGoalId: map['retryOfGoalId'],
+      id: map['id']?.toString() ?? '',
+      title: map['title']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      horizon: map['horizon']?.toString() ?? GoalHorizon.weekly.name,
+      status: map['status']?.toString() ?? GoalStatus.active.name,
+      priority: map['priority']?.toString() ?? GoalPriority.medium.name,
+      steps: parsedSteps,
+      failureReason: map['failureReason']?.toString() ?? '',
+      lessonsLearned: map['lessonsLearned']?.toString() ?? '',
+      relatedNoteIds: relatedNoteIds,
+      relatedPlannerItemIds: relatedPlannerItemIds,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      targetDate: targetDate,
+      retryOfGoalId: map['retryOfGoalId']?.toString(),
     );
   }
 

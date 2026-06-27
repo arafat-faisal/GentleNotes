@@ -389,7 +389,8 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
       );
     }
 
-    if (_errorMessage != null) {
+    final errorMessage = _errorMessage;
+    if (errorMessage != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -409,7 +410,7 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               Text(
-                _errorMessage!,
+                errorMessage,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
               ),
@@ -440,9 +441,10 @@ class _PdfReaderScreenState extends ConsumerState<PdfReaderScreen> {
       ),
     );
 
-    Widget pdfView = _pdfBytes != null
+    final pdfBytes = _pdfBytes;
+    Widget pdfView = pdfBytes != null
         ? PdfViewer.data(
-            _pdfBytes!,
+            pdfBytes,
             sourceName: 'pdf_document.pdf',
             controller: controller,
             params: params,
