@@ -19,6 +19,8 @@ import '../features/planner/presentation/screens/create_edit_planner_item_screen
 import '../features/goals/presentation/goals_dashboard_screen.dart';
 import '../features/goals/presentation/goal_detail_screen.dart';
 import '../features/goals/presentation/create_edit_goal_screen.dart';
+import '../features/goals/domain/entities/goal_enums.dart';
+import '../features/knowledge_hub/presentation/knowledge_hub_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -122,7 +124,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/goals/create',
-        builder: (context, state) => const CreateEditGoalScreen(),
+        builder: (context, state) {
+          final horizonStr = state.uri.queryParameters['horizon'];
+          GoalHorizon? initialHorizon;
+          if (horizonStr != null) {
+            try {
+              initialHorizon = GoalHorizon.values.firstWhere(
+                (h) => h.name.toLowerCase() == horizonStr.toLowerCase(),
+              );
+            } catch (_) {}
+          }
+          return CreateEditGoalScreen(initialHorizon: initialHorizon);
+        },
       ),
       GoRoute(
         path: '/goals/detail/:id',
@@ -137,6 +150,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final goalId = state.pathParameters['id']!;
           return CreateEditGoalScreen(goalId: goalId);
         },
+      ),
+      GoRoute(
+        path: '/knowledge_hub',
+        builder: (context, state) => const KnowledgeHubScreen(),
       ),
     ],
   );

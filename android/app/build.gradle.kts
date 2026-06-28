@@ -22,6 +22,24 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
+    
+    buildFeatures {
+        resValues = true
+    }
+    
+    flavorDimensions += "default"
+    
+    productFlavors {
+        create("dev") {
+            dimension = "default"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "GentleNotes Dev")
+        }
+        create("prod") {
+            dimension = "default"
+            resValue("string", "app_name", "GentleNotes")
+        }
+    }
 
     signingConfigs {
         create("release") {

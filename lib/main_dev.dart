@@ -9,7 +9,7 @@ import 'core/services/storage/hive_local_storage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Set up Default Flavor (Dev) for backwards compatibility
+  // Set up Flavor
   FlavorConfig(
     flavor: Flavor.dev,
     appName: 'GentleNotes Dev',
@@ -17,8 +17,10 @@ void main() async {
 
   // Initialize Hive and seed default data before launching the app.
   await HiveLocalStorage().init();
+  
   // Initialize pdfrx
   await pdfrxFlutterInitialize();
+  
   runApp(
     const ProviderScope(
       child: GentleNotesApp(),

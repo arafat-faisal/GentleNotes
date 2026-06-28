@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/gentle_scaffold.dart';
 import '../controllers/planner_controller.dart';
 import '../controllers/planner_filter_controller.dart';
@@ -15,6 +16,7 @@ import '../widgets/planner_today_view.dart';
 import '../widgets/planner_week_view.dart';
 import '../widgets/planner_month_view.dart';
 import '../widgets/planner_schedule_view.dart';
+import '../widgets/planner_overview_tab.dart';
 
 class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
@@ -27,7 +29,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  static const _tabs = ['Today', 'Week', 'Month', 'Schedule'];
+  static const _tabs = ['Overview', 'Today', 'Week', 'Month', 'Schedule'];
 
   @override
   void initState() {
@@ -61,11 +63,12 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       appBar: isSelectionMode ? _buildSelectionAppBar(theme, selectedIds) : _buildTabAppBar(theme),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          PlannerTodayView(),
-          PlannerWeekView(),
-          PlannerMonthView(),
-          PlannerScheduleView(),
+        children: [
+          PlannerOverviewTab(tabController: _tabController),
+          const PlannerTodayView(),
+          const PlannerWeekView(),
+          const PlannerMonthView(),
+          const PlannerScheduleView(),
         ],
       ),
     );
@@ -105,6 +108,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
                     builder: (context) => AlertDialog(
                       title: const Text('Delete Plans?'),
                       content: Text('Are you sure you want to delete ${selectedIds.length} plan(s)?'),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(false),
@@ -131,7 +135,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       bottom: TabBar(
         controller: _tabController,
         tabs: _tabs.map((t) => Tab(text: t)).toList(),
-        isScrollable: false,
+        isScrollable: true,
         labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
       ),
@@ -151,6 +155,11 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       ),
       actions: [
         IconButton(
+          icon: const Icon(Icons.menu_book_rounded),
+          tooltip: 'Knowledge Hub',
+          onPressed: () => context.push('/knowledge_hub'),
+        ),
+        IconButton(
           tooltip: 'Import from AI',
           icon: const Icon(Icons.auto_awesome),
           onPressed: () => PlannerAiImportDialog.show(context),
@@ -160,7 +169,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen>
       bottom: TabBar(
         controller: _tabController,
         tabs: _tabs.map((t) => Tab(text: t)).toList(),
-        isScrollable: false,
+        isScrollable: true,
         labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 13),
       ),

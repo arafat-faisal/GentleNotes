@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # State Management & Routing
   flutter_riverpod: ^2.6.1
@@ -73,6 +75,7 @@ dependencies:
   path: any
   http: ^1.6.0
   pdfrx: ^2.2.24
+  url_launcher: ^6.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

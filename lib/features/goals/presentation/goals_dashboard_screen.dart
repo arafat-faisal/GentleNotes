@@ -6,6 +6,7 @@ import '../../../../shared/widgets/gentle_scaffold.dart';
 import 'controllers/goals_controller.dart';
 import '../domain/entities/goal_enums.dart';
 import 'widgets/goal_card.dart';
+import 'widgets/goals_overview_tab.dart';
 
 class GoalsDashboardScreen extends ConsumerWidget {
   const GoalsDashboardScreen({super.key});
@@ -22,32 +23,38 @@ class GoalsDashboardScreen extends ConsumerWidget {
         label: const Text('New Goal'),
       ),
       body: DefaultTabController(
-        length: GoalHorizon.values.length,
+        length: GoalHorizon.values.length + 1,
         child: Column(
           children: [
             TabBar(
               isScrollable: true,
-              tabs: GoalHorizon.values.map((h) => Tab(text: h.displayName)).toList(),
+              tabs: [
+                const Tab(text: 'Overview'),
+                ...GoalHorizon.values.map((h) => Tab(text: h.displayName)),
+              ],
             ),
             Expanded(
               child: TabBarView(
-                children: GoalHorizon.values.map((horizon) {
-                  final horizonGoals = goals.where((g) => g.horizon == horizon).toList();
-                  if (horizonGoals.isEmpty) {
-                    return const Center(child: Text('No goals here yet.'));
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: horizonGoals.length,
-                    itemBuilder: (context, index) {
-                      final goal = horizonGoals[index];
-                      return GoalCard(
-                        goal: goal,
-                        onTap: () => context.push('/goals/detail/${goal.id}'),
-                      );
-                    },
-                  );
-                }).toList(),
+                children: [
+                  GoalsOverviewTab(goals: goals),
+                  ...GoalHorizon.values.map((horizon) {
+                    final horizonGoals = goals.where((g) => g.horizon == horizon).toList();
+                    if (horizonGoals.isEmpty) {
+                      return const Center(child: Text('No goals here yet.'));
+                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: horizonGoals.length,
+                      itemBuilder: (context, index) {
+                        final goal = horizonGoals[index];
+                        return GoalCard(
+                          goal: goal,
+                          onTap: () => context.push('/goals/detail/${goal.id}'),
+                        );
+                      },
+                    );
+                  }),
+                ],
               ),
             ),
           ],

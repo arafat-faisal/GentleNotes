@@ -64,8 +64,9 @@ class PdfExportService {
   }) async {
     final doc = pw.Document();
 
+    final isTest = !kIsWeb && io.Platform.environment.containsKey('FLUTTER_TEST');
     try {
-      if (_fontBold == null) {
+      if (_fontBold == null && !isTest) {
         _fontBold     = await PdfGoogleFonts.robotoBold();
         _fontSemiBold = await PdfGoogleFonts.robotoMedium();
         _fontRegular  = await PdfGoogleFonts.robotoRegular();
@@ -81,24 +82,34 @@ class PdfExportService {
       _fontMonoBold ??= pw.Font.courierBold();
     }
 
+    if (isTest) {
+      _fontBold     ??= pw.Font.helveticaBold();
+      _fontSemiBold ??= pw.Font.helveticaBold();
+      _fontRegular  ??= pw.Font.helvetica();
+      _fontMono     ??= pw.Font.courier();
+      _fontMonoBold ??= pw.Font.courierBold();
+    }
+
     var fallbacksList = _fallbacks;
     if (fallbacksList == null) {
       fallbacksList = [];
       _fallbacks = fallbacksList;
-      try {
-        final fonts = await Future.wait([
-          PdfGoogleFonts.notoSansSCRegular(),
-          PdfGoogleFonts.notoSansJPRegular(),
-          PdfGoogleFonts.notoSansKRRegular(),
-          PdfGoogleFonts.notoSansArabicRegular(),
-          PdfGoogleFonts.notoSansDevanagariRegular(),
-          PdfGoogleFonts.notoSansHebrewRegular(),
-          PdfGoogleFonts.notoSansThaiRegular(),
-          PdfGoogleFonts.notoColorEmoji(),
-        ]);
-        fallbacksList.addAll(fonts);
-      } catch (e) {
-        debugPrint('PDF: Fallback Google Fonts fetch failed: $e');
+      if (!isTest) {
+        try {
+          final fonts = await Future.wait([
+            PdfGoogleFonts.notoSansSCRegular(),
+            PdfGoogleFonts.notoSansJPRegular(),
+            PdfGoogleFonts.notoSansKRRegular(),
+            PdfGoogleFonts.notoSansArabicRegular(),
+            PdfGoogleFonts.notoSansDevanagariRegular(),
+            PdfGoogleFonts.notoSansHebrewRegular(),
+            PdfGoogleFonts.notoSansThaiRegular(),
+            PdfGoogleFonts.notoColorEmoji(),
+          ]);
+          fallbacksList.addAll(fonts);
+        } catch (e) {
+          debugPrint('PDF: Fallback Google Fonts fetch failed: $e');
+        }
       }
     }
 

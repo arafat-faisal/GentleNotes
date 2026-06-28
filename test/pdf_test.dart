@@ -5,7 +5,7 @@ import 'package:gentle_notes/features/notes/data/models/note_model.dart';
 import 'package:gentle_notes/models/models.dart';
 
 void main() {
-  testWidgets('Test PDF Export Image Generation', (tester) async {
+  test('Test PDF Export Image Generation', () async {
     // Create a dummy image file
     final tempDir = Directory.systemTemp;
     final imgFile = File('${tempDir.path}/dummy.jpg');

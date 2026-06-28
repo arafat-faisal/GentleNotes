@@ -14,11 +14,20 @@ class ConvertDeltaToBlocks {
 
     List<dynamic>? parsedOps;
 
-    if (trimmedContent.startsWith('[') && trimmedContent.endsWith(']')) {
+    if (trimmedContent.startsWith('{') && trimmedContent.endsWith('}')) {
+      try {
+        final Map<String, dynamic> parsed = jsonDecode(trimmedContent);
+        if (parsed.containsKey('ops') && parsed['ops'] is List) {
+          parsedOps = parsed['ops'] as List<dynamic>;
+        }
+      } catch (e, stack) {
+        AppLogger.warning('ConvertDeltaToBlocks: Failed to parse Delta JSON object', e, stack);
+      }
+    } else if (trimmedContent.startsWith('[') && trimmedContent.endsWith(']')) {
       try {
         parsedOps = jsonDecode(trimmedContent) as List<dynamic>;
       } catch (e, stack) {
-        AppLogger.warning('ConvertDeltaToBlocks: Failed to parse Delta JSON, attempting markdown conversion instead', e, stack);
+        AppLogger.warning('ConvertDeltaToBlocks: Failed to parse Delta JSON array', e, stack);
       }
     }
 

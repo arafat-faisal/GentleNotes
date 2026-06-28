@@ -613,7 +613,7 @@ class BentoGridEditorialLayout extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SizedBox(
-                    height: 380,
+                    height: 300,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -721,7 +721,7 @@ class BentoGridEditorialLayout extends ConsumerWidget {
                       crossAxisCount: 3,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 1.45,
+                      childAspectRatio: 1.7,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => NoteCard(note: remainingNotes[index], folders: folders),
@@ -749,7 +749,7 @@ class BentoGridEditorialLayout extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SizedBox(
-                    height: 380,
+                    height: 300,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -845,7 +845,7 @@ class BentoGridEditorialLayout extends ConsumerWidget {
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 1.4,
+                      childAspectRatio: 1.65,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) => NoteCard(note: remainingNotes[index], folders: folders),
@@ -874,18 +874,18 @@ class BentoGridEditorialLayout extends ConsumerWidget {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   SizedBox(
-                    height: 190,
+                    height: 150,
                     child: _buildHeroTile(context, heroNote, folders),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: SizedBox(height: 130, child: _buildCalendarTile(context, ref)),
+                        child: SizedBox(height: 115, child: _buildCalendarTile(context, ref)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: SizedBox(height: 130, child: _buildFoldersTile(context, folders, ref)),
+                        child: SizedBox(height: 115, child: _buildFoldersTile(context, folders, ref)),
                       ),
                     ],
                   ),
@@ -895,7 +895,7 @@ class BentoGridEditorialLayout extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: SizedBox(
-                          height: 90,
+                          height: 80,
                           child: _buildStatTile(
                             context,
                             title: 'All Notes',
@@ -910,7 +910,7 @@ class BentoGridEditorialLayout extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: SizedBox(
-                          height: 90,
+                          height: 80,
                           child: _buildStatTile(
                             context,
                             title: 'Favorites',

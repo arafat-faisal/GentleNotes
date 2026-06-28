@@ -10,8 +10,9 @@ import 'controllers/goals_controller.dart';
 
 class CreateEditGoalScreen extends ConsumerStatefulWidget {
   final String? goalId;
+  final GoalHorizon? initialHorizon;
 
-  const CreateEditGoalScreen({super.key, this.goalId});
+  const CreateEditGoalScreen({super.key, this.goalId, this.initialHorizon});
 
   @override
   ConsumerState<CreateEditGoalScreen> createState() => _CreateEditGoalScreenState();
@@ -20,7 +21,7 @@ class CreateEditGoalScreen extends ConsumerStatefulWidget {
 class _CreateEditGoalScreenState extends ConsumerState<CreateEditGoalScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  GoalHorizon _horizon = GoalHorizon.weekly;
+  late GoalHorizon _horizon;
   GoalPriority _priority = GoalPriority.medium;
   final List<GoalStepEntity> _steps = [];
   final _stepController = TextEditingController();
@@ -30,6 +31,7 @@ class _CreateEditGoalScreenState extends ConsumerState<CreateEditGoalScreen> {
   @override
   void initState() {
     super.initState();
+    _horizon = widget.initialHorizon ?? GoalHorizon.weekly;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.goalId != null) {
         final goals = ref.read(goalsProvider);

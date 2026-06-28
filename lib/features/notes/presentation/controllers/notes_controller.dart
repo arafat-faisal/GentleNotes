@@ -251,7 +251,10 @@ final searchFilteredProvider = Provider<List<NoteModel>>((ref) {
 /// Final centralized filtered provider pointing to the end of the pipeline.
 /// Replaces the old monolithic filteredNotesProvider so that existing visual templates compile cleanly.
 final filteredNotesProvider = Provider<List<NoteModel>>((ref) {
-  return ref.watch(searchFilteredProvider);
+  final notes = ref.watch(searchFilteredProvider);
+  final pinned = notes.where((n) => n.isPinned).toList();
+  final unpinned = notes.where((n) => !n.isPinned).toList();
+  return [...pinned, ...unpinned];
 });
 
 /// Returns only pinned notes.

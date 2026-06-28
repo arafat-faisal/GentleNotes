@@ -59,7 +59,9 @@ class GentleScaffold extends ConsumerWidget {
       return Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         appBar: appBar ?? (isBatchActive ? _buildBatchAppBar(context, ref, theme, selectedIds) : _buildAppBar(context, theme)),
-        body: body,
+        body: SafeArea(
+          child: body,
+        ),
         floatingActionButton: floatingActionButton,
         bottomNavigationBar: showBottomNav
             ? Container(
@@ -306,6 +308,7 @@ class GentleScaffold extends ConsumerWidget {
                 _buildSidebarTile(context: context, icon: Icons.assignment_outlined, activeIcon: Icons.assignment_rounded, label: 'Templates', route: '/templates', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.flag_outlined, activeIcon: Icons.flag_rounded, label: 'Goals', route: '/goals', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month_rounded, label: 'Planner', route: '/planner', currentRoute: currentRoute),
+                _buildSidebarTile(context: context, icon: Icons.menu_book_outlined, activeIcon: Icons.menu_book_rounded, label: 'Knowledge Hub', route: '/knowledge_hub', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.tune_rounded, activeIcon: Icons.tune_rounded, label: 'Settings', route: '/settings', currentRoute: currentRoute),
                 _buildSidebarTile(context: context, icon: Icons.help_outline_rounded, activeIcon: Icons.help_rounded, label: 'About & Help', route: '/about', currentRoute: currentRoute),
 

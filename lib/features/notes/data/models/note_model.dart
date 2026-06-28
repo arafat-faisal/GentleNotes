@@ -36,21 +36,39 @@ class NoteModel {
   });
 
   String get plainText {
-    if (content.startsWith('[') && content.endsWith(']')) {
-      try {
+    try {
+      // Handle {"ops":[...]} object format (used by flutter_quill)
+      if (content.startsWith('{')) {
+        final Map<String, dynamic> parsed = jsonDecode(content);
+        final ops = parsed['ops'];
+        if (ops is List) {
+          final sb = StringBuffer();
+          for (final op in ops) {
+            if (op is Map && op.containsKey('insert')) {
+              final insert = op['insert'];
+              if (insert is String) sb.write(insert);
+            }
+          }
+          final result = sb.toString();
+          // Strip trailing lone newline that Quill always adds
+          return result.endsWith('\n') && result.length > 1
+              ? result.substring(0, result.length - 1)
+              : result.trim();
+        }
+      }
+      // Handle [...] array format (legacy)
+      if (content.startsWith('[') && content.endsWith(']')) {
         final List parsed = jsonDecode(content);
         final sb = StringBuffer();
         for (final op in parsed) {
           if (op is Map && op.containsKey('insert')) {
             final insert = op['insert'];
-            if (insert is String) {
-              sb.write(insert);
-            }
+            if (insert is String) sb.write(insert);
           }
         }
-        return sb.toString();
-      } catch (_) {}
-    }
+        return sb.toString().trim();
+      }
+    } catch (_) {}
     return content;
   }
 

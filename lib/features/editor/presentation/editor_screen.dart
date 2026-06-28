@@ -204,8 +204,16 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     Document doc;
     if (noteContent.isNotEmpty) {
       try {
-        final deltaJson = jsonDecode(noteContent);
-        doc = Document.fromJson(deltaJson);
+        final decoded = jsonDecode(noteContent);
+        final List<dynamic> ops;
+        if (decoded is Map && decoded.containsKey('ops') && decoded['ops'] is List) {
+          ops = decoded['ops'] as List<dynamic>;
+        } else if (decoded is List) {
+          ops = decoded;
+        } else {
+          throw Exception('Invalid delta format');
+        }
+        doc = Document.fromJson(ops);
       } catch (e) {
         AppLogger.warning('EditorScreen: Failed to jsonDecode note content. Attempting markdownToDelta parsing. Error: $e');
         try {

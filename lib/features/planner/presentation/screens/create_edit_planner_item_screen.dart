@@ -19,9 +19,10 @@ import '../../domain/entities/planner_enums.dart';
 import '../../domain/entities/planner_item_entity.dart';
 
 class CreateEditPlannerItemScreen extends ConsumerStatefulWidget {
-  const CreateEditPlannerItemScreen({super.key, this.existingItem});
+  const CreateEditPlannerItemScreen({super.key, this.existingItem, this.initialDate});
 
   final PlannerItemEntity? existingItem;
+  final DateTime? initialDate;
 
   @override
   ConsumerState<CreateEditPlannerItemScreen> createState() =>
@@ -61,7 +62,7 @@ class _CreateEditPlannerItemScreenState
     _descCtrl = TextEditingController(text: item?.description ?? '');
     _locationCtrl = TextEditingController(text: item?.locationOrLink ?? '');
     _type = item?.type ?? PlannerItemType.task;
-    _date = item?.date ?? DateTime.now();
+    _date = item?.date ?? widget.initialDate ?? DateTime.now();
     _startTime = item?.startTime;
     _endTime = item?.endTime;
     _isAllDay = item?.isAllDay ?? false;
